@@ -7,7 +7,7 @@ use std::io::prelude::*;
 use std::iter::*;
 use std::path::Path;
 
-fn solve(path: &Path) -> i64 {
+fn solve(path: &Path) -> String {
     let input = File::open(path).unwrap();
     let buffered = BufReader::new(input);
     let lines : Vec<String> = buffered.lines().filter_map(Result::ok).collect();
@@ -30,8 +30,6 @@ fn solve(path: &Path) -> i64 {
     while reqs.len() > 0 {
         let mut noreqs : Vec<char> = reqs.iter().filter(|r| r.1.iter().filter(|c| !res.contains(&c)).count() == 0).map(|r| *r.0).collect();
         noreqs.sort_unstable();
-        println!("{:?}", reqs);
-        println!("{:?}", noreqs);
         if noreqs.len() == 0 {
             break;
         }
@@ -39,9 +37,7 @@ fn solve(path: &Path) -> i64 {
         res.push(op);
         reqs.remove(&op);
     }
-    let s : String = res.into_iter().collect();
-    println!("{}", s);
-    return 0;
+    return res.into_iter().collect();
 }
 
 fn main() {

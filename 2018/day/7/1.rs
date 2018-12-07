@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::collections::HashSet;
 use std::env;
 use std::fs::File;
 use std::io::BufReader;
@@ -17,14 +16,9 @@ fn solve(path: &Path) -> String {
         rows.push((t[0], t[1]));
     }
     let mut reqs = HashMap::new();
-    let mut letters = HashSet::new();
     for (before, after) in rows {
         reqs.entry(after).or_insert(Vec::new()).push(before);
-        letters.insert(before);
-        letters.insert(after);
-    }
-    for l in &letters {
-        reqs.entry(*l).or_insert(Vec::<char>::new());
+        reqs.entry(before).or_insert(Vec::new());
     }
     let mut res : Vec<char> = vec![];
     while reqs.len() > 0 {

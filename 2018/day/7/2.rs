@@ -16,14 +16,9 @@ struct Work {
 impl Work {
     fn new(rows: Vec<(char, char)>) -> Work {
         let mut reqs = HashMap::new();
-        let mut letters = HashSet::new();
         for (before, after) in rows {
             reqs.entry(after).or_insert(Vec::new()).push(before);
-            letters.insert(before);
-            letters.insert(after);
-        }
-        for l in &letters {
-            reqs.entry(*l).or_insert(Vec::<char>::new());
+            reqs.entry(before).or_insert(Vec::new());
         }
         Work {
             ongoing: HashMap::<char, i64>::new(),

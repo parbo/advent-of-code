@@ -1,0 +1,14 @@
+cargo-features = ["edition"]
+
+[package]
+name = 'day8'
+version = '0.0.1'
+edition = '2018'
+
+[[bin]]
+name = '1'
+path = '1.rs'
+
+[[bin]]
+name = '2'
+path = '2.rs'

@@ -5,7 +5,7 @@
 int main(int argc, char *argv[]) {
   auto players = std::atoi(argv[1]);
   auto marbles = std::atoi(argv[2]);
-  std::list<int> circle;
+  std::list<int64_t> circle;
   std::vector<int64_t> score;
   score.resize(players);
   circle.push_back(0);

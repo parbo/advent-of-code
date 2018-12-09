@@ -22,6 +22,9 @@ int main(int argc, char *argv[]) {
       }
       auto value = *it;
       it = circle.erase(it);
+      if (it == circle.end()) {
+	it = circle.begin();
+      }
       score[player] += (value + marble);
       if (score[player] > max_score) {
 	max_score = score[player];

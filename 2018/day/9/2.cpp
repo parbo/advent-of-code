@@ -6,6 +6,7 @@ int main(int argc, char *argv[]) {
   auto players = std::atoi(argv[1]);
   auto marbles = std::atoi(argv[2]);
   std::list<int64_t> circle;
+  int64_t max_score = 0;
   std::vector<int64_t> score;
   score.resize(players);
   circle.push_back(0);
@@ -22,6 +23,9 @@ int main(int argc, char *argv[]) {
       auto value = *it;
       it = circle.erase(it);
       score[player] += (value + marble);
+      if (score[player] > max_score) {
+	max_score = score[player];
+      }
     } else {
       for (int x = 0; x < 2; ++x) {
         ++it;
@@ -36,11 +40,5 @@ int main(int argc, char *argv[]) {
       std::cout << marble << " " << (100.0 * marble) / marbles << "%\n";
     }
   }
-  int64_t s = 0;
-  for (auto sc : score) {
-    if (sc > s) {
-      s = sc;
-    }
-  }
-  std::cout << s;
+  std::cout << max_score;
 }

@@ -39,9 +39,9 @@ int main(int argc, char *argv[]) {
       it = circle.insert(it, marble);
     }
     player = (player + 1) % players;
-    if (marble % 10000 == 0) {
-      std::cout << marble << " " << (100.0 * marble) / marbles << "%\n";
-    }
+    // if (marble % 10000 == 0) {
+    //   std::cout << marble << " " << (100.0 * marble) / marbles << "%\n";
+    // }
   }
   std::cout << max_score;
 }

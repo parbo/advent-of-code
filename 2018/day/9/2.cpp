@@ -1,17 +1,17 @@
 #include <list>
 #include <vector>
 #include <iostream>
+#include <algorithm>
 
 int main(int argc, char *argv[]) {
   auto players = std::atoi(argv[1]);
   auto marbles = std::atoi(argv[2]);
   std::list<int64_t> circle;
   int64_t max_score = 0;
-  std::vector<int64_t> score;
-  score.resize(players);
+  std::vector<int64_t> scores;
+  scores.resize(players);
   circle.push_back(0);
   auto it = circle.begin();
-  auto player = 1;
   for (int marble = 1; marble < marbles + 1; ++marble) {
     if ((marble % 23) == 0) {
       for (int x = 0; x < 7; ++x) {
@@ -25,10 +25,9 @@ int main(int argc, char *argv[]) {
       if (it == circle.end()) {
 	it = circle.begin();
       }
-      score[player] += (value + marble);
-      if (score[player] > max_score) {
-	max_score = score[player];
-      }
+      auto &score = scores[marble % players];
+      score += (value + marble);
+      max_score = std::max(score, max_score);
     } else {
       for (int x = 0; x < 2; ++x) {
         ++it;
@@ -38,10 +37,6 @@ int main(int argc, char *argv[]) {
       }
       it = circle.insert(it, marble);
     }
-    player = (player + 1) % players;
-    // if (marble % 10000 == 0) {
-    //   std::cout << marble << " " << (100.0 * marble) / marbles << "%\n";
-    // }
   }
   std::cout << max_score;
 }

@@ -1,14 +1,14 @@
 extern crate linked_list;
 
 use linked_list::LinkedList;
-use std::collections::HashMap;
 use std::env;
 
 fn solve(players: i64, marbles: i64) -> i64 {
     let mut circle = LinkedList::new();
     circle.push_front(0);
     let mut cursor = circle.cursor();
-    let mut score = HashMap::new();
+    let mut score = vec![];
+    score.resize(players as usize, 0);
     for marble in 1..(marbles+1) {
         if marble % 23 == 0 {
             for _ in 0..7 {
@@ -17,7 +17,7 @@ fn solve(players: i64, marbles: i64) -> i64 {
                 }
             }
             let removed = cursor.remove().unwrap();
-            *score.entry(marble % players).or_insert(0) += removed + marble;
+            score[(marble % players) as usize] += removed + marble;
         } else {
             for _ in 0..2 {
                 if let None = cursor.next() {
@@ -27,7 +27,7 @@ fn solve(players: i64, marbles: i64) -> i64 {
             cursor.insert(marble);
         }
     }
-    return *score.iter().map(|a| a.1).max().unwrap();
+    return *score.iter().max().unwrap();
 }
 
 fn main() {

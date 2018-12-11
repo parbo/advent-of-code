@@ -1,3 +1,4 @@
+use std::cmp;
 use std::env;
 
 fn power_level(x: i64, y: i64, serial: i64) -> i64 {
@@ -21,18 +22,17 @@ fn solve(serial: i64) -> (i64, i64, i64) {
     let mut max_power = 0;
     let mut max_coord = (0, 0, 0);
     for y in 1..301 {
-        println!("y: {}", y);
+//        println!("y: {}", y);
         for x in 1..301 {
-            let mut max_s = 301 - x;
-            if 301 - y < max_s {
-                max_s = 301 -y;
-            }
+            let max_s = cmp::min(301 - y, 301 - x);
+            let mut p = 0;
             for s in 1..max_s {
-                let mut p = 0;
-                for yy in y..(y + s) {
-                    for xx in x..(x + s) {
-                        let o = (yy - 1) * 300 + (xx - 1);
-                        p += grid[o as usize];
+                for i in 0..s {
+                    let oa = (y + (s - 1) - 1) * 300 + (x + i - 1);
+                    let ob = (y + i - 1) * 300 + (x + (s - 1) - 1);
+                    p += grid[oa as usize];
+                    if oa != ob {
+                        p += grid[ob as usize];
                     }
                 }
                 if p > max_power {

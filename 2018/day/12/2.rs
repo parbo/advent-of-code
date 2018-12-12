@@ -5,7 +5,6 @@ use std::io::BufReader;
 use std::io::prelude::*;
 use std::iter::*;
 use std::path::Path;
-use std::mem;
 
 fn solve(path: &Path) -> i64 {
     let input = File::open(path).unwrap();
@@ -23,18 +22,18 @@ fn solve(path: &Path) -> i64 {
             }
         }
     }
-    println!("{:?}", patterns);
-    let mut inserted = 0;
-    let mut next = vec![];
     let gens = 50000000000_i64;
     let mut sums = HashMap::new();
-    let mut loop_c = -1;
+    let mut gen_c = (-1, -1);
+    let mut inserted : i64 = 0;
+    let mut last_sum = 0;
     for gen in 0..gens {
         initial.insert(0, '.');
         initial.insert(0, '.');
         inserted += 2;
         initial.push('.');
         initial.push('.');
+        let mut next = vec![];
         next.resize(initial.len(), '.');
         for i in 0..(initial.len() - 5) {
             for (p, res) in &patterns {
@@ -50,35 +49,20 @@ fn solve(path: &Path) -> i64 {
                 }
             }
         }
-        let mut b = 0;
-        while next[b] == '.' {
-            b += 1;
-        }
-        let mut a = 0;
-        let l = next.len();
-        while next[l - a - 1] == '.' {
-            a += 1;
-        }
-        initial = next[b..(l-a)].to_vec();
-        let s : Vec<i64> = initial.iter().enumerate().filter(|(n, c)| **c == '#').map(|(n, c)|  n as i64 - inserted).collect();
-        if sums.contains_key(&s) {
-            loop_c = *sums.get(&s).unwrap();
+        initial = next;
+        let first_non_empty = initial.iter().enumerate().find(|(_, c)| **c == '#').unwrap().0;
+        let r : Vec<i64> = initial.iter().enumerate().filter(|(_, c)| **c == '#').map(|(n, _)| (n - first_non_empty) as i64).collect();
+        last_sum = initial.iter().enumerate().map(|(n, c)| if *c == '#' { n as i64 - inserted } else { 0 }).sum::<i64>();
+        if sums.contains_key(&r) {
+            gen_c = (gen, inserted);
             break;
         } else {
-            sums.insert(s, gen);
-        }
-        if gen % 1000 == 0 {
-            println!("gen: {}, {:?}", gen, initial);
+            sums.insert(r.clone(), (gen, inserted));
         }
     }
-    println!("{:?}", sums);
-    let rem = gens - loop_c * (gens / loop_c);
-    for (s, g) in sums {
-        if g == rem {
-            return s.iter().sum();
-        }
-    }
-    return -1;
+    let rem = gens - gen_c.0 - 1;
+    let c = initial.iter().filter(|c| **c == '#').count() as i64;
+    return last_sum + rem * c;
 }
 
 fn main() {

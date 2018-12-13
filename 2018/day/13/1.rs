@@ -16,22 +16,49 @@ fn draw_grid(grid: &Vec<Vec<char>>) {
 }
 
 #[derive(Debug)]
+enum Turn {
+    Left,
+    Straight,
+    Right
+}
+
+#[derive(Debug)]
 struct Car {
     dir: char,
     pos: (usize, usize),
-    next_turn: char
+    next_turn: Turn
 }
 
 fn tick(cars: &mut Vec<Car>, grid: &Vec<Vec<char>>) {
     for c in &mut cars {
         // maybe turn
         if grid[c.pos.1][c.pos.0] == '+' {
-            c.dir = c.next_dir;
-            match c.next_dir {
-                '>' => c.next_dir = c.next_dir,
-                '<' => c.dirpos = (c.pos.0 - 1, c.pos.1),
-                '^' => c.pos = (c.pos.0, c.pos.1 - 1),
-                'v' => c.pos = (c.pos.0, c.pos.1 + 1),
+            c.dir = match c.dir {
+                '>' => match c.next_turn {
+                    Left => '^',
+                    Right => 'v',
+                    Straight => c.dir
+                },
+                '<' => match c.next_turn {
+                    Left => 'v',
+                    Right => 'v',
+                    Straight => c.dir
+                },
+                '>' => match c.next_turn {
+                    Left => '^',
+                    Right => 'v',
+                    Straight => c.dir
+                },
+                '>' => match c.next_turn {
+                    Left => '^',
+                    Right => 'v',
+                    Straight => c.dir
+                }
+            }
+            match c.next_turn {
+                Left => c.next_turn = Straight,
+                Straight => c.next_turn = Right,
+                Right => c.next_turn = Left
             }
         }
         // move
@@ -57,7 +84,7 @@ fn solve(path: &Path) -> (i64, i64) {
     m.insert('v', '|');
     m.insert('^', '|');
     for (row, line) in lines.iter().enumerate() {
-        let row_cars : Vec<Car>= line.chars().enumerate().filter(|(_, c)| ['<', '>', 'v', '^'].contains(&c)).map(|(col, c)| Car {dir: c, pos: (col, row), next_dir: '<' }).collect();
+        let row_cars : Vec<Car>= line.chars().enumerate().filter(|(_, c)| ['<', '>', 'v', '^'].contains(&c)).map(|(col, c)| Car {dir: c, pos: (col, row), next_turn: Left }).collect();
         cars.extend(row_cars);
         let v : Vec<char> = line.chars().map(|c| *m.get(&c).unwrap_or(&c)).collect();
         max_w = std::cmp::max(v.len(), max_w);

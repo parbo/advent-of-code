@@ -78,12 +78,27 @@ impl CartGrid {
 
     fn draw_grid(&self) {
         for y in 0..self.grid.len() {
-            for x in 0..self.grid[y].len() {
+            let row_len = self.grid[y].len();
+            for x in 0..row_len {
                 let col = self.grid[y][x];
                 let c = match col {
-                    '-' => '═',
-                    '|' => '║',
-                    '+' => '╬',
+                    '-' => '─',
+                    '|' => '│',
+                    '+' => '┼',
+                    '/' => {
+                        if x > 0 && (self.grid[y][x-1] == '-' || self.grid[y][x-1] == '+') {
+                            '╯'
+                        } else {
+                            '╭'
+                        }
+                    },
+                    '\\' => {
+                        if x + 1 < row_len && (self.grid[y][x+1] == '-' || self.grid[y][x+1] == '+') {
+                            '╰'
+                        } else {
+                            '╮'
+                        }
+                    },
                     _ => col
                 };
                 self.window.mvaddch(self.yoffs + y as i32, self.xoffs + x as i32, c);
@@ -111,6 +126,9 @@ impl CartGrid {
             Some(Input::KeyRight) => self.xoffs -= 1,
             Some(Input::KeyUp) => self.yoffs += 1,
             Some(Input::KeyDown) => self.yoffs -= 1,
+            Some(Input::KeyResize) => {
+                resize_term(0, 0);
+            }
             _ => {}
         }
         self.window.refresh();

@@ -40,9 +40,10 @@ struct Car {
     next_turn: Turn
 }
 
-fn tick(cars: &mut Vec<Car>, grid: &Vec<Vec<char>>) -> Option<(usize, usize)> {
+fn tick(cars: &mut Vec<Car>, grid: &Vec<Vec<char>>) {
     cars.sort_by(|a, b| a.pos.cmp(&b.pos));
-    for i in 0..cars.len() {
+    let mut i = 0;
+    loop {
         {
             let c = &mut cars[i];
             // move
@@ -101,18 +102,37 @@ fn tick(cars: &mut Vec<Car>, grid: &Vec<Vec<char>>) -> Option<(usize, usize)> {
                 }
             }
         }
-        if let Some(pos) = is_crash(&cars) {
-            return Some(pos);
+        match is_crash(&cars) {
+            Some(pos) => {
+                let last = std::cmp::max(pos.0, pos.1);
+                let first = std::cmp::min(pos.0, pos.1);
+                assert!(first == i || last == i);
+                cars.remove(last);
+                cars.remove(first);
+                // move back the loop pos on crash
+                let mut count = 0;
+                if first <= i {
+                    count += 1;
+                }
+                if last <= i {
+                    count += 1;
+                }
+                i -= std::cmp::min(count, i);
+            }
+            _ => {}
+        }
+        i += 1;
+        if i >= cars.len() {
+            break;
         }
     }
-    None
 }
 
 fn is_crash(cars: &Vec<Car>) -> Option<(usize, usize)> {
     for i in 0..cars.len() {
         for j in (i + 1)..cars.len() {
             if cars[i].pos == cars[j].pos {
-                return Some(cars[i].pos);
+                return Some((i, j));
             }
         }
     }
@@ -145,8 +165,10 @@ fn solve(path: &Path) -> (usize, usize) {
         if grid.len() < 10 {
             draw_grid(&cars, &grid);
         }
-        if let Some(pos) = tick(&mut cars, &grid) {
-            return pos;
+        tick(&mut cars, &grid);
+        if cars.len() == 1 {
+            tick(&mut cars, &grid);
+            return cars[0].pos
         }
     }
 }

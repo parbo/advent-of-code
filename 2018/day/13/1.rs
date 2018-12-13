@@ -19,7 +19,29 @@ fn draw_grid(grid: &Vec<Vec<char>>) {
 struct Car {
     dir: char,
     pos: (usize, usize),
-    next_dir: char
+    next_turn: char
+}
+
+fn tick(cars: &mut Vec<Car>, grid: &Vec<Vec<char>>) {
+    for c in &mut cars {
+        // maybe turn
+        if grid[c.pos.1][c.pos.0] == '+' {
+            c.dir = c.next_dir;
+            match c.next_dir {
+                '>' => c.next_dir = c.next_dir,
+                '<' => c.dirpos = (c.pos.0 - 1, c.pos.1),
+                '^' => c.pos = (c.pos.0, c.pos.1 - 1),
+                'v' => c.pos = (c.pos.0, c.pos.1 + 1),
+            }
+        }
+        // move
+        match c {
+            '>' => c.pos = (c.pos.0 + 1, c.pos.1),
+            '<' => c.pos = (c.pos.0 - 1, c.pos.1),
+            '^' => c.pos = (c.pos.0, c.pos.1 - 1),
+            'v' => c.pos = (c.pos.0, c.pos.1 + 1),
+        }
+    }
 }
 
 fn solve(path: &Path) -> (i64, i64) {

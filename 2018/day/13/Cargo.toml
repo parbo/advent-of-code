@@ -9,5 +9,5 @@ edition = '2018'
 name = '2'
 path = '2.rs'
 [dependencies]
-linked-list = "0.0.3"
+lazy_static = "1.2.0"
 pancurses = "0.16"

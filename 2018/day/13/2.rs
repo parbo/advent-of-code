@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate lazy_static;
 extern crate pancurses;
 
 use std::env;
@@ -7,10 +9,43 @@ use std::io::BufReader;
 use std::io::prelude::*;
 use std::iter::*;
 use std::path::Path;
-use pancurses::{initscr, endwin};
+use pancurses::*;
 
-fn draw_grid(cars: &Vec<Car>, grid: &Vec<Vec<char>>) -> String {
-    let mut chars = vec![];
+lazy_static! {
+    static ref SPRITES: HashMap<char, char> = {
+        let mut map = HashMap::new();
+        map.insert('-', '═');
+	map.insert('|', '║');
+	map.insert('+', '╬');
+        map
+    };
+    static ref COLORS: HashMap<char, u8> = {
+        let mut map = HashMap::new();
+        map.insert('<', 2);
+        map.insert('>', 2);
+        map.insert('^', 2);
+        map.insert('v', 2);
+        map
+    };
+}
+
+fn sprite(s: char) -> char {
+    *SPRITES.get(&s).unwrap_or(&s)
+}
+
+fn draw(window: &Window, x: usize, y: usize, c: char) {
+    if has_colors() {
+        let color = COLORS.get(&c).unwrap_or(&1);
+        window.attrset(ColorPair(*color));
+    }
+    window.mvaddch(y as i32, x as i32, sprite(c));
+    if has_colors() {
+        let color = COLORS.get(&c).unwrap_or(&1);
+        window.attroff(ColorPair(*color));
+    }
+}
+
+fn draw_grid(window: &Window, cars: &Vec<Car>, grid: &Vec<Vec<char>>) {
     for (y, row) in grid.iter().enumerate() {
         for (x, col) in row.iter().enumerate() {
             let mut car = None;
@@ -21,14 +56,13 @@ fn draw_grid(cars: &Vec<Car>, grid: &Vec<Vec<char>>) -> String {
                 }
             }
             if !car.is_none() {
-                chars.push(car.unwrap());
+                let c = car.unwrap();
+                draw(window, x, y, c);
             } else {
-                chars.push(*col);
+                draw(window, x, y, *col);
             }
         }
-        chars.push('\n');
     }
-    String::from_iter(chars)
 }
 
 #[derive(Debug)]
@@ -175,20 +209,33 @@ fn parse(path: &Path) -> (Vec<Car>, Vec<Vec<char>>) {
 fn solve(path: &Path, sleep: u64) -> (usize, usize) {
     let (mut cars, grid) = parse(path);
     let window = initscr();
+    nl();
+    noecho();
+    curs_set(0);
+    window.keypad(true);
+    if has_colors() {
+        let mut bg = COLOR_BLACK;
+
+        start_color();
+        if use_default_colors() == OK {
+            bg = -1;
+        }
+
+        init_pair(1, COLOR_WHITE, bg);
+        init_pair(2, COLOR_BLACK, COLOR_RED);
+    }
     window.scrollok(true);
     window.timeout(sleep as i32);
     loop {
-        let s = draw_grid(&cars, &grid);
         window.clear();
-        window.mvaddstr(0, 0, s);
+        draw_grid(&window, &cars, &grid);
         tick(&mut cars, &grid);
         if cars.len() <= 1 {
             tick(&mut cars, &grid);
             break;
         }
-        window.refresh();
-//        std::thread::sleep(std::time::Duration::from_millis(sleep));
         let _ = window.getch();
+        window.refresh();
     }
     endwin();
     cars[0].pos

@@ -1,0 +1,13 @@
+cargo-features = ["edition"]
+
+[package]
+name = 'day13'
+version = '0.0.1'
+edition = '2018'
+
+[[bin]]
+name = '2'
+path = '2.rs'
+[dependencies]
+linked-list = "0.0.3"
+pancurses = "0.16"

@@ -1,3 +1,5 @@
+extern crate pancurses;
+
 use std::env;
 use std::collections::HashMap;
 use std::fs::File;
@@ -5,8 +7,10 @@ use std::io::BufReader;
 use std::io::prelude::*;
 use std::iter::*;
 use std::path::Path;
+use pancurses::{initscr, endwin};
 
-fn draw_grid(cars: &Vec<Car>, grid: &Vec<Vec<char>>) {
+fn draw_grid(cars: &Vec<Car>, grid: &Vec<Vec<char>>) -> String {
+    let mut chars = vec![];
     for (y, row) in grid.iter().enumerate() {
         for (x, col) in row.iter().enumerate() {
             let mut car = None;
@@ -17,13 +21,14 @@ fn draw_grid(cars: &Vec<Car>, grid: &Vec<Vec<char>>) {
                 }
             }
             if !car.is_none() {
-                print!("{}", car.unwrap());
+                chars.push(car.unwrap());
             } else {
-                print!("{}", col);
+                chars.push(*col);
             }
         }
-        println!("");
+        chars.push('\n');
     }
+    String::from_iter(chars)
 }
 
 #[derive(Debug)]
@@ -44,6 +49,9 @@ fn tick(cars: &mut Vec<Car>, grid: &Vec<Vec<char>>) {
     cars.sort_by(|a, b| a.pos.cmp(&b.pos));
     let mut i = 0;
     loop {
+        if cars.len() == 0 {
+            break;
+        }
         {
             let c = &mut cars[i];
             // move
@@ -139,7 +147,7 @@ fn is_crash(cars: &Vec<Car>) -> Option<(usize, usize)> {
     return None;
 }
 
-fn solve(path: &Path) -> (usize, usize) {
+fn parse(path: &Path) -> (Vec<Car>, Vec<Vec<char>>) {
     let input = File::open(path).unwrap();
     let buffered = BufReader::new(input);
     let lines : Vec<String> = buffered.lines().filter_map(Result::ok).collect();
@@ -161,22 +169,37 @@ fn solve(path: &Path) -> (usize, usize) {
     for row in &mut grid {
         row.resize(max_w, ' ');
     }
+    (cars, grid)
+}
+
+fn solve(path: &Path, sleep: u64) -> (usize, usize) {
+    let (mut cars, grid) = parse(path);
+    let window = initscr();
+    window.scrollok(true);
+    window.timeout(sleep as i32);
     loop {
-        if grid.len() < 10 {
-            draw_grid(&cars, &grid);
-        }
+        let s = draw_grid(&cars, &grid);
+        window.clear();
+        window.mvaddstr(0, 0, s);
         tick(&mut cars, &grid);
-        if cars.len() == 1 {
+        if cars.len() <= 1 {
             tick(&mut cars, &grid);
-            return cars[0].pos
+            break;
         }
+        window.refresh();
+//        std::thread::sleep(std::time::Duration::from_millis(sleep));
+        let _ = window.getch();
     }
+    endwin();
+    cars[0].pos
 }
 
 fn main() {
     let args: Vec<String> = env::args().collect();
     let filename = &args[1];
+    let sleep_str = &args[2];
+    let sleep = sleep_str.parse::<u64>().unwrap();
 
-    let result = solve(Path::new(&filename));
+    let result = solve(Path::new(&filename), sleep);
     println!("{:?}", result);
 }

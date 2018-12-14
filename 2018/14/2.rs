@@ -26,14 +26,7 @@ fn solve(pattern_str: &str) {
             let rl = recipes.len();
             let pl = pattern.len();
             if rl >= pl {
-                let mut all_match = true;
-                for i in 0..pl {
-                    if pattern[i] != recipes[rl - pl + i] {
-                        all_match = false;
-                        break;
-                    }
-                }
-                if all_match {
+                if pattern[..] == recipes[(rl-pl)..] {
                     println!("{}", rl - pl);
                     return;
                 }

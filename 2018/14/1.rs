@@ -1,44 +1,53 @@
-fn dump(recipes: &[usize], elf_1: usize, elf_2: usize) {
-    for (n, recipe) in recipes.iter().enumerate() {
-        if n == elf_1 {
-            print!("({})", recipe);
-        } else if n == elf_2 {
-            print!("[{}]", recipe);
-        } else {
-            print!(" {} ", recipe);
+fn digits(num: usize) -> Vec<usize> {
+    let mut digs = vec![];
+    let mut r = num;
+    loop {
+        let digit = r - 10 * (r / 10);
+        assert!(digit < 10);
+        digs.insert(0, digit);
+        r = r / 10;
+        if r == 0 {
+            break;
         }
     }
-    println!("");
+    digs
 }
 
-fn answer(recipes: &[usize]) {
-    for recipe in recipes {
-        print!("{}", recipe);
-    }
-    println!("");
-}
-
-fn solve() {
-    let mut recipes = vec![4, 3, 0, 9, 7, 1];
-    let offs = recipes.len();
-    let mut elves : Vec<usize> = (0..offs).collect();
+fn solve(initial: &str, offs: usize, num_elves: usize) {
+    let mut recipes : Vec<usize> = initial.chars().map(|c| c.to_digit(10).unwrap() as usize).collect();
+    let mut elves : Vec<usize> = (0..num_elves).collect();
 
     while recipes.len() < offs + 10 {
-//        dump(&recipes, elf_1, elf_2);
-        let mut r : usize  = elves.iter().map(|e| recipes[*e]).sum();
-        let mut i = 1;
-        while r > 0 {
-            recipes.push(r % (10 * i));
-            r = r / 10;
-            i += 1;
+        let r : usize  = elves.iter().map(|e| recipes[*e]).sum();
+        recipes.extend(digits(r));
+        for e in &mut elves {
+            *e = (*e + 1 + recipes[*e]) % recipes.len();
         }
-
-        elves = elves.iter().map(|e| (e + 1 + recipes[*e]) % recipes.len()).collect();
     }
-//    dump(&recipes, elf_1, elf_2);
-    answer(&recipes[offs..(offs+10)]);
+    let strs : Vec<String> = recipes[offs..(offs+10)].iter().map(|r| r.to_string()).collect();
+    let s = strs.join("");
+    if recipes.len() < 50 {
+        println!("{:?}", recipes);
+    } else {
+        println!("[too long]");
+    }
+    println!("{}, {}, {} => {}", initial, offs, num_elves, s);
 }
 
 fn main() {
-    solve();
+    assert!(digits(12345) == vec![1, 2, 3, 4, 5]);
+    assert!(digits(4000) == vec![4, 0, 0, 0]);
+    assert!(digits(18) == vec![1, 8]);
+    assert!(digits(10) == vec![1, 0]);
+    assert!(digits(0) == vec![0]);
+    assert!(digits(7) == vec![7]);
+
+    solve("37", 5, 2);
+    solve("37", 9, 2);
+    solve("37", 18, 2);
+    solve("37", 2018, 2);
+    for initial in &["074501", "430971"] {
+        solve(initial, initial.len(), 2);
+        solve(initial, initial.len(), initial.len());
+    }
 }

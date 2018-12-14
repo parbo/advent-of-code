@@ -46,8 +46,5 @@ fn main() {
     solve("37", 9, 2);
     solve("37", 18, 2);
     solve("37", 2018, 2);
-    for initial in &["074501", "430971"] {
-        solve(initial, initial.len(), 2);
-        solve(initial, initial.len(), initial.len());
-    }
+    solve("37", 430971, 2);
 }

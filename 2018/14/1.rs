@@ -13,9 +13,9 @@ fn digits(num: usize) -> Vec<usize> {
     digs
 }
 
-fn solve(initial: &str, offs: usize, num_elves: usize) {
-    let mut recipes : Vec<usize> = initial.chars().map(|c| c.to_digit(10).unwrap() as usize).collect();
-    let mut elves : Vec<usize> = (0..num_elves).collect();
+fn solve(offs: usize) {
+    let mut recipes = vec![3, 7];
+    let mut elves = vec![0, 1];
 
     while recipes.len() < offs + 10 {
         let r : usize  = elves.iter().map(|e| recipes[*e]).sum();
@@ -31,7 +31,7 @@ fn solve(initial: &str, offs: usize, num_elves: usize) {
     } else {
         println!("[too long]");
     }
-    println!("{}, {}, {} => {}", initial, offs, num_elves, s);
+    println!("{} => {}", offs, s);
 }
 
 fn main() {
@@ -42,9 +42,9 @@ fn main() {
     assert!(digits(0) == vec![0]);
     assert!(digits(7) == vec![7]);
 
-    solve("37", 5, 2);
-    solve("37", 9, 2);
-    solve("37", 18, 2);
-    solve("37", 2018, 2);
-    solve("37", 430971, 2);
+    solve(5);
+    solve(9);
+    solve(18);
+    solve(2018);
+    solve(430971);
 }

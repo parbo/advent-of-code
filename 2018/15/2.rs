@@ -255,21 +255,17 @@ impl Map {
             // Fight!
             if let Entity::Being(_) = self.entity(fighter) {
                 // Find the weakest enemy
-                let mut min_hp = std::i64::MAX;
-                let mut min_enemy = None;
+                let mut close_enemies = vec![];
                 for close_enemy in enemies_to_fight {
-                    let entity = self.entity(close_enemy);
-                    match entity {
-                        Entity::Being(x) => {
-                            if x.hp < min_hp {
-                                min_hp = x.hp;
-                                min_enemy = Some(close_enemy);
-                            }
-                        },
-                        _ => panic!()
+                    if let Entity::Being(x) = self.entity(close_enemy) {
+                        close_enemies.push((x.hp, close_enemy));
+                    } else {
+                        panic!();
                     }
                 }
-                if let Some(enemy) = min_enemy {
+                if close_enemies.len() > 0 {
+                    close_enemies.sort();
+                    let enemy = close_enemies[0].1;
                     let (y, x) = fighter;
                     if let Entity::Being(attacker) = self.map[y][x] {
                         let (yy, xx) = enemy;
@@ -297,6 +293,10 @@ impl Map {
     }
 
     fn draw(&self) {
+        for _ in 0..self.map[0].len() {
+            print!("-");
+        }
+        println!("");
         for row in &self.map {
             let mut entities : Vec<Entity> = vec![];
             for col in row {
@@ -334,6 +334,19 @@ impl Map {
                 println!("");
             }
         }
+    }
+
+    fn outcome(&self) -> i64 {
+        let mut sum = 0;
+        for row in &self.map {
+            for col in row {
+                if let Entity::Being(x) = col {
+                    println!("{:?}", x);
+                    sum += x.hp;
+                }
+            }
+        }
+        sum
     }
 }
 
@@ -374,20 +387,18 @@ fn solve(path: &Path) {
         let mut rounds = 0;
         loop {
             let (done, elf_died) = map.round();
+            if elf_power == 20 {
+                map.draw();
+            }
             if elf_died {
+                map.draw();
+                let sum = map.outcome();
+                println!("{}, {}, {}, {}", elf_power, rounds, sum, rounds * sum);
                 break;
             }
             if done && !elf_died {
                 map.draw();
-                let mut sum = 0;
-                for row in &map.map {
-                    for col in row {
-                        if let Entity::Being(x) = col {
-                            println!("{:?}", x);
-                            sum += x.hp;
-                        }
-                    }
-                }
+                let sum = map.outcome();
                 println!("{}, {}, {}, {}", elf_power, rounds, sum, rounds * sum);
                 return;
             }

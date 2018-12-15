@@ -2,6 +2,7 @@ use std::env;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::prelude::*;
@@ -204,8 +205,9 @@ impl Map {
     fn round(&mut self) -> (bool, bool) {
         let fighters = self.fighters();
         let mut elf_died = false;
+        let mut already_dead = HashSet::new();
         for fa in &fighters {
-            if self.entity(*fa) == Entity::Floor {
+            if already_dead.contains(fa) {
                 // Already dead
                 continue;
             }
@@ -284,6 +286,7 @@ impl Map {
                         if dead {
                             // die!
                             self.map[yy][xx] = Entity::Floor;
+                            already_dead.insert((yy, xx));
                         }
                     }
                 }
@@ -387,7 +390,11 @@ fn solve(path: &Path) {
         let mut rounds = 0;
         loop {
             let (done, elf_died) = map.round();
-            if elf_power == 20 {
+            if !done {
+                rounds += 1;
+            }
+            if elf_power == 20 || elf_power == 3 {
+                println!("After round {}", rounds);
                 map.draw();
             }
             if elf_died {
@@ -402,7 +409,6 @@ fn solve(path: &Path) {
                 println!("{}, {}, {}, {}", elf_power, rounds, sum, rounds * sum);
                 return;
             }
-            rounds += 1;
         }
         elf_power += 1;
     }

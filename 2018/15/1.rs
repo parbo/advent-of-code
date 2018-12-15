@@ -2,6 +2,7 @@ use std::env;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::prelude::*;
@@ -199,8 +200,9 @@ impl Map {
 
     fn round(&mut self) -> bool {
         let fighters = self.fighters();
+        let mut already_dead = HashSet::new();
         for fa in &fighters {
-            if self.entity(*fa) == Entity::Floor {
+            if already_dead.contains(fa) {
                 // Already dead
                 continue;
             }
@@ -246,27 +248,24 @@ impl Map {
             // Fight!
             if let Entity::Being(_) = self.entity(fighter) {
                 // Find the weakest enemy
-                let mut min_hp = std::i64::MAX;
-                let mut min_enemy = None;
+                let mut close_enemies = vec![];
                 for close_enemy in enemies_to_fight {
-                    let entity = self.entity(close_enemy);
-                    match entity {
-                        Entity::Being(x) => {
-                            if x.hp < min_hp {
-                                min_hp = x.hp;
-                                min_enemy = Some(close_enemy);
-                            }
-                        },
-                        _ => panic!()
+                    if let Entity::Being(x) = self.entity(close_enemy) {
+                        close_enemies.push((x.hp, close_enemy));
+                    } else {
+                        panic!();
                     }
                 }
-                if let Some(enemy) = min_enemy {
+                if close_enemies.len() > 0 {
+                    close_enemies.sort();
+                    let enemy = close_enemies[0].1;
                     let (y, x) = fighter;
                     if let Entity::Being(attacker) = self.map[y][x] {
                         let (yy, xx) = enemy;
                         let mut dead = false;
                         if let Entity::Being(attackee) = &mut self.map[yy][xx] {
-                            if attackee.hp >= attacker.attack {
+                            println!("attack: {:?} -> {:?}", attacker, attackee);
+                            if attackee.hp > attacker.attack {
                                 attackee.hp -= attacker.attack;
                             } else {
                                 dead = true;
@@ -274,7 +273,9 @@ impl Map {
                         }
                         if dead {
                             // die!
+                            println!("die: {:?}, {:?}", (yy, xx), self.entity((yy, xx)));
                             self.map[yy][xx] = Entity::Floor;
+                            already_dead.insert((yy, xx));
                         }
                     }
                 }
@@ -284,6 +285,10 @@ impl Map {
     }
 
     fn draw(&self) {
+        for _ in 0..self.map[0].len() {
+            print!("-");
+        }
+        println!("");
         for row in &self.map {
             let mut entities : Vec<Entity> = vec![];
             for col in row {

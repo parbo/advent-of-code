@@ -218,13 +218,14 @@ impl Map {
                 let mut shortest = std::usize::MAX;
                 let mut shortest_steps = vec![];
                 for fb in &enemies {
+                    // Find paths to all free spaces next to the enemy
                     for adj in self.neighbours(*fb, |c| self.map[c.0][c.1] == Entity::Floor) {
                         if let Some(p) = shortest_path(self, *fa, adj) {
                             if p.len() < shortest {
                                 shortest = p.len();
-                                shortest_steps = vec![p];
+                                shortest_steps = vec![(adj, p[1])];
                             } else if p.len() == shortest {
-                                shortest_steps.push(p);
+                                shortest_steps.push((adj, p[1]));
                             }
                         }
                     }
@@ -233,14 +234,14 @@ impl Map {
                     shortest_steps.sort();
                     // Move
                     let (y, x) = *fa;
-                    let (ny, nx) = shortest_steps[0][1];
+                    let (ny, nx) = shortest_steps[0].1;
                     assert!(self.map[ny][nx] == Entity::Floor);
                     self.map[ny][nx] = self.map[y][x];
                     self.map[y][x] = Entity::Floor;
                     fighter = (ny, nx);
+                    // After moving, we might have some in range enemies
+                    enemies_to_fight = self.enemies_in_range(fighter);
                 }
-                // After moving, we might have some in range enemies
-                enemies_to_fight = self.enemies_in_range(fighter);
             }
             // Fight!
             if let Entity::Being(_) = self.entity(fighter) {

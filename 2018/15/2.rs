@@ -28,7 +28,8 @@ impl Ord for State {
         // In case of a tie we compare positions - this step is necessary
         // to make implementations of `PartialEq` and `Ord` consistent.
         other.cost.cmp(&self.cost)
-            .then_with(|| other.position.cmp(&self.position))
+            .then_with(|| other.position.0.cmp(&self.position.0))
+            .then_with(|| other.position.1.cmp(&self.position.1))
     }
 }
 
@@ -39,38 +40,14 @@ impl PartialOrd for State {
     }
 }
 
-fn bp(came_from: &HashMap<(usize, usize), HashSet<(usize, usize)>>, pos: (usize, usize)) -> Vec<Vec<(usize, usize)>> {
-    if let Some(positions) = came_from.get(&pos) {
-        println!("{:?} -> {:?}", pos, positions);
-        let mut new_paths = vec![];
-        for p in positions {
-            let res = bp(came_from, *p);
-            if res.len() > 0 {
-                for r in res {
-                    let mut new_path = r.clone();
-                    new_path.extend(vec![pos]);
-                    new_paths.push(new_path);
-                }
-            } else {
-                let mut new_path = vec![*p, pos];
-                new_paths.push(new_path);
-            }
-        }
-        println!("returning {:?}", new_paths);
-        return new_paths;
-    } else {
-        println!("{:?} -> end", pos);
-        vec![]
-    }
-}
-
 // Dijkstra's shortest path algorithm.
+
 
 // Start at `start` and use `dist` to track the current shortest distance
 // to each node. This implementation isn't memory-efficient as it may leave duplicate
 // nodes in the queue. It also uses `usize::MAX` as a sentinel value,
 // for a simpler implementation.
-fn shortest_path(n: &Neighbours, start: (usize, usize), goal: (usize, usize)) -> Option<Vec<Vec<(usize, usize)>>> {
+fn shortest_path(n: &Neighbours, start: (usize, usize), goal: (usize, usize)) -> Option<(usize, Vec<(usize, usize)>)> {
     // dist[node] = current shortest distance from `start` to `node`
     let mut dist = HashMap::new();
     let mut heap = BinaryHeap::new();
@@ -80,11 +57,21 @@ fn shortest_path(n: &Neighbours, start: (usize, usize), goal: (usize, usize)) ->
     dist.insert(start, 0);
     heap.push(State { cost: 0, position: start });
 
+    let mut goal_cost = 0;
+    let mut res = vec![];
+
     // Examine the frontier with lower cost nodes first (min-heap)
     while let Some(State { cost, position }) = heap.pop() {
-        // Alternatively we could have continued to find all shortest paths
         if position == goal {
-            return Some(bp(&came_from, goal));
+            if goal_cost == 0 {
+                goal_cost = cost;
+            }
+            if cost == goal_cost {
+                res.push(*came_from.get(&goal).unwrap());
+            }
+            if cost > goal_cost {
+                return Some((cost, res));
+            }
         }
 
         // Important as we may have already found a better way
@@ -106,15 +93,14 @@ fn shortest_path(n: &Neighbours, start: (usize, usize), goal: (usize, usize)) ->
                 // Relaxation, we have now found a better way
                 dist.insert(next.position, next.cost);
                 heap.push(next);
-                // Replace the path
-                let mut cf = HashSet::new();
-                cf.insert(position);
-                came_from.insert(*neighbour_position, cf);
-            } else if next.cost == d {
-                // Update the path
-                came_from.entry(*neighbour_position).or_insert(HashSet::new()).insert(position);
+                // Remember the path
+                came_from.insert(*neighbour_position, position);
             }
         }
+    }
+
+    if res.len() > 0 {
+        return Some((goal_cost, res));
     }
 
     // Goal not reachable
@@ -268,27 +254,44 @@ impl Map {
                         candidates.insert(adj);
                     }
                 }
-                let mut all_paths = vec![];
+                // hack: remove the fighter temporarily
+                let f = self.map[fighter.0][fighter.1];
+                self.map[fighter.0][fighter.1] = Entity::Floor;
+                let mut all_steps = vec![];
                 for adj in candidates {
-                    if let Some(paths) = shortest_path(self, fighter, adj) {
-                        println!("{:?} -> {:?} => {:?}", fighter, adj, paths);
-                        all_paths.extend(paths);
+                    // Find the last step of the path from target to fighter
+                    if let Some(path_result) = shortest_path(self, adj, fighter) {
+//                        println!("{:?} -> {:?} => {:?}", fighter, adj, path_result);
+                        all_steps.push(path_result);
                     }
                 }
-                if all_paths.len() > 0 {
+                self.map[fighter.0][fighter.1] = f;
+                if all_steps.len() > 0 {
                     // Sort the paths by:
                     //  path length
                     //  goal reading order
                     //  first step reading order
-                    all_paths.sort_by(|a, b| a.len().cmp(&b.len()).then_with(|| a[a.len()-1].cmp(&b[b.len()-1])).then_with(|| a[1].cmp(&b[1])));
-                    if fighter == (15, 10) {
-                        for p in &all_paths {
-                            println!("path: {:?}", p);
-                        }
-                    }
+                    all_steps.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.cmp(&b.1)));
+//                    println!("-- {:?}", fighter);
+                    // let mut c = std::usize::MAX;
+                    // for s in &all_steps {
+                    //     if s.0 > c {
+                    //         break;
+                    //     }
+                    //     c = s.0;
+                    //     println!("{:?}", s);
+                    // }
+                    // if fighter == (15, 10) {
+                    //     for p in &all_paths {
+                    //         println!("path: {:?}", p);
+                    //     }
+                    // }
                     // Move
                     let (y, x) = fighter;
-                    let (ny, nx) = all_paths[0][1];
+                    let mut steps = all_steps[0].1.clone();
+                    steps.sort();
+                    let (ny, nx) = steps[0];
+//                    println!("chosen: {}, {}", ny, nx);
                     assert!(self.map[ny][nx] == Entity::Floor);
                     self.map[ny][nx] = self.map[y][x];
                     self.map[y][x] = Entity::Floor;
@@ -412,7 +415,7 @@ fn solve(path: &Path) {
     for row in &mut grid {
         row.resize(max_w, ' ');
     }
-    let mut elf_power = 6;
+    let mut elf_power = 3;
     loop {
 //        println!("elf_power: {}", elf_power);
         let mut m = vec![];
@@ -434,9 +437,11 @@ fn solve(path: &Path) {
 
         let mut rounds = 0;
         let mut elves_died = 0;
+        map.draw();
         loop {
             let (done, elf_died) = map.round();
-            map.draw();
+//            map.draw();
+//            return;
             if !done {
                 rounds += 1;
                 if elf_power == 20 || elf_power == 3 {
@@ -458,7 +463,7 @@ fn solve(path: &Path) {
             break;
         }
         elf_power += 1;
-        return;
+//        return;
     }
 }
 

@@ -252,21 +252,24 @@ impl Map {
                     return (true, elf_died);
                 }
                 // Find the closest open square adjacent to an enemy
-                let mut shortest = std::usize::MAX;
-                enemies.sort_by(|a, b| manhattan(*a, fighter).cmp(&manhattan(*b, fighter)));
-                let mut all_paths = vec![];
+                // Find paths to all free spaces next to the enemy
+                let mut candidates = HashSet::new();
                 for fb in &enemies {
-                    // Find paths to all free spaces next to the enemy
                     for adj in self.neighbours(*fb, |c| self.map[c.0][c.1] == Entity::Floor) {
-                        if manhattan(fighter, adj) > shortest {
-                            continue;
-                        }
-                        if let Some(paths) = shortest_path(self, fighter, adj) {
-                            all_paths.extend(paths);
-                        }
+                        candidates.insert(adj);
+                    }
+                }
+                let mut all_paths = vec![];
+                for adj in candidates {
+                    if let Some(paths) = shortest_path(self, fighter, adj) {
+                        all_paths.extend(paths);
                     }
                 }
                 if all_paths.len() > 0 {
+                    // Sort the paths by:
+                    //  path length
+                    //  goal reading order
+                    //  first step reading order
                     all_paths.sort_by(|a, b| a.len().cmp(&b.len()).then_with(|| a[a.len()-1].cmp(&b[b.len()-1])).then_with(|| a[1].cmp(&b[1])));
                     // for p in &all_paths {
                     //     println!("path: {:?}", p);
@@ -289,7 +292,9 @@ impl Map {
                 let mut close_enemies = vec![];
                 for close_enemy in enemies_to_fight {
                     if let Entity::Being(x) = self.entity(close_enemy) {
-                        close_enemies.push((x.hp, close_enemy));
+                        if !already_dead.contains(&close_enemy.id) {
+                            close_enemies.push((x.hp, close_enemy));
+                        }
                     } else {
                         panic!();
                     }

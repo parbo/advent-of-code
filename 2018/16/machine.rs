@@ -185,7 +185,7 @@ impl Machine {
     }
 }
 
-fn reject(c: &HashMap<i64, Ops>, runs: &Vec<(Vec<i64>, Vec<i64>, Vec<i64>)>) -> bool {
+fn reject(c: &HashMap<i64, Ops>, runs: &Vec<(Vec<i64>, Vec<i64>, Vec<i64>)>) -> Option<HashMap<i64, Ops>> {
     let mut unmatched : HashSet<&Ops> = HashSet::from_iter(&[Ops::Addr,
                                                              Ops::Addi,
                                                              Ops::Mulr,
@@ -205,6 +205,7 @@ fn reject(c: &HashMap<i64, Ops>, runs: &Vec<(Vec<i64>, Vec<i64>, Vec<i64>)>) -> 
     for (i, op) in c {
         unmatched.remove(&op);
     }
+    let mut matches = HashMap::new();
     for (ins, bef, aft) in runs {
         if let Some(op) = c.get(&ins[0]) {
             let mut m = Machine::new();
@@ -216,7 +217,7 @@ fn reject(c: &HashMap<i64, Ops>, runs: &Vec<(Vec<i64>, Vec<i64>, Vec<i64>)>) -> 
                 if m.regs[0] == aft[0] && m.regs[1] == aft[1] && m.regs[2] == aft[2] && m.regs[3] == aft[3] {
                 } else {
                     // reject if the locked ones doä't match
-                    return true;
+                    return None;
                 }
             }
         } else {
@@ -229,17 +230,23 @@ fn reject(c: &HashMap<i64, Ops>, runs: &Vec<(Vec<i64>, Vec<i64>, Vec<i64>)>) -> 
                 m.regs[3] =  bef[3];
                 if let Ok(_) = m.execute(&op, ins[1], ins[2], ins[3]) {
                     if m.regs[0] == aft[0] && m.regs[1] == aft[1] && m.regs[2] == aft[2] && m.regs[3] == aft[3] {
+                        matches.entry(ins[0]).or_insert(HashSet::new()).insert(*op);
                         any_match = true;
-                        break;
                     }
                 }
             }
             if !any_match {
-                return true;
+                return None;
             }
         }
     }
-    return false;
+    let mut unambiguous : HashMap<i64, Ops> = HashMap::new();
+    for (opix, ops) in matches {
+        if ops.len() == 1 {
+            unambiguous.insert(opix, *ops.iter().cloned().next().unwrap());
+        }
+    }
+    return Some(unambiguous);
 }
 
 fn accept(c: &HashMap<i64, Ops>, runs: &Vec<(Vec<i64>, Vec<i64>, Vec<i64>)>) -> bool {
@@ -274,15 +281,18 @@ fn next(c: &HashMap<i64, Ops>, lock: (i64, Ops)) -> HashMap<i64, Ops> {
 }
 
 fn bt(c: &HashMap<i64, Ops>, runs: &Vec<(Vec<i64>, Vec<i64>, Vec<i64>)>) -> bool {
-    if reject(&c, runs) {
+    let unambiguous = reject(&c, runs);
+    if unambiguous.is_none() {
         return false;
     }
     if accept(&c, runs) {
         println!("{:?}", c);
         return true;
     }
+    let mut cc = unambiguous.unwrap();
+    cc.extend(c.into_iter().map(|(k, v)| (k.clone(), v.clone())));
     for opix in 0..16 {
-        if c.contains_key(&opix) {
+        if cc.contains_key(&opix) {
             continue;
         }
         for op in &[Ops::Addr,
@@ -301,10 +311,10 @@ fn bt(c: &HashMap<i64, Ops>, runs: &Vec<(Vec<i64>, Vec<i64>, Vec<i64>)>) -> bool
                     Ops::Eqir,
                     Ops::Eqri,
                     Ops::Eqrr] {
-            if let Some(_) = c.values().find(|x| *x == op) {
+            if let Some(_) = cc.values().find(|x| *x == op) {
                 continue;
             }
-            let x = next(c, (opix, *op));
+            let x = next(&cc, (opix, *op));
             if bt(&x, runs) {
                 return true;
             }
@@ -342,7 +352,7 @@ fn solve(path: &Path) {
         }
     }
 
-    let pt = 2;
+    let pt = 1;
 
     if pt == 0 {
         let mut gt3_matching = 0;

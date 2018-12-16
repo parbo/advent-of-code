@@ -67,7 +67,7 @@ fn shortest_path(n: &Neighbours, start: (usize, usize), goal: (usize, usize)) ->
                 goal_cost = cost;
             }
             if cost == goal_cost {
-                res.push(*came_from.get(&goal).unwrap());
+                res.extend(came_from.get(&goal).unwrap());
             }
             if cost > goal_cost {
                 return Some((cost, res));
@@ -94,7 +94,9 @@ fn shortest_path(n: &Neighbours, start: (usize, usize), goal: (usize, usize)) ->
                 dist.insert(next.position, next.cost);
                 heap.push(next);
                 // Remember the path
-                came_from.insert(*neighbour_position, position);
+                came_from.insert(*neighbour_position, vec![position]);
+            } else if next.cost == d {
+                came_from.entry(*neighbour_position).or_insert(vec![]).push(position);
             }
         }
     }
@@ -445,8 +447,8 @@ fn solve(path: &Path) {
             if !done {
                 rounds += 1;
                 if elf_power == 20 || elf_power == 3 {
-//                    println!("After round {}", rounds);
-//                    map.draw();
+                    println!("After round {}", rounds);
+                    map.draw();
                 }
             }
             if elf_died {

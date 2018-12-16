@@ -126,7 +126,8 @@ enum FighterKind {
 struct Fighter {
     kind: FighterKind,
     attack: i64,
-    hp: i64
+    hp: i64,
+    id: (usize, usize)
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -217,18 +218,30 @@ impl Map {
         fighters
     }
 
+    fn fighter(&self, id: (usize, usize)) -> (usize, usize) {
+        for (y, row) in self.map.iter().enumerate() {
+            for (x, entity) in row.iter().enumerate() {
+                if let Entity::Being(b) = entity {
+                    if b.id == id {
+                        return (y, x);
+                    }
+                }
+            }
+        }
+        panic!();
+    }
+
     fn round(&mut self) -> (bool, bool) {
-        let fighters = self.fighters();
+        let fighter_ids : Vec<(usize, usize)> = self.fighters().iter().map(|f| if let Entity::Being(x) = self.entity(*f) { x.id } else { panic!() }).collect();
         let mut elf_died = false;
         let mut already_dead = HashSet::new();
-        let mut curr_pos = HashMap::<(usize, usize), (usize, usize)>::new();
-        for fa in &fighters {
-            if already_dead.contains(fa) {
+        for id in &fighter_ids {
+            if already_dead.contains(id) {
                 // Already dead
 //                println!("{:?} already dead", fa);
                 continue;
             }
-            let mut fighter = *curr_pos.entry(*fa).or_insert(*fa);
+            let mut fighter = self.fighter(*id);
             // Do i have an enemy in range?
             let mut enemies_to_fight = self.enemies_in_range(fighter);
             if enemies_to_fight.len() == 0 {
@@ -238,7 +251,7 @@ impl Map {
                     // Combat is over
                     return (true, elf_died);
                 }
-                // Find the closest enemy
+                // Find the closest open square adjacent to an enemy
                 let mut shortest = std::usize::MAX;
                 enemies.sort_by(|a, b| manhattan(*a, fighter).cmp(&manhattan(*b, fighter)));
                 let mut all_paths = vec![];
@@ -264,8 +277,6 @@ impl Map {
                     assert!(self.map[ny][nx] == Entity::Floor);
                     self.map[ny][nx] = self.map[y][x];
                     self.map[y][x] = Entity::Floor;
-                    let pos = fighter;
-                    curr_pos.insert(pos, (ny, nx));
                     fighter = (ny, nx);
                     //println!("moving {:?} > {:?}", (y, x), (ny, nx));
                     // After moving, we might have some in range enemies
@@ -296,6 +307,7 @@ impl Map {
                                 attackee.hp -= attacker.attack;
                             } else {
                                 dead = true;
+                                already_dead.insert(attackee.id);
                                 if attackee.kind == FighterKind::Elf {
                                     elf_died = true;
                                 }
@@ -305,7 +317,6 @@ impl Map {
                             // die!
                             //println!("die: {:?}, {:?}", (yy, xx), self.entity((yy, xx)));
                             self.map[yy][xx] = Entity::Floor;
-                            already_dead.insert((yy, xx));
                         }
                     }
                 }
@@ -390,14 +401,14 @@ fn solve(path: &Path) {
     loop {
         println!("elf_power: {}", elf_power);
         let mut m = vec![];
-        for row in &grid {
+        for (y, row) in grid.iter().enumerate() {
             let mut map_row = vec![];
-            for col in row {
+            for (x, col) in row.iter().enumerate() {
                 let entity = match col {
                     '#' => Entity::Wall,
                     '.' => Entity::Floor,
-                    'E' => Entity::Being(Fighter { kind: FighterKind::Elf, attack: elf_power, hp: 200 }),
-                    'G' => Entity::Being(Fighter { kind: FighterKind::Goblin, attack: 3, hp: 200 }),
+                    'E' => Entity::Being(Fighter { kind: FighterKind::Elf, attack: elf_power, hp: 200, id: (y, x) }),
+                    'G' => Entity::Being(Fighter { kind: FighterKind::Goblin, attack: 3, hp: 200, id: (y, x) }),
                     _ => panic!()
                 };
                 map_row.push(entity);

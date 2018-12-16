@@ -13,10 +13,10 @@ pub trait Neighbours {
     fn neighbours(&self, pos: (usize, usize)) -> Vec<(usize, usize)>;
 }
 
-#[derive(Copy, Clone, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq)]
 struct State {
     cost: usize,
-    position: (usize, usize)  // y, x
+    position: (usize, usize),  // y, x
 }
 
 // The priority queue depends on `Ord`.
@@ -39,6 +39,31 @@ impl PartialOrd for State {
     }
 }
 
+fn bp(came_from: &HashMap<(usize, usize), HashSet<(usize, usize)>>, pos: (usize, usize)) -> Vec<Vec<(usize, usize)>> {
+    if let Some(positions) = came_from.get(&pos) {
+        println!("{:?} -> {:?}", pos, positions);
+        let mut new_paths = vec![];
+        for p in positions {
+            let res = bp(came_from, *p);
+            if res.len() > 0 {
+                for r in res {
+                    let mut new_path = r.clone();
+                    new_path.extend(vec![pos]);
+                    new_paths.push(new_path);
+                }
+            } else {
+                let mut new_path = vec![*p, pos];
+                new_paths.push(new_path);
+            }
+        }
+        println!("returning {:?}", new_paths);
+        return new_paths;
+    } else {
+        println!("{:?} -> end", pos);
+        vec![]
+    }
+}
+
 // Dijkstra's shortest path algorithm.
 
 // Start at `start` and use `dist` to track the current shortest distance
@@ -55,28 +80,11 @@ fn shortest_path(n: &Neighbours, start: (usize, usize), goal: (usize, usize)) ->
     dist.insert(start, 0);
     heap.push(State { cost: 0, position: start });
 
-    let mut shortest = std::usize::MAX;
-    let mut paths : Vec<Vec<(usize, usize)>> = vec![];
-
     // Examine the frontier with lower cost nodes first (min-heap)
     while let Some(State { cost, position }) = heap.pop() {
         // Alternatively we could have continued to find all shortest paths
         if position == goal {
-            let mut path = vec![goal];
-            let mut current = goal;
-            while let Some(pos) = came_from.get(&current) {
-                path.insert(0, *pos);
-                current = *pos;
-            }
-            if path.len() > shortest {
-                paths.sort();
-                return Some(paths);
-            } else if path.len() == shortest {
-                paths.push(path);
-            } else {
-                shortest = path.len();
-                paths = vec![path];
-            }
+            return Some(bp(&came_from, goal));
         }
 
         // Important as we may have already found a better way
@@ -95,17 +103,18 @@ fn shortest_path(n: &Neighbours, start: (usize, usize), goal: (usize, usize)) ->
 
             // If so, add it to the frontier and continue
             if next.cost < d {
-                heap.push(next);
                 // Relaxation, we have now found a better way
                 dist.insert(next.position, next.cost);
-                // Remember the path
-                came_from.insert(*neighbour_position, position);
+                heap.push(next);
+                // Replace the path
+                let mut cf = HashSet::new();
+                cf.insert(position);
+                came_from.insert(*neighbour_position, cf);
+            } else if next.cost == d {
+                // Update the path
+                came_from.entry(*neighbour_position).or_insert(HashSet::new()).insert(position);
             }
         }
-    }
-
-    if paths.len() > 0 {
-        return Some(paths);
     }
 
     // Goal not reachable
@@ -262,6 +271,7 @@ impl Map {
                 let mut all_paths = vec![];
                 for adj in candidates {
                     if let Some(paths) = shortest_path(self, fighter, adj) {
+                        println!("{:?} -> {:?} => {:?}", fighter, adj, paths);
                         all_paths.extend(paths);
                     }
                 }
@@ -271,9 +281,11 @@ impl Map {
                     //  goal reading order
                     //  first step reading order
                     all_paths.sort_by(|a, b| a.len().cmp(&b.len()).then_with(|| a[a.len()-1].cmp(&b[b.len()-1])).then_with(|| a[1].cmp(&b[1])));
-                    // for p in &all_paths {
-                    //     println!("path: {:?}", p);
-                    // }
+                    if fighter == (15, 10) {
+                        for p in &all_paths {
+                            println!("path: {:?}", p);
+                        }
+                    }
                     // Move
                     let (y, x) = fighter;
                     let (ny, nx) = all_paths[0][1];
@@ -292,9 +304,7 @@ impl Map {
                 let mut close_enemies = vec![];
                 for close_enemy in enemies_to_fight {
                     if let Entity::Being(x) = self.entity(close_enemy) {
-                        if !already_dead.contains(&close_enemy.id) {
-                            close_enemies.push((x.hp, close_enemy));
-                        }
+                        close_enemies.push((x.hp, close_enemy));
                     } else {
                         panic!();
                     }
@@ -379,7 +389,7 @@ impl Map {
         for row in &self.map {
             for col in row {
                 if let Entity::Being(x) = col {
-                    println!("{:?}", x);
+//                    println!("{:?}", x);
                     sum += x.hp;
                 }
             }
@@ -402,9 +412,9 @@ fn solve(path: &Path) {
     for row in &mut grid {
         row.resize(max_w, ' ');
     }
-    let mut elf_power = 3;
+    let mut elf_power = 6;
     loop {
-        println!("elf_power: {}", elf_power);
+//        println!("elf_power: {}", elf_power);
         let mut m = vec![];
         for (y, row) in grid.iter().enumerate() {
             let mut map_row = vec![];
@@ -423,29 +433,32 @@ fn solve(path: &Path) {
         let mut map = Map { map: m };
 
         let mut rounds = 0;
+        let mut elves_died = 0;
         loop {
             let (done, elf_died) = map.round();
+            map.draw();
             if !done {
                 rounds += 1;
                 if elf_power == 20 || elf_power == 3 {
-                    println!("After round {}", rounds);
-                    map.draw();
+//                    println!("After round {}", rounds);
+//                    map.draw();
                 }
             }
             if elf_died {
-                map.draw();
-                let sum = map.outcome();
-                println!("{}, {}, {}, {}", elf_power, rounds, sum, rounds * sum);
-                break;
+                elves_died += 1;
             }
             if done {
                 map.draw();
                 let sum = map.outcome();
-                println!("{}, {}, {}, {}", elf_power, rounds, sum, rounds * sum);
-                return;
+                println!("{}, {}, {}, {}, {}", elf_power, rounds, sum, rounds * sum, elves_died);
+                break;
             }
         }
+        if elves_died == 0 {
+            break;
+        }
         elf_power += 1;
+        return;
     }
 }
 

@@ -202,7 +202,7 @@ fn reject(c: &HashMap<i64, Ops>, runs: &Vec<(Vec<i64>, Vec<i64>, Vec<i64>)>) -> 
                                                              Ops::Eqir,
                                                              Ops::Eqri,
                                                              Ops::Eqrr]);
-    for (i, op) in c {
+    for (_, op) in c {
         unmatched.remove(&op);
     }
     let mut matches = HashMap::new();
@@ -280,14 +280,14 @@ fn next(c: &HashMap<i64, Ops>, lock: (i64, Ops)) -> HashMap<i64, Ops> {
     n
 }
 
-fn bt(c: &HashMap<i64, Ops>, runs: &Vec<(Vec<i64>, Vec<i64>, Vec<i64>)>) -> bool {
+fn bt(c: &HashMap<i64, Ops>, runs: &Vec<(Vec<i64>, Vec<i64>, Vec<i64>)>) -> Option<HashMap<i64, Ops>> {
     let unambiguous = reject(&c, runs);
     if unambiguous.is_none() {
-        return false;
+        return None;
     }
     if accept(&c, runs) {
         println!("{:?}", c);
-        return true;
+        return Some(c.clone());
     }
     let mut cc = unambiguous.unwrap();
     cc.extend(c.into_iter().map(|(k, v)| (k.clone(), v.clone())));
@@ -315,12 +315,12 @@ fn bt(c: &HashMap<i64, Ops>, runs: &Vec<(Vec<i64>, Vec<i64>, Vec<i64>)>) -> bool
                 continue;
             }
             let x = next(&cc, (opix, *op));
-            if bt(&x, runs) {
-                return true;
+            if let Some(sol) = bt(&x, runs) {
+                return Some(sol);
             }
         }
     }
-    return false;
+    return None;
 }
 
 fn solve(path: &Path) {
@@ -352,76 +352,57 @@ fn solve(path: &Path) {
         }
     }
 
-    let pt = 1;
-
-    if pt == 0 {
-        let mut gt3_matching = 0;
-        for (ins, bef, aft) in &runs {
-            let mut matching = 0;
-            for op in &[Ops::Addr,
-                        Ops::Addi,
-                        Ops::Mulr,
-                        Ops::Muli,
-                        Ops::Banr,
-                        Ops::Bani,
-                        Ops::Borr,
-                        Ops::Bori,
-                        Ops::Setr,
-                        Ops::Seti,
-                        Ops::Gtir,
-                        Ops::Gtri,
-                        Ops::Gtrr,
-                        Ops::Eqir,
-                        Ops::Eqri,
-                        Ops::Eqrr] {
-                let mut m = Machine::new();
-                m.regs[0] =  bef[0];
-                m.regs[1] =  bef[1];
-                m.regs[2] =  bef[2];
-                m.regs[3] =  bef[3];
-                println!("{:?}, {:?}, {:?}, {:?}", ins, bef, aft, op);
-                if let Ok(_) = m.execute(op, ins[1], ins[2], ins[3]) {
-                    if m.regs[0] == aft[0] && m.regs[1] == aft[1] && m.regs[2] == aft[2] && m.regs[3] == aft[3] {
-                        matching += 1;
-                        if matching >= 3 {
-                            gt3_matching += 1;
-                            break;
-                        }
+    // pt 1
+    let mut gt3_matching = 0;
+    for (ins, bef, aft) in &runs {
+        let mut matching = 0;
+        for op in &[Ops::Addr,
+                    Ops::Addi,
+                    Ops::Mulr,
+                    Ops::Muli,
+                    Ops::Banr,
+                    Ops::Bani,
+                    Ops::Borr,
+                    Ops::Bori,
+                    Ops::Setr,
+                    Ops::Seti,
+                    Ops::Gtir,
+                    Ops::Gtri,
+                    Ops::Gtrr,
+                    Ops::Eqir,
+                    Ops::Eqri,
+                    Ops::Eqrr] {
+            let mut m = Machine::new();
+            m.regs[0] =  bef[0];
+            m.regs[1] =  bef[1];
+            m.regs[2] =  bef[2];
+            m.regs[3] =  bef[3];
+            if let Ok(_) = m.execute(op, ins[1], ins[2], ins[3]) {
+                if m.regs[0] == aft[0] && m.regs[1] == aft[1] && m.regs[2] == aft[2] && m.regs[3] == aft[3] {
+                    matching += 1;
+                    if matching >= 3 {
+                        gt3_matching += 1;
+                        break;
                     }
                 }
             }
         }
-        println!("{}", gt3_matching);
-    } else if pt == 1 {
-        let c : HashMap<i64, Ops> = HashMap::new();
-        bt(&c, &runs);
-    } else {
-        // mapping is
-        let insmap : HashMap<i64, Ops> = [(10, Ops::Bori),
-                                          (12, Ops::Eqir),
-                                          (6, Ops::Borr),
-                                          (14, Ops::Gtrr),
-                                          (4, Ops::Gtri),
-                                          (7, Ops::Eqri),
-                                          (15, Ops::Gtir),
-                                          (8, Ops::Seti),
-                                          (0, Ops::Bani),
-                                          (13, Ops::Muli),
-                                          (9, Ops::Eqrr),
-                                          (1, Ops::Addr),
-                                          (2, Ops::Mulr),
-                                          (3, Ops::Addi),
-                                          (5, Ops::Banr),
-                                          (11, Ops::Setr)].iter().cloned().collect();
-        let mut m = Machine::new();
-        for p in program {
-            match m.execute(insmap.get(&p[0]).unwrap(), p[1], p[2], p[3]) {
-                Ok(_) => {},
-                _ => panic!()
-            }
-        }
-        println!("{:?}", m);
     }
+    println!("num > 3: {}", gt3_matching);
+
+    // pt 2
+    let c : HashMap<i64, Ops> = HashMap::new();
+    let insmap = bt(&c, &runs).unwrap();
+
+    // pt 3
+    let mut m = Machine::new();
+    for p in program {
+        match m.execute(insmap.get(&p[0]).unwrap(), p[1], p[2], p[3]) {
+            Ok(_) => {},
+            _ => panic!()
+        }
+    }
+    println!("{:?}", m);
 }
 
 fn main() {

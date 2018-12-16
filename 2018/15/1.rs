@@ -55,6 +55,9 @@ fn shortest_path(n: &Neighbours, start: (usize, usize), goal: (usize, usize)) ->
     dist.insert(start, 0);
     heap.push(State { cost: 0, position: start });
 
+    let mut shortest = std::usize::MAX;
+    let mut paths : Vec<Vec<(usize, usize)>> = vec![];
+
     // Examine the frontier with lower cost nodes first (min-heap)
     while let Some(State { cost, position }) = heap.pop() {
         // Alternatively we could have continued to find all shortest paths
@@ -65,7 +68,17 @@ fn shortest_path(n: &Neighbours, start: (usize, usize), goal: (usize, usize)) ->
                 path.insert(0, *pos);
                 current = *pos;
             }
-            return Some(path);
+            println!("path: {:?}", path);
+            if path.len() > shortest {
+                paths.sort();
+                println!("picking: {:?}", paths[0]);
+                return Some(paths[0].clone());
+            } else if path.len() == shortest {
+                paths.push(path);
+            } else {
+                shortest = path.len();
+                paths = vec![path];
+            }
         }
 
         // Important as we may have already found a better way
@@ -93,8 +106,17 @@ fn shortest_path(n: &Neighbours, start: (usize, usize), goal: (usize, usize)) ->
         }
     }
 
+    if paths.len() > 0 {
+        println!("picking: {:?}", paths[0]);
+        return Some(paths[0].clone());
+    }
+
     // Goal not reachable
     None
+}
+
+fn manhattan(a: (usize, usize), b: (usize, usize)) -> usize {
+    ((a.0 as i64 - b.0 as i64).abs() + (a.1 as i64 - b.1 as i64).abs()) as usize
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -211,17 +233,21 @@ impl Map {
             let mut enemies_to_fight = self.enemies_in_range(fighter);
             if enemies_to_fight.len() == 0 {
                 // Find my enemies
-                let enemies = self.enemies(fighter);
+                let mut enemies = self.enemies(fighter);
                 if enemies.len() == 0 {
                     // Combat is over
                     return true;
                 }
                 // Find the closest enemy
                 let mut shortest = std::usize::MAX;
+                enemies.sort_by(|a, b| manhattan(*a, fighter).cmp(&manhattan(*b, fighter)));
                 let mut shortest_steps = vec![];
                 for fb in &enemies {
                     // Find paths to all free spaces next to the enemy
                     for adj in self.neighbours(*fb, |c| self.map[c.0][c.1] == Entity::Floor) {
+                        if manhattan(fighter, adj) > shortest {
+                            continue;
+                        }
                         if let Some(p) = shortest_path(self, *fa, adj) {
                             if p.len() < shortest {
                                 shortest = p.len();

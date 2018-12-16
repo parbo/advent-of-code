@@ -45,7 +45,7 @@ impl PartialOrd for State {
 // to each node. This implementation isn't memory-efficient as it may leave duplicate
 // nodes in the queue. It also uses `usize::MAX` as a sentinel value,
 // for a simpler implementation.
-fn shortest_path(n: &Neighbours, start: (usize, usize), goal: (usize, usize)) -> Option<Vec<(usize, usize)>> {
+fn shortest_path(n: &Neighbours, start: (usize, usize), goal: (usize, usize)) -> Option<Vec<Vec<(usize, usize)>>> {
     // dist[node] = current shortest distance from `start` to `node`
     let mut dist = HashMap::new();
     let mut heap = BinaryHeap::new();
@@ -54,6 +54,9 @@ fn shortest_path(n: &Neighbours, start: (usize, usize), goal: (usize, usize)) ->
     // We're at `start`, with a zero cost
     dist.insert(start, 0);
     heap.push(State { cost: 0, position: start });
+
+    let mut shortest = std::usize::MAX;
+    let mut paths : Vec<Vec<(usize, usize)>> = vec![];
 
     // Examine the frontier with lower cost nodes first (min-heap)
     while let Some(State { cost, position }) = heap.pop() {
@@ -65,7 +68,15 @@ fn shortest_path(n: &Neighbours, start: (usize, usize), goal: (usize, usize)) ->
                 path.insert(0, *pos);
                 current = *pos;
             }
-            return Some(path);
+            if path.len() > shortest {
+                paths.sort();
+                return Some(paths);
+            } else if path.len() == shortest {
+                paths.push(path);
+            } else {
+                shortest = path.len();
+                paths = vec![path];
+            }
         }
 
         // Important as we may have already found a better way
@@ -91,6 +102,10 @@ fn shortest_path(n: &Neighbours, start: (usize, usize), goal: (usize, usize)) ->
                 came_from.insert(*neighbour_position, position);
             }
         }
+    }
+
+    if paths.len() > 0 {
+        return Some(paths);
     }
 
     // Goal not reachable
@@ -206,12 +221,14 @@ impl Map {
         let fighters = self.fighters();
         let mut elf_died = false;
         let mut already_dead = HashSet::new();
+        let mut curr_pos = HashMap::<(usize, usize), (usize, usize)>::new();
         for fa in &fighters {
             if already_dead.contains(fa) {
                 // Already dead
+//                println!("{:?} already dead", fa);
                 continue;
             }
-            let mut fighter = *fa;
+            let mut fighter = *curr_pos.entry(*fa).or_insert(*fa);
             // Do i have an enemy in range?
             let mut enemies_to_fight = self.enemies_in_range(fighter);
             if enemies_to_fight.len() == 0 {
@@ -224,32 +241,33 @@ impl Map {
                 // Find the closest enemy
                 let mut shortest = std::usize::MAX;
                 enemies.sort_by(|a, b| manhattan(*a, fighter).cmp(&manhattan(*b, fighter)));
-                let mut shortest_steps = vec![];
+                let mut all_paths = vec![];
                 for fb in &enemies {
                     // Find paths to all free spaces next to the enemy
                     for adj in self.neighbours(*fb, |c| self.map[c.0][c.1] == Entity::Floor) {
                         if manhattan(fighter, adj) > shortest {
                             continue;
                         }
-                        if let Some(p) = shortest_path(self, *fa, adj) {
-                            if p.len() < shortest {
-                                shortest = p.len();
-                                shortest_steps = vec![(adj, p[1])];
-                            } else if p.len() == shortest {
-                                shortest_steps.push((adj, p[1]));
-                            }
+                        if let Some(paths) = shortest_path(self, fighter, adj) {
+                            all_paths.extend(paths);
                         }
                     }
                 }
-                if shortest_steps.len() > 0 {
-                    shortest_steps.sort();
+                if all_paths.len() > 0 {
+                    all_paths.sort_by(|a, b| a.len().cmp(&b.len()).then_with(|| a[a.len()-1].cmp(&b[b.len()-1])).then_with(|| a[1].cmp(&b[1])));
+                    // for p in &all_paths {
+                    //     println!("path: {:?}", p);
+                    // }
                     // Move
-                    let (y, x) = *fa;
-                    let (ny, nx) = shortest_steps[0].1;
+                    let (y, x) = fighter;
+                    let (ny, nx) = all_paths[0][1];
                     assert!(self.map[ny][nx] == Entity::Floor);
                     self.map[ny][nx] = self.map[y][x];
                     self.map[y][x] = Entity::Floor;
+                    let pos = fighter;
+                    curr_pos.insert(pos, (ny, nx));
                     fighter = (ny, nx);
+                    //println!("moving {:?} > {:?}", (y, x), (ny, nx));
                     // After moving, we might have some in range enemies
                     enemies_to_fight = self.enemies_in_range(fighter);
                 }
@@ -273,7 +291,7 @@ impl Map {
                         let (yy, xx) = enemy;
                         let mut dead = false;
                         if let Entity::Being(attackee) = &mut self.map[yy][xx] {
-//                            println!("{:?}-{:?} attacks {:?}-{:?}", (y, x), attacker, (yy, xx), attackee);
+                            //println!("attack: {:?} -> {:?}", attacker, attackee);
                             if attackee.hp > attacker.attack {
                                 attackee.hp -= attacker.attack;
                             } else {
@@ -285,6 +303,7 @@ impl Map {
                         }
                         if dead {
                             // die!
+                            //println!("die: {:?}, {:?}", (yy, xx), self.entity((yy, xx)));
                             self.map[yy][xx] = Entity::Floor;
                             already_dead.insert((yy, xx));
                         }
@@ -392,10 +411,10 @@ fn solve(path: &Path) {
             let (done, elf_died) = map.round();
             if !done {
                 rounds += 1;
-            }
-            if elf_power == 20 || elf_power == 3 {
-                println!("After round {}", rounds);
-                map.draw();
+                if elf_power == 20 || elf_power == 3 {
+                    println!("After round {}", rounds);
+                    map.draw();
+                }
             }
             if elf_died {
                 map.draw();
@@ -403,7 +422,7 @@ fn solve(path: &Path) {
                 println!("{}, {}, {}, {}", elf_power, rounds, sum, rounds * sum);
                 break;
             }
-            if done && !elf_died {
+            if done {
                 map.draw();
                 let sum = map.outcome();
                 println!("{}, {}, {}, {}", elf_power, rounds, sum, rounds * sum);

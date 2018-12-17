@@ -82,14 +82,14 @@ fn fill_right(grid: &mut Vec<Vec<char>>, sources: &mut HashSet<(usize, usize)>, 
     }
     if FIRM.contains(&grid[wy+1][wx+1]) {
         let x = wx;
-        while wx > 1 && FIRM.contains(&grid[wy+1][wx]) && EMPTY.contains(&grid[wy][wx-1]) {
+        while wx > 0 && FIRM.contains(&grid[wy+1][wx]) && EMPTY.contains(&grid[wy][wx-1]) {
             wx -= 1;
             if grid[wy][wx] != '|' {
                 grid[wy][wx] = '|';
                 any_change = true;
             }
         }
-        if wx > 1 && FIRM.contains(&grid[wy][wx-1]) {
+        if wx > 0 && FIRM.contains(&grid[wy][wx-1]) {
             for xx in wx..(x+1) {
                 if grid[wy][xx] != '~' {
                     grid[wy][xx] = '~';
@@ -141,21 +141,27 @@ fn fill_down(grid: &mut Vec<Vec<char>>, sources: &mut HashSet<(usize, usize)>, s
         }
         return any_change;
     }
+    let mut went_left = false;
     if wx > 0 && EMPTY.contains(&grid[wy][wx-1]) && EMPTY.contains(&grid[wy][wx]) {
-        // if grid[wy][wx] != '|' {
-        //     grid[wy][wx] = '|';
-        //     any_change = true;
-        // }
+        went_left = true;
         if fill_left(grid, sources, wy, wx, minx, maxx, miny, maxy) {
             any_change = true;
         }
     }
+    let mut went_right = false;
     if wx < maxx && EMPTY.contains(&grid[wy][wx+1]) && EMPTY.contains(&grid[wy][wx]) {
-        // if grid[wy][wx] != '|' {
-        //     grid[wy][wx] = '|';
-        //     any_change = true;
-        // }
+        went_right = true;
         if fill_right(grid, sources, wy, wx, minx, maxx, miny, maxy) {
+            any_change = true;
+        }
+    }
+    if grid[wy][wx] == '.' {
+        grid[wy][wx] = '|';
+        any_change = true;
+    }
+    if !went_right && !went_left {
+        if grid[wy][wx] != '~' {
+            grid[wy][wx] = '~';
             any_change = true;
         }
     }
@@ -169,20 +175,24 @@ fn fill(grid: &mut Vec<Vec<char>>, sy: usize, sx: usize, minx: usize, maxx: usiz
             break;
         }
         if grid.len() < 20 {
-            println!("----------------");
-            for (y, row) in grid.iter().enumerate() {
-                if y < miny {
-                    continue;
-                }
-                for (x, col) in row.iter().enumerate() {
-                    if x < minx {
-                        continue;
-                    }
-                    print!("{}", col);
-                }
-                println!("");
-            }
+            draw(grid, minx, miny);
         }
+    }
+}
+
+fn draw(grid: &Vec<Vec<char>>, minx: usize, miny: usize) {
+    println!("----------------");
+    for (y, row) in grid.iter().enumerate() {
+        if y < miny - 1 {
+            continue;
+        }
+        for (x, col) in row.iter().enumerate() {
+            if x < minx - 1 {
+                continue;
+            }
+            print!("{}", col);
+        }
+        println!("");
     }
 }
 
@@ -231,7 +241,6 @@ fn solve(path: &Path) {
     // Fill grid
     for r in rects {
         let ((y1, y2), (x1, x2)) = r;
-        println!("{:?}", r);
         for y in y1..(y2+1) {
             for x in x1..(x2+1) {
                 grid[y][x] = '#';
@@ -239,35 +248,29 @@ fn solve(path: &Path) {
         }
     }
     if grid.len() < 20 {
-        for (y, row) in grid.iter().enumerate() {
-            if y < miny {
-                continue;
-            }
-            for (x, col) in row.iter().enumerate() {
-                if x < minx {
-                    continue;
-                }
-                print!("{}", col);
-            }
-            println!("");
-        }
+        draw(&grid, minx, miny);
     }
     // fill it up
     fill(&mut grid, 0, 500, minx, maxx, miny, maxy);
     // calc the sum
     let mut sum = 0;
+    let mut sum_retained = 0;
     for (y, row) in grid.iter().enumerate() {
         if y < miny || y > maxy {
             continue;
         }
         for (x, _) in row.iter().enumerate() {
             let c = grid[y][x];
+            if c == '~' {
+                sum_retained += 1;
+            }
             if c == '|' || c == '~' {
                 sum += 1;
             }
         }
     }
-    println!("water: {}", sum);
+    draw(&grid, minx, miny);
+    println!("water: {}, retained: {}", sum, sum_retained);
 }
 
 fn main() {

@@ -9,10 +9,6 @@ use std::io::prelude::*;
 use std::iter::*;
 use std::path::Path;
 
-pub trait Neighbours {
-    fn neighbours(&self, pos: (usize, usize)) -> Vec<(usize, usize)>;
-}
-
 #[derive(Clone, Eq, PartialEq)]
 struct State {
     cost: usize,
@@ -40,79 +36,6 @@ impl PartialOrd for State {
     }
 }
 
-// Dijkstra's shortest path algorithm.
-
-
-// Start at `start` and use `dist` to track the current shortest distance
-// to each node. This implementation isn't memory-efficient as it may leave duplicate
-// nodes in the queue. It also uses `usize::MAX` as a sentinel value,
-// for a simpler implementation.
-fn shortest_path(n: &Neighbours, start: (usize, usize), goal: (usize, usize)) -> Option<(usize, Vec<(usize, usize)>)> {
-    // dist[node] = current shortest distance from `start` to `node`
-    let mut dist = HashMap::new();
-    let mut heap = BinaryHeap::new();
-    let mut came_from = HashMap::new();
-
-    // We're at `start`, with a zero cost
-    dist.insert(start, 0);
-    heap.push(State { cost: 0, position: start });
-
-    let mut goal_cost = 0;
-    let mut res = vec![];
-
-    // Examine the frontier with lower cost nodes first (min-heap)
-    while let Some(State { cost, position }) = heap.pop() {
-        if position == goal {
-            if goal_cost == 0 {
-                goal_cost = cost;
-            }
-            if cost == goal_cost {
-                res.extend(came_from.get(&goal).unwrap());
-            }
-            if cost > goal_cost {
-                return Some((cost, res));
-            }
-        }
-
-        // Important as we may have already found a better way
-        if cost > *dist.entry(position).or_insert(std::usize::MAX) {
-            continue;
-        }
-
-        // For each node we can reach, see if we can find a way with
-        // a lower cost going through this node
-        let neighbours = n.neighbours(position);
-//        println!("neigh: {:?} => {:?}", position, neighbours);
-        for neighbour_position in &neighbours {
-            let next = State { cost: cost + 1, position: *neighbour_position };
-
-            let d = *dist.entry(next.position).or_insert(std::usize::MAX);
-
-            // If so, add it to the frontier and continue
-            if next.cost < d {
-                // Relaxation, we have now found a better way
-                dist.insert(next.position, next.cost);
-                heap.push(next);
-                // Remember the path
-                came_from.insert(*neighbour_position, vec![position]);
-            } else if next.cost == d {
-                came_from.entry(*neighbour_position).or_insert(vec![]).push(position);
-            }
-        }
-    }
-
-    if res.len() > 0 {
-        return Some((goal_cost, res));
-    }
-
-    // Goal not reachable
-    None
-}
-
-fn manhattan(a: (usize, usize), b: (usize, usize)) -> usize {
-    ((a.0 as i64 - b.0 as i64).abs() + (a.1 as i64 - b.1 as i64).abs()) as usize
-}
-
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 enum FighterKind {
     Elf,
@@ -135,16 +58,30 @@ enum Entity {
 }
 
 struct Map {
-    map: Vec<Vec<Entity>>
-}
-
-impl Neighbours for Map {
-    fn neighbours(&self, pos: (usize, usize)) -> Vec<(usize, usize)> {
-        self.neighbours(pos, |p| self.map[p.0][p.1] == Entity::Floor)
-    }
+    map: Vec<Vec<Entity>>,
+    dist: HashMap<(usize, usize), usize>,
+    heap: BinaryHeap<State>,
+    came_from: HashMap<(usize, usize), Vec<(usize, usize)>>
 }
 
 impl Map {
+    fn new(m: Vec<Vec<Entity>>) -> Map {
+        let mut map = Map {
+            map: m,
+            dist: HashMap::new(),
+            heap: BinaryHeap::new(),
+            came_from: HashMap::new()
+        };
+        map.dist.reserve(256);
+        map.heap.reserve(256);
+        map.came_from.reserve(256);
+        map
+    }
+
+    fn dijkstra_neighbours(&self, pos: (usize, usize)) -> Vec<(usize, usize)> {
+        self.neighbours(pos, |p| self.map[p.0][p.1] == Entity::Floor)
+    }
+
     fn neighbours(&self, pos: (usize, usize), filter: impl Fn((usize, usize)) -> bool) -> Vec<(usize, usize)> {
         let mut n = vec![];
         let y = pos.0 as i64;
@@ -165,6 +102,75 @@ impl Map {
             n.push((*ny as usize, *nx as usize));
         }
         n
+    }
+
+    // Dijkstra's shortest path algorithm.
+    fn shortest_path(&mut self, start: (usize, usize), goal: (usize, usize)) -> Option<(usize, Vec<(usize, usize)>)> {
+        self.dist.clear();
+        self.heap.clear();
+        self.came_from.clear();
+
+        // We're at `start`, with a zero cost
+        self.dist.insert(start, 0);
+        self.heap.push(State { cost: 0, position: start });
+
+        let mut goal_cost = None;
+        let mut res = vec![];
+
+        // Examine the frontier with lower cost nodes first (min-heap)
+        while let Some(State { cost, position }) = self.heap.pop() {
+            if position == goal {
+                if let Some(gc) = goal_cost {
+                    if cost == gc {
+                        res.extend(self.came_from.get(&goal).unwrap());
+                    }
+                } else {
+                    goal_cost = Some(cost);
+                    res.extend(self.came_from.get(&goal).unwrap());
+                }
+            }
+
+            if let Some(gc) = goal_cost {
+                if cost > gc {
+                    return Some((gc, res));
+                }
+            }
+
+            // Important as we may have already found a better way
+            if cost > *self.dist.entry(position).or_insert(std::usize::MAX) {
+                continue;
+            }
+
+            // For each node we can reach, see if we can find a way with
+            // a lower cost going through this node
+            let neighbours = self.dijkstra_neighbours(position);
+            //        println!("neigh: {:?} => {:?}", position, neighbours);
+            for neighbour_position in &neighbours {
+                let next = State { cost: cost + 1, position: *neighbour_position };
+
+                let d = *self.dist.entry(next.position).or_insert(std::usize::MAX);
+
+                // If so, add it to the frontier and continue
+                if next.cost < d {
+                    // Relaxation, we have now found a better way
+                    self.dist.insert(next.position, next.cost);
+                    self.heap.push(next);
+                    // Remember the path
+                    self.came_from.insert(*neighbour_position, vec![position]);
+                } else if next.cost == d {
+                    self.came_from.entry(*neighbour_position).or_insert(vec![]).push(position);
+                }
+            }
+        }
+
+        if let Some(gc) = goal_cost {
+            return Some((gc, res));
+        } else {
+            assert_eq!(res.len(), 0);
+        }
+
+        // Goal not reachable
+        None
     }
 
     fn entity(&self, pos: (usize, usize)) -> Entity {
@@ -232,10 +238,9 @@ impl Map {
         let fighter_ids : Vec<(usize, usize)> = self.fighters().iter().map(|f| if let Entity::Being(x) = self.entity(*f) { x.id } else { panic!() }).collect();
         let mut elf_died = false;
         let mut already_dead = HashSet::new();
+        already_dead.reserve(fighter_ids.len());
         for id in &fighter_ids {
             if already_dead.contains(id) {
-                // Already dead
-//                println!("{:?} already dead", fa);
                 continue;
             }
             let mut fighter = self.fighter(*id);
@@ -243,7 +248,7 @@ impl Map {
             let mut enemies_to_fight = self.enemies_in_range(fighter);
             if enemies_to_fight.len() == 0 {
                 // Find my enemies
-                let mut enemies = self.enemies(fighter);
+                let enemies = self.enemies(fighter);
                 if enemies.len() == 0 {
                     // Combat is over
                     return (true, elf_died);
@@ -251,6 +256,7 @@ impl Map {
                 // Find the closest open square adjacent to an enemy
                 // Find paths to all free spaces next to the enemy
                 let mut candidates = HashSet::new();
+                candidates.reserve(enemies.len() * 4);
                 for fb in &enemies {
                     for adj in self.neighbours(*fb, |c| self.map[c.0][c.1] == Entity::Floor) {
                         candidates.insert(adj);
@@ -262,9 +268,11 @@ impl Map {
                 let mut all_steps = vec![];
                 for adj in candidates {
                     // Find the last step of the path from target to fighter
-                    if let Some(path_result) = shortest_path(self, adj, fighter) {
-//                        println!("{:?} -> {:?} => {:?}", fighter, adj, path_result);
-                        all_steps.push(path_result);
+                    if let Some(path_result) = self.shortest_path(adj, fighter) {
+                        let (cost, steps) = path_result;
+                        for s in steps {
+                            all_steps.push((cost, adj, s));
+                        }
                     }
                 }
                 self.map[fighter.0][fighter.1] = f;
@@ -273,32 +281,14 @@ impl Map {
                     //  path length
                     //  goal reading order
                     //  first step reading order
-                    all_steps.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.cmp(&b.1)));
-//                    println!("-- {:?}", fighter);
-                    // let mut c = std::usize::MAX;
-                    // for s in &all_steps {
-                    //     if s.0 > c {
-                    //         break;
-                    //     }
-                    //     c = s.0;
-                    //     println!("{:?}", s);
-                    // }
-                    // if fighter == (15, 10) {
-                    //     for p in &all_paths {
-                    //         println!("path: {:?}", p);
-                    //     }
-                    // }
+                    all_steps.sort();
                     // Move
                     let (y, x) = fighter;
-                    let mut steps = all_steps[0].1.clone();
-                    steps.sort();
-                    let (ny, nx) = steps[0];
-//                    println!("chosen: {}, {}", ny, nx);
+                    let (ny, nx) = all_steps[0].2;
                     assert!(self.map[ny][nx] == Entity::Floor);
                     self.map[ny][nx] = self.map[y][x];
                     self.map[y][x] = Entity::Floor;
                     fighter = (ny, nx);
-                    //println!("moving {:?} > {:?}", (y, x), (ny, nx));
                     // After moving, we might have some in range enemies
                     enemies_to_fight = self.enemies_in_range(fighter);
                 }
@@ -322,7 +312,6 @@ impl Map {
                         let (yy, xx) = enemy;
                         let mut dead = false;
                         if let Entity::Being(attackee) = &mut self.map[yy][xx] {
-                            //println!("attack: {:?} -> {:?}", attacker, attackee);
                             if attackee.hp > attacker.attack {
                                 attackee.hp -= attacker.attack;
                             } else {
@@ -335,7 +324,6 @@ impl Map {
                         }
                         if dead {
                             // die!
-                            //println!("die: {:?}, {:?}", (yy, xx), self.entity((yy, xx)));
                             self.map[yy][xx] = Entity::Floor;
                         }
                     }
@@ -394,7 +382,6 @@ impl Map {
         for row in &self.map {
             for col in row {
                 if let Entity::Being(x) = col {
-//                    println!("{:?}", x);
                     sum += x.hp;
                 }
             }
@@ -419,7 +406,6 @@ fn solve(path: &Path) {
     }
     let mut elf_power = 3;
     loop {
-//        println!("elf_power: {}", elf_power);
         let mut m = vec![];
         for (y, row) in grid.iter().enumerate() {
             let mut map_row = vec![];
@@ -435,21 +421,15 @@ fn solve(path: &Path) {
             }
             m.push(map_row);
         }
-        let mut map = Map { map: m };
+        let mut map = Map::new(m);
 
         let mut rounds = 0;
         let mut elves_died = 0;
         map.draw();
         loop {
             let (done, elf_died) = map.round();
-//            map.draw();
-//            return;
             if !done {
                 rounds += 1;
-                if elf_power == 20 || elf_power == 3 {
-                    println!("After round {}", rounds);
-                    map.draw();
-                }
             }
             if elf_died {
                 elves_died += 1;
@@ -465,7 +445,6 @@ fn solve(path: &Path) {
             break;
         }
         elf_power += 1;
-//        return;
     }
 }
 

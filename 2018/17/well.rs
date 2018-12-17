@@ -2,12 +2,15 @@ use std::env;
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::BufReader;
+use std::io::Write;
 use std::io::prelude::*;
 use std::iter::*;
 use std::path::Path;
 
 static EMPTY : [char;2] = ['.', '|'];
 static FIRM : [char;2] = ['#', '~'];
+
+static mut FRAME : usize = 0;
 
 fn fill_left(grid: &mut Vec<Vec<char>>, sources: &mut HashSet<(usize, usize)>, sy: usize, sx: usize, minx: usize, maxx: usize, miny: usize, maxy: usize) -> bool {
     // if sources.contains(&(sy, sx)) {
@@ -174,10 +177,60 @@ fn fill(grid: &mut Vec<Vec<char>>, sy: usize, sx: usize, minx: usize, maxx: usiz
         if !fill_down(grid, &mut sources, sy, sx, minx, maxx, miny, maxy) {
             break;
         }
+        save_frame(grid, minx, maxx, miny, maxy);
         if grid.len() < 20 {
             draw(grid, minx, miny);
         }
     }
+}
+
+fn save_frame(grid: &Vec<Vec<char>>, minx: usize, maxx: usize, miny: usize, maxy: usize) {
+    let f = unsafe {
+        FRAME += 1;
+        FRAME
+    };
+    println!("saving frame: {}", f);
+    let name = format!("frame_{:08}.ppm", f);
+    let path = Path::new(&name);
+    let mut file = File::create(&path).unwrap();
+    let w = maxx - minx + 2;
+    let h = maxy - miny + 2;
+    let header = format!("P6 {} {} 255\n", w, h);
+    let mut data = vec![];
+    data.extend(header.as_bytes());
+    for (y, row) in grid.iter().enumerate() {
+        if y < miny - 1 {
+            continue;
+        }
+        for (x, col) in row.iter().enumerate() {
+            if x < minx - 1 {
+                continue;
+            }
+            match col {
+                '|' => {
+                    data.push(0);
+                    data.push(0);
+                    data.push(0xff);
+                },
+                '~' => {
+                    data.push(0);
+                    data.push(0x20);
+                    data.push(0xff);
+                },
+                '#' => {
+                    data.push(0xff);
+                    data.push(0xff);
+                    data.push(0xff);
+                },
+                _ => {
+                    data.push(0);
+                    data.push(0);
+                    data.push(0);
+                },
+            }
+        }
+    }
+    file.write(&data).unwrap();
 }
 
 fn draw(grid: &Vec<Vec<char>>, minx: usize, miny: usize) {
@@ -269,7 +322,7 @@ fn solve(path: &Path) {
             }
         }
     }
-    draw(&grid, minx, miny);
+//    draw(&grid, minx, miny);
     println!("water: {}, retained: {}", sum, sum_retained);
 }
 

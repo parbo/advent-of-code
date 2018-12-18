@@ -1,8 +1,7 @@
 use std::env;
-use std::collections::HashSet;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
-use std::io::Write;
 use std::io::prelude::*;
 use std::iter::*;
 use std::path::Path;
@@ -35,60 +34,61 @@ fn solve(path: &Path) {
     // An acre filled with trees will become a lumberyard if three or more adjacent acres were lumberyards. Otherwise, nothing happens.
     // An acre containing a lumberyard will remain a lumberyard if it was adjacent to at least one other lumberyard and at least one acre containing trees. Otherwise, it becomes open.
     let mut curr = 0;
+    let mut next = 1;
     let mut minutes = 0;
+    let w = grids[0][0].len();
+    let h = grids[0].len();
+    let mut seen : HashMap<Vec<Vec<char>>, (usize, usize)> = HashMap::new();
     loop {
         let mut total_trees = 0;
         let mut total_lumberyards = 0;
-        let g = &grids[curr];
-        if curr == 0 {
-            curr = 1;
-        } else {
-            curr = 0;
-        }
-        let n = &grids[curr];
-        for (y, row) in g.iter().enumerate() {
-            for (x, col) in row.iter().enumerate() {
+        for y in 0..h {
+            for x in 0..w {
                 let mut trees = 0;
                 let mut lumberyards = 0;
-                for ny in ((y-1) as i64)..((y+2) as i64) {
-                    if ny < 0 || ny > (g.len() as i64) {
+                for ny in (y as i64 - 1)..(y as i64 + 2) {
+                    if ny < 0 || ny >= (h as i64) {
                         continue;
                     }
-                    for nx in ((x-1) as i64)..((x+2) as i64) {
-                        if nx < 0 || nx > (row.len() as i64) {
+                    for nx in (x as i64 - 1)..(x as i64 + 2) {
+                        if nx < 0 || nx >= (w as i64) {
                             continue;
                         }
-                        match col {
+                        if nx as usize == x && ny as usize == y {
+                            continue;
+                        }
+                        match grids[curr][ny as usize][nx as usize] {
                             '|' => trees += 1,
                             '#' => lumberyards += 1,
                             _ => {}
                         }
                     }
                 }
+                let col = grids[curr][y][x];
                 match col {
                     '.' => {
                         if trees >= 3 {
-                            n[y][x] = '|';
+                            grids[next][y][x] = '|';
                             total_trees += 1;
                         } else {
-                            n[y][x] = '.';
+                            grids[next][y][x] = '.';
                         }
                     },
                     '|' => {
                         if lumberyards >= 3 {
-                            n[y][x] = '#';
+                            grids[next][y][x] = '#';
                             total_lumberyards += 1;
                         } else {
-                            n[y][x] = '|';
+                            grids[next][y][x] = '|';
                             total_trees += 1;
                         }
                     },
                     '#' => {
                         if trees >= 1 && lumberyards >= 1 {
-                            n[y][x] = '#';
+                            grids[next][y][x] = '#';
                             total_lumberyards += 1;
                         } else {
-                            n[y][x] = '.';
+                            grids[next][y][x] = '.';
                         }
                     },
                     _ => panic!()
@@ -96,9 +96,28 @@ fn solve(path: &Path) {
             }
         }
         minutes += 1;
-        if minutes == 10 {
-            println!("{} {} {}", total_lumberyards, total_trees, total_lumberyards * total_trees);
+        if let Some(v) = seen.get(&grids[next]) {
+            println!("loop found: {:?} -> {}", v, minutes);
+            let loop_len = minutes - v.0;
+            println!("loop length: {}", loop_len);
+            let rem = (1000000000 - minutes) % loop_len;
+            for (_, m) in &seen {
+//                println!("m: {:?}, v: {:?}, rem: {}", m, v, rem);
+                if v.0 + rem == m.0 {
+                    println!("minutes: {}", m.1)
+                }
+            }
             break;
+        }
+        seen.insert(grids[next].clone(), (minutes, total_lumberyards * total_trees));
+        std::mem::swap(&mut curr, &mut next);
+//        draw(&grids[next]);
+        // if minutes == 10 {
+        //     println!("{} {} {}", total_lumberyards, total_trees, total_lumberyards * total_trees);
+        //     break;
+        // }
+        if minutes % 1000 == 0 {
+            println!("minutes: {}", minutes);
         }
     }
 }

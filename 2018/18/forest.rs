@@ -1,3 +1,5 @@
+extern crate pancurses;
+
 use std::env;
 use std::collections::HashMap;
 use std::fs::File;
@@ -5,14 +7,14 @@ use std::io::BufReader;
 use std::io::prelude::*;
 use std::iter::*;
 use std::path::Path;
+use pancurses::*;
 
-fn draw(grid: &Vec<Vec<char>>) {
-    println!("----------------");
-    for row in grid {
-        for col in row {
-            print!("{}", col);
+fn draw(grid: &Vec<Vec<char>>, window: &Window, yoffs: i32, xoffs: i32) {
+    window.clear();
+    for (y, row) in grid.iter().enumerate() {
+        for (x, col) in row.iter().enumerate() {
+            window.mvaddch(y as i32 + yoffs, x as i32 + xoffs, *col);
         }
-        println!("");
     }
 }
 
@@ -39,6 +41,16 @@ fn solve(path: &Path) {
     let w = grids[0][0].len();
     let h = grids[0].len();
     let mut seen : HashMap<Vec<Vec<char>>, (usize, usize)> = HashMap::new();
+    let window = initscr();
+    let mut xoffs : i32 = 0;
+    let mut yoffs : i32 = 0;
+    let mut do_loop = false;
+    nl();
+    noecho();
+    curs_set(0);
+    window.keypad(true);
+    window.scrollok(true);
+    window.timeout(20);
     loop {
         let mut total_trees = 0;
         let mut total_lumberyards = 0;
@@ -111,7 +123,7 @@ fn solve(path: &Path) {
         }
         seen.insert(grids[next].clone(), (minutes, total_lumberyards * total_trees));
         std::mem::swap(&mut curr, &mut next);
-//        draw(&grids[next]);
+        draw(&grids[next], &window, yoffs, xoffs);
         // if minutes == 10 {
         //     println!("{} {} {}", total_lumberyards, total_trees, total_lumberyards * total_trees);
         //     break;
@@ -119,7 +131,21 @@ fn solve(path: &Path) {
         if minutes % 1000 == 0 {
             println!("minutes: {}", minutes);
         }
+        let c = window.getch();
+        match c {
+            Some(Input::KeyLeft) => xoffs += 1,
+            Some(Input::KeyRight) => xoffs -= 1,
+            Some(Input::KeyUp) => yoffs += 1,
+            Some(Input::KeyDown) => yoffs -= 1,
+            Some(Input::KeyResize) => {
+                resize_term(0, 0);
+            }
+            _ => {}
+        }
+        window.refresh();
+
     }
+    endwin();
 }
 
 fn main() {

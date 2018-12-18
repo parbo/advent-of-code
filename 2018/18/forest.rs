@@ -25,8 +25,8 @@ fn solve(path: &Path) {
     grids.push(vec![]);
     grids.push(vec![]);
     for line in lines {
-        let row : Vec<char> = line.chars().cloned().collect();
-        let empty : Vec<char> = vec![];
+        let row : Vec<char> = line.chars().collect();
+        let mut empty : Vec<char> = vec![];
         empty.resize(row.len(), '.');
         grids[0].push(row);
         grids[1].push(empty);
@@ -37,60 +37,68 @@ fn solve(path: &Path) {
     let mut curr = 0;
     let mut minutes = 0;
     loop {
+        let mut total_trees = 0;
+        let mut total_lumberyards = 0;
         let g = &grids[curr];
         if curr == 0 {
             curr = 1;
         } else {
             curr = 0;
         }
-        let mut n = &grids[curr];
-        for (y, row) in grid.iter().enumerate() {
-            if y < miny - 1 {
-                continue;
-            }
-            for (y, row) in g.iter().enumerate() {
-                for (x, col) in row.iter().enumerate() {
-                    let mut trees = 0;
-                    let mut lumberyards = 0;
-                    for ny in ((y-1) as i64)..((y+2) as i64) {
-                        if ny < 0 || ny > (g.len() as i64) {
+        let n = &grids[curr];
+        for (y, row) in g.iter().enumerate() {
+            for (x, col) in row.iter().enumerate() {
+                let mut trees = 0;
+                let mut lumberyards = 0;
+                for ny in ((y-1) as i64)..((y+2) as i64) {
+                    if ny < 0 || ny > (g.len() as i64) {
+                        continue;
+                    }
+                    for nx in ((x-1) as i64)..((x+2) as i64) {
+                        if nx < 0 || nx > (row.len() as i64) {
                             continue;
                         }
-                        for nx in ((x-1) as i64)..((x+2) as i64) {
-                            if nx < 0 || nx > (row.len() as i64) {
-                                continue;
-                            }
-                            match col {
-                                '|' => trees += 1,
-                                '#' => lumberyards += 1;
-                            }
-                        }
-                    }
-                    match col {
-                        '.' => {
-                            if trees >= 3 {
-                                n[y][x] = '|';
-                            } else {
-                                n[y][x] = '.';
-                            }
-                        },
-                        '|' => {
-                            if lumberyards >= 3 {
-                                n[y][x] = '#';
-                            } else {
-                                n[y][x] = '|';
-                            }
-                        },
-                        '#' => {
-                            if trees >= 1 && lumberyards >= 1 {
-                                n[y][x] = '#';
-                            } else {
-                                n[y][x] = '.';
-                            }
+                        match col {
+                            '|' => trees += 1,
+                            '#' => lumberyards += 1,
+                            _ => {}
                         }
                     }
                 }
+                match col {
+                    '.' => {
+                        if trees >= 3 {
+                            n[y][x] = '|';
+                            total_trees += 1;
+                        } else {
+                            n[y][x] = '.';
+                        }
+                    },
+                    '|' => {
+                        if lumberyards >= 3 {
+                            n[y][x] = '#';
+                            total_lumberyards += 1;
+                        } else {
+                            n[y][x] = '|';
+                            total_trees += 1;
+                        }
+                    },
+                    '#' => {
+                        if trees >= 1 && lumberyards >= 1 {
+                            n[y][x] = '#';
+                            total_lumberyards += 1;
+                        } else {
+                            n[y][x] = '.';
+                        }
+                    },
+                    _ => panic!()
+                }
             }
+        }
+        minutes += 1;
+        if minutes == 10 {
+            println!("{} {} {}", total_lumberyards, total_trees, total_lumberyards * total_trees);
+            break;
         }
     }
 }

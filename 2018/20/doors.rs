@@ -5,15 +5,15 @@ use std::io::prelude::*;
 use std::iter::*;
 use std::path::Path;
 
-fn walk(buffer: &Vec<char>, ix: usize, pos: (i64, i64), steps: usize, depth: usize, places: &mut HashMap<(i64, i64), usize>) -> usize {
+fn walk(buffer: &Vec<char>, ix: usize, pos: (i64, i64), steps: usize, places: &mut HashMap<(i64, i64), usize>) -> usize {
     let mut new_ix = ix;
     let mut new_pos = pos;
     let mut new_steps = steps;
     while new_ix < buffer.len() {
         match buffer[new_ix] {
-            '^' => new_ix = walk(buffer, new_ix + 1, new_pos, new_steps, depth + 1, places),
+            '^' => new_ix = walk(buffer, new_ix + 1, new_pos, new_steps, places),
             '$' => { return new_ix + 1; }
-            '(' => new_ix = walk(buffer, new_ix + 1, new_pos, new_steps, depth + 1, places),
+            '(' => new_ix = walk(buffer, new_ix + 1, new_pos, new_steps, places),
             ')' => { return new_ix + 1; }
             '|' => {
                 new_pos = pos;
@@ -47,7 +47,7 @@ fn solve(path: &Path) {
     input.read_to_string(&mut buffer).unwrap();
     let mut places = HashMap::new();
     let r = buffer.trim().chars().collect();
-    walk(&r, 0, (0, 0), 0, 0, &mut places);
+    walk(&r, 0, (0, 0), 0, &mut places);
     let max_d = places.iter().map(|(_, v)| v).max().unwrap();
     let gte_1000 = places.iter().filter(|(_, &v)| v >= 1000_usize).count();
     println!("max: {}, >= 1000: {}", max_d, gte_1000);

@@ -1,12 +1,9 @@
 use std::env;
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::BufReader;
 use std::io::prelude::*;
 use std::iter::*;
 use std::path::Path;
-use std::error::Error as StdError;
-use std::fmt;
 
 fn walk(buffer: &Vec<char>, ix: usize, pos: (i64, i64), steps: usize, depth: usize, places: &mut HashMap<(i64, i64), usize>) -> usize {
     let mut new_ix = ix;
@@ -38,35 +35,22 @@ fn walk(buffer: &Vec<char>, ix: usize, pos: (i64, i64), steps: usize, depth: usi
                 new_steps = steps;
                 new_ix += 1;
             },
-            'E' => {
-                new_pos = (new_pos.0 + 1, new_pos.1);
-                new_steps += 1;
-                let s = places.entry(new_pos).or_insert(new_steps);
-                if new_steps < *s {
-                    *s = new_steps;
-                }
-                new_ix += 1;
+            'E' | 'W' | 'N' | 'S' => {
+                match buffer[new_ix] {
+                    'E' => {
+                        new_pos = (new_pos.0 + 1, new_pos.1);
+                    },
+                    'W' => {
+                        new_pos = (new_pos.0 - 1, new_pos.1);
             },
-            'W' => {
-                new_pos = (new_pos.0 - 1, new_pos.1);
-                new_steps += 1;
-                let s = places.entry(new_pos).or_insert(new_steps);
-                if new_steps < *s {
-                    *s = new_steps;
+                    'N' => {
+                        new_pos = (new_pos.0, new_pos.1 - 1);
+                    },
+                    'S' => {
+                        new_pos = (new_pos.0, new_pos.1 + 1);
+                    },
+                    _ => panic!()
                 }
-                new_ix += 1;
-            },
-            'N' => {
-                new_pos = (new_pos.0, new_pos.1 - 1);
-                new_steps += 1;
-                let s = places.entry(new_pos).or_insert(new_steps);
-                if new_steps < *s {
-                    *s = new_steps;
-                }
-                new_ix += 1;
-            },
-            'S' => {
-                new_pos = (new_pos.0, new_pos.1 + 1);
                 new_steps += 1;
                 let s = places.entry(new_pos).or_insert(new_steps);
                 if new_steps < *s {
@@ -92,7 +76,7 @@ fn solve(path: &Path) {
     walk(&r, 0, (0, 0), 0, 0, &mut places);
     let mut max_d = 0;
     let mut gte_1000 = 0;
-    for (p, d) in places {
+    for (_, d) in places {
         if d > max_d {
             max_d = d;
         }

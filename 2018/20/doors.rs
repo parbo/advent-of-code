@@ -13,10 +13,6 @@ fn walk(buffer: &Vec<char>, ix: usize, pos: (i64, i64), steps: usize, depth: usi
         if new_ix >= buffer.len() {
             break;
         }
-        // for _ in 0..depth {
-        //     print!(" ");
-        // }
-        // println!("{}, {}, {:?}", buffer[new_ix], new_ix, new_pos);
         match buffer[new_ix] {
             '^' => {
                 new_ix = walk(buffer, new_ix + 1, new_pos, new_steps, depth + 1, places);
@@ -58,10 +54,7 @@ fn walk(buffer: &Vec<char>, ix: usize, pos: (i64, i64), steps: usize, depth: usi
                 }
                 new_ix += 1;
             },
-            x => {
-                println!("x: {}", x);
-                panic!()
-            }
+            _ => panic!()
         }
     }
     new_ix
@@ -74,16 +67,8 @@ fn solve(path: &Path) {
     let mut places = HashMap::new();
     let r = buffer.trim().chars().collect();
     walk(&r, 0, (0, 0), 0, 0, &mut places);
-    let mut max_d = 0;
-    let mut gte_1000 = 0;
-    for (_, d) in places {
-        if d > max_d {
-            max_d = d;
-        }
-        if d >= 1000 {
-            gte_1000 += 1;
-        }
-    }
+    let max_d = places.iter().map(|(_, v)| v).max().unwrap();
+    let gte_1000 = places.iter().filter(|(_, &v)| v >= 1000_usize).count();
     println!("max: {}, >= 1000: {}", max_d, gte_1000);
 }
 

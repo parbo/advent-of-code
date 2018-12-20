@@ -225,19 +225,9 @@ fn solve(path: &Path) {
         let illegal = program.len() as i64;
         let mut i = 0;
         let mut pc = 0;
-        if *r0 == 1 {
-            // shortcut the loop
-            // first loop
-            pc = 13;
-            m.regs = [10551284, 2, 10551282, 3, 0, 0];
-            println!("{:?}", m);
-        }
         loop {
             let (op, args) = &program[pc];
             i += 1;
-            if *r0 == 1 {
-                println!("{} {:?}, {:?}, {:?}", pc, m, op, args);
-            }
             match m.execute(&op, args[0], args[1], args[2]) {
                 Ok(new_pc) => {
                     if new_pc < 0 || new_pc >= illegal {

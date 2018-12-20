@@ -9,23 +9,12 @@ fn walk(buffer: &Vec<char>, ix: usize, pos: (i64, i64), steps: usize, depth: usi
     let mut new_ix = ix;
     let mut new_pos = pos;
     let mut new_steps = steps;
-    loop {
-        if new_ix >= buffer.len() {
-            break;
-        }
+    while new_ix < buffer.len() {
         match buffer[new_ix] {
-            '^' => {
-                new_ix = walk(buffer, new_ix + 1, new_pos, new_steps, depth + 1, places);
-            },
-            '$' => {
-                return new_ix + 1;
-            },
-            '(' => {
-                new_ix = walk(buffer, new_ix + 1, new_pos, new_steps, depth + 1, places);
-            },
-            ')' => {
-                return new_ix + 1;
-            },
+            '^' => new_ix = walk(buffer, new_ix + 1, new_pos, new_steps, depth + 1, places),
+            '$' => { return new_ix + 1; }
+            '(' => new_ix = walk(buffer, new_ix + 1, new_pos, new_steps, depth + 1, places),
+            ')' => { return new_ix + 1; }
             '|' => {
                 new_pos = pos;
                 new_steps = steps;
@@ -33,18 +22,10 @@ fn walk(buffer: &Vec<char>, ix: usize, pos: (i64, i64), steps: usize, depth: usi
             },
             'E' | 'W' | 'N' | 'S' => {
                 match buffer[new_ix] {
-                    'E' => {
-                        new_pos = (new_pos.0 + 1, new_pos.1);
-                    },
-                    'W' => {
-                        new_pos = (new_pos.0 - 1, new_pos.1);
-            },
-                    'N' => {
-                        new_pos = (new_pos.0, new_pos.1 - 1);
-                    },
-                    'S' => {
-                        new_pos = (new_pos.0, new_pos.1 + 1);
-                    },
+                    'E' => new_pos = (new_pos.0 + 1, new_pos.1),
+                    'W' => new_pos = (new_pos.0 - 1, new_pos.1),
+                    'N' => new_pos = (new_pos.0, new_pos.1 - 1),
+                    'S' => new_pos = (new_pos.0, new_pos.1 + 1),
                     _ => panic!()
                 }
                 new_steps += 1;

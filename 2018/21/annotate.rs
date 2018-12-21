@@ -82,10 +82,12 @@ fn solve(path: &Path) {
             _ => {
             }
         }
-        println!("        break;");
+        println!("        ++pc;");
+        if *c == pc_reg {
+            println!("        break;");
+        }
     }
     println!("    }}");
-    println!("    ++pc;");
     println!("  }} while (pc < {});", program.len());
     println!("  printf(\"{}: %d\\n\", {});", vars[pc_reg], vars[pc_reg]);
     for i in 0..6 {

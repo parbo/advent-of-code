@@ -1,9 +1,12 @@
+extern crate fnv;
+
 use std::path::Path;
 use std::fs::File;
 use std::io::Write;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 use std::collections::HashMap;
+use fnv::FnvHashMap;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 enum Equipment {
@@ -149,9 +152,9 @@ impl Cave {
     // Dijkstra's shortest path algorithm.
     fn shortest_path(&mut self, start: CavePos, goal: CavePos) -> Option<(Vec<CavePos>, i64)> {
         // dist[node] = current shortest distance from `start` to `node`
-        let mut dist = HashMap::new();
+        let mut dist = FnvHashMap::default();
         let mut heap = BinaryHeap::new();
-        let mut came_from = HashMap::new();
+        let mut came_from = FnvHashMap::default();
 
         // We're at `start`, with a zero cost
         dist.insert(start, 0);

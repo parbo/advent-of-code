@@ -1,0 +1,12 @@
+[package]
+name = 'day22'
+version = '0.0.1'
+
+[profile.release]
+debug = true
+
+[[bin]]
+name = 'cave'
+path = 'cave.rs'
+[dependencies]
+fnv = "1.0.6"

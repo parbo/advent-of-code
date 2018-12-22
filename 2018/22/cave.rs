@@ -89,7 +89,7 @@ struct Cave {
 impl Cave {
     fn new(depth: i64, target: (i64, i64)) -> Cave {
         let mut memo = vec![];
-        let stride = (2 * std::cmp::max(target.0, target.1));
+        let stride = 2 * std::cmp::max(target.0, target.1);
         memo.resize((stride * stride) as usize, -1);
         Cave {
             memo: memo,
@@ -123,8 +123,8 @@ impl Cave {
         v
     }
 
-    fn neighbours(&mut self, cp: CavePos) -> Vec<(CavePos, i64)> {
-        let mut res = vec![];
+    fn neighbours(&mut self, cp: CavePos, res: &mut Vec<(CavePos, i64)>) {
+        res.clear();
         for (dx, dy) in &[(-1, 0), (0, -1), (1, 0), (0, 1)] {
             let nx = cp.pos.0 + dx;
             let ny = cp.pos.1 + dy;
@@ -144,7 +144,6 @@ impl Cave {
                 res.push((CavePos { pos: (nx, ny), equipment: *e }, cost));
             }
         }
-        res
     }
 
     // Dijkstra's shortest path algorithm.
@@ -157,6 +156,8 @@ impl Cave {
         // We're at `start`, with a zero cost
         dist.insert(start, 0);
         heap.push(State { h_cost: manhattan(goal.pos, (0, 0)), cost: 0, position: start });
+
+        let mut nb = vec![];
 
         // Examine the frontier with lower cost nodes first (min-heap)
         while let Some(s) = heap.pop() {
@@ -177,7 +178,7 @@ impl Cave {
 
             // For each node we can reach, see if we can find a way with
             // a lower cost going through this node
-            let nb = self.neighbours(s.position);
+            self.neighbours(s.position, &mut nb);
             for (nb_position, nb_cost) in &nb {
                 let new_cost = s.cost + *nb_cost;
                 let h = new_cost + manhattan(goal.pos, nb_position.pos) + if nb_position.equipment != goal.equipment { 7 } else { 0 };

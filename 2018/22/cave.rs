@@ -170,7 +170,7 @@ impl Cave {
             let nb = self.neighbours(s.position);
             for (nb_position, nb_cost) in &nb {
                 let new_cost = s.cost + *nb_cost;
-                let h = new_cost + manhattan(goal.pos, nb_position.pos);
+                let h = new_cost + manhattan(goal.pos, nb_position.pos) + if nb_position.equipment != goal.equipment { 7 } else { 0 };
                 let next = State { h_cost: h, cost: new_cost, position: *nb_position };
 
                 let d = *dist.entry(next.position).or_insert(std::i64::MAX);

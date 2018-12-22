@@ -1,3 +1,6 @@
+use std::path::Path;
+use std::fs::File;
+use std::io::Write;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 use std::collections::HashMap;
@@ -199,32 +202,82 @@ fn draw(cave: &mut Cave, path: &Vec<CavePos>, target: (i64, i64)) {
         cps.insert(p.pos, *p);
     }
     // Draw it
+    println!("saving image");
+    let name = format!("{}_{}_{}.ppm", cave.depth, cave.target.0, cave.target.1);
+    let path = Path::new(&name);
+    let mut file = File::create(&path).unwrap();
+    let w = max_x + 1;
+    let h = max_y + 1;
+    let header = format!("P6 {} {} 255\n", w, h);
+    let mut data = vec![];
+    data.extend(header.as_bytes());
     println!("target: {:?}", target);
-    for y in 0..(max_y+1) {
+    for y in 0..h {
         print!("{:4} ", y);
-        for x in 0..(max_x+1) {
+        for x in 0..w {
             if x == 0 && y == 0 {
                 print!("M");
+                data.push(0xff);
+                data.push(0xff);
+                data.push(0xff);
             } else if (x as i64, y as i64) == target {
                 print!("T");
+                data.push(0xff);
+                data.push(0xff);
+                data.push(0xff);
             } else if let Some(cp) = cps.get(&(x, y)) {
                 match cp.equipment {
-                    Equipment::ClimbingGear => print!("x"),
-                    Equipment::Torch => print!("+"),
-                    Equipment::Neither => print!("o")
+                    Equipment::ClimbingGear => {
+                        print!("x");
+                        data.push(0);
+                        data.push(0xff);
+                        data.push(0xff);
+                    },
+                    Equipment::Torch => {
+                        print!("+");
+                        data.push(0xff);
+                        data.push(0xff);
+                        data.push(0);
+                    },
+                    Equipment::Neither => {
+                        print!("o");
+                        data.push(0xff);
+                        data.push(0);
+                        data.push(0xff);
+                    }
                 }
             } else if let Some(g) = cave.memo.get(&(x, y)) {
                 let t = rt(ero(*g, cave.depth));
                 match t {
-                    0 => print!("."),
-                    1 => print!("="),
-                    2 => print!("|"),
+                    0 => {
+                        print!(".");
+                        data.push(0);
+                        data.push(0x80);
+                        data.push(0);
+                    },
+                    1 => {
+                        print!("=");
+                        data.push(0);
+                        data.push(0);
+                        data.push(0x80);
+                    },
+                    2 => {
+                        print!("|");
+                        data.push(0x80);
+                        data.push(0);
+                        data.push(0);
+                    },
                     _ => panic!()
                 }
+            } else {
+                data.push(0);
+                data.push(0);
+                data.push(0);
             }
         }
         println!("");
     }
+    file.write(&data).unwrap();
 }
 
 fn solve(depth: i64, target: (i64, i64)) {

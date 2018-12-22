@@ -206,8 +206,8 @@ fn draw(cave: &mut Cave, path: &Vec<CavePos>, target: (i64, i64)) {
                     Equipment::Torch => print!("+"),
                     Equipment::Neither => print!("o")
                 }
-            } else {
-                let t = rt(ero(cave.geo((x, y)), cave.depth));
+            } else if let Some(g) = cave.memo.get(&(x, y)) {
+                let t = rt(ero(*g, cave.depth));
                 match t {
                     0 => print!("."),
                     1 => print!("="),

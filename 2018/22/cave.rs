@@ -17,6 +17,7 @@ struct CavePos {
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 struct State {
+    h_cost: i64,
     cost: i64,
     position: CavePos
 }
@@ -29,7 +30,7 @@ impl Ord for State {
         // Notice that the we flip the ordering on costs.
         // In case of a tie we compare positions - this step is necessary
         // to make implementations of `PartialEq` and `Ord` consistent.
-        other.cost.cmp(&self.cost)
+        other.h_cost.cmp(&self.h_cost)
             .then_with(|| self.position.cmp(&other.position))
     }
 }
@@ -69,6 +70,10 @@ fn allowed(t: i64, e: Equipment) -> bool {
         _ => panic!()
     }
     return true;
+}
+
+fn manhattan(a: (i64, i64), b: (i64, i64)) -> i64 {
+    ((a.0 - b.0).abs() + (a.1 - b.1).abs())
 }
 
 struct Cave {
@@ -141,30 +146,32 @@ impl Cave {
 
         // We're at `start`, with a zero cost
         dist.insert(start, 0);
-        heap.push(State { cost: 0, position: start });
+        heap.push(State { h_cost: manhattan(goal.pos, (0, 0)), cost: 0, position: start });
 
         // Examine the frontier with lower cost nodes first (min-heap)
-        while let Some(State { cost, position }) = heap.pop() {
-            if position == goal {
+        while let Some(s) = heap.pop() {
+            if s.position == goal {
                 let mut path = vec![goal];
                 let mut current = goal;
                 while let Some(pos) = came_from.get(&current) {
                     path.insert(0, *pos);
                     current = *pos;
                 }
-                return Some((path, cost));
+                return Some((path, s.cost));
             }
 
             // Important as we may have already found a better way
-            if cost > *dist.entry(position).or_insert(std::i64::MAX) {
+            if s.cost > *dist.entry(s.position).or_insert(std::i64::MAX) {
                 continue;
             }
 
             // For each node we can reach, see if we can find a way with
             // a lower cost going through this node
-            let nb = self.neighbours(position);
+            let nb = self.neighbours(s.position);
             for (nb_position, nb_cost) in &nb {
-                let next = State { cost: cost + *nb_cost, position: *nb_position };
+                let new_cost = s.cost + *nb_cost;
+                let h = new_cost + manhattan(goal.pos, nb_position.pos);
+                let next = State { h_cost: h, cost: new_cost, position: *nb_position };
 
                 let d = *dist.entry(next.position).or_insert(std::i64::MAX);
 
@@ -174,7 +181,7 @@ impl Cave {
                     // Relaxation, we have now found a better way
                     dist.insert(next.position, next.cost);
                     // Remember the path
-                    came_from.insert(*nb_position, position);
+                    came_from.insert(*nb_position, s.position);
                 }
             }
         }

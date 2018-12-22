@@ -85,7 +85,7 @@ struct Cave {
 impl Cave {
     fn new(depth: i64, target: (i64, i64)) -> Cave {
         Cave {
-            memo: HashMap::new(),
+            memo: HashMap::with_capacity((2 * target.0 * target.1) as usize),
             depth: depth,
             target: target
         }

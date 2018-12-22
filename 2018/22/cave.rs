@@ -80,24 +80,31 @@ fn manhattan(a: (i64, i64), b: (i64, i64)) -> i64 {
 }
 
 struct Cave {
-    memo: HashMap<(i64, i64), i64>,
+    memo: Vec<i64>,
+    memo_stride: i64,
     depth: i64,
     target: (i64, i64)
 }
 
 impl Cave {
     fn new(depth: i64, target: (i64, i64)) -> Cave {
+        let mut memo = vec![];
+        let stride = (2 * std::cmp::max(target.0, target.1));
+        memo.resize((stride * stride) as usize, -1);
         Cave {
-            memo: HashMap::with_capacity((2 * target.0 * target.1) as usize),
+            memo: memo,
+            memo_stride: stride,
             depth: depth,
             target: target
         }
     }
 
     fn geo(&mut self, pos: (i64, i64)) -> i64 {
+        let ix = (pos.1 * self.memo_stride + pos.0) as usize;
         {
-            if let Some(v) = self.memo.get(&pos) {
-                return *v;
+            let v = self.memo[ix];
+            if v >= 0 {
+                return v;
             }
         }
 
@@ -112,7 +119,7 @@ impl Cave {
                 er1 * er2
             }
         };
-        self.memo.insert(pos, v);
+        self.memo[ix] = v;
         v
     }
 
@@ -195,8 +202,8 @@ impl Cave {
 }
 
 fn draw(cave: &mut Cave, path: &Vec<CavePos>, target: (i64, i64)) {
-    let max_x = cave.memo.keys().map(|c| c.0).max().unwrap();
-    let max_y = cave.memo.keys().map(|c| c.1).max().unwrap();
+    let max_x = cave.memo.iter().enumerate().filter(|(_, &c)| c != -1).map(|(n, _)| (n as i64) % cave.memo_stride).max().unwrap();
+    let max_y = cave.memo.iter().enumerate().filter(|(_, &c)| c != -1).map(|(n, _)| (n as i64) / cave.memo_stride).max().unwrap();
     let mut cps : HashMap<(i64, i64), CavePos> = HashMap::new();
     for p in path {
         cps.insert(p.pos, *p);
@@ -246,8 +253,8 @@ fn draw(cave: &mut Cave, path: &Vec<CavePos>, target: (i64, i64)) {
                         data.push(0xff);
                     }
                 }
-            } else if let Some(g) = cave.memo.get(&(x, y)) {
-                let t = rt(ero(*g, cave.depth));
+            } else if cave.memo[(y * cave.memo_stride + x) as usize] != -1 {
+                let t = rt(ero(cave.memo[(y * cave.memo_stride + x) as usize], cave.depth));
                 match t {
                     0 => {
                         print!(".");

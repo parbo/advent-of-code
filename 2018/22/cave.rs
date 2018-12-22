@@ -49,18 +49,40 @@ fn ero(g: i64, depth: i64) -> i64 {
     (g + depth) % 20183
 }
 
+fn allowed(t: i64, e: Equipment) -> bool {
+    match t {
+        0 => {
+            if e == Equipment::Neither {
+                return false;
+            }
+        },
+        1 => {
+            if e == Equipment::Torch {
+                return false;
+            }
+        },
+        2 => {
+            if e == Equipment::ClimbingGear {
+                return false;
+            }
+        },
+        _ => panic!()
+    }
+    return true;
+}
+
 struct Cave {
     memo: HashMap<(i64, i64), i64>,
     depth: i64,
+    target: (i64, i64)
 }
 
 impl Cave {
     fn new(depth: i64, target: (i64, i64)) -> Cave {
-        let mut memo = HashMap::new();
-        memo.insert(target, 0);
         Cave {
-            memo: memo,
+            memo: HashMap::new(),
             depth: depth,
+            target: target
         }
     }
 
@@ -73,8 +95,9 @@ impl Cave {
 
         let v = match pos {
             (0, 0) => 0,
-            (x, 0) => x * 16807,
-            (0, y) => y * 48271,
+            x if x == self.target => 0,
+            (x, 0) => x * 16807_i64,
+            (0, y) => y * 48271_i64,
             (x, y) => {
                 let er1 = ero(self.geo((x - 1, y)), self.depth);
                 let er2 = ero(self.geo((x, y - 1)), self.depth);
@@ -94,24 +117,13 @@ impl Cave {
                 continue;
             }
             for e in &[Equipment::ClimbingGear, Equipment::Torch, Equipment::Neither] {
-                let t = rt(ero(self.geo((nx, ny)), self.depth));
-                match t {
-                    0 => {
-                        if *e == Equipment::Neither {
-                            continue;
-                        }
-                    },
-                    1 => {
-                        if *e == Equipment::Torch {
-                            continue;
-                        }
-                    },
-                    2 => {
-                        if *e == Equipment::ClimbingGear {
-                            continue;
-                        }
-                    },
-                    _ => panic!()
+                let t_old = rt(ero(self.geo((cp.pos.0, cp.pos.1)), self.depth));
+                if !allowed(t_old, *e) {
+                    continue;
+                }
+                let t_new = rt(ero(self.geo((nx, ny)), self.depth));
+                if !allowed(t_new, *e) {
+                    continue;
                 }
                 let cost = if *e == cp.equipment { 1 } else { 8 };
                 res.push((CavePos { pos: (nx, ny), equipment: *e }, cost));
@@ -134,7 +146,6 @@ impl Cave {
         // Examine the frontier with lower cost nodes first (min-heap)
         while let Some(State { cost, position }) = heap.pop() {
             if position == goal {
-                println!("pos: {:?},  goal: {:?}", position, goal);
                 let mut path = vec![goal];
                 let mut current = goal;
                 while let Some(pos) = came_from.get(&current) {
@@ -174,8 +185,8 @@ impl Cave {
 }
 
 fn draw(cave: &mut Cave, path: &Vec<CavePos>, target: (i64, i64)) {
-    let max_y = path.iter().map(|c| c.pos.1).max().unwrap();
-    let max_x = path.iter().map(|c| c.pos.0).max().unwrap();
+    let max_x = cave.memo.keys().map(|c| c.0).max().unwrap();
+    let max_y = cave.memo.keys().map(|c| c.1).max().unwrap();
     let mut cps : HashMap<(i64, i64), CavePos> = HashMap::new();
     for p in path {
         cps.insert(p.pos, *p);
@@ -192,7 +203,7 @@ fn draw(cave: &mut Cave, path: &Vec<CavePos>, target: (i64, i64)) {
             } else if let Some(cp) = cps.get(&(x, y)) {
                 match cp.equipment {
                     Equipment::ClimbingGear => print!("x"),
-                    Equipment::Torch => print!("¤"),
+                    Equipment::Torch => print!("+"),
                     Equipment::Neither => print!("o")
                 }
             } else {
@@ -232,16 +243,6 @@ fn solve(depth: i64, target: (i64, i64)) {
     println!("path: {}", path.len());
     draw(&mut cave, &path, target);
     println!("minutes: {}", cost);
-    let mut c = 0;
-    let mut last = path[0];
-    for p in &path[1..] {
-        c += 1;
-        if p.equipment != last.equipment {
-            c += 7;
-        }
-        last = *p;
-    }
-    println!("calc minutes: {}", c);
 }
 
 fn main() {

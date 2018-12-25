@@ -57,30 +57,6 @@ impl FromStr for Group {
     }
 }
 
-impl Group {
-    fn effective_power(&self) -> i64 {
-        self.num * self.dmg
-    }
-
-    fn is_immune(&self, attack: &String) -> bool {
-        self.immune.contains(attack)
-    }
-
-    fn is_weak(&self, attack: &String) -> bool {
-        self.weak.contains(attack)
-    }
-
-    fn damage(&self, defender: &Group) -> i64 {
-        if defender.is_immune(&self.attack) {
-            0
-        } else if defender.is_weak(&self.attack) {
-            2 * self.effective_power()
-        } else {
-            self.effective_power()
-        }
-    }
-}
-
 fn parse(lines: &[String], boost: i64) -> Vec<Group> {
     let mut groups = vec![];
     let mut in_immune = false;
@@ -109,6 +85,30 @@ fn parse(lines: &[String], boost: i64) -> Vec<Group> {
         groups.push(group);
     }
     groups
+}
+
+impl Group {
+    fn effective_power(&self) -> i64 {
+        self.num * self.dmg
+    }
+
+    fn is_immune(&self, attack: &String) -> bool {
+        self.immune.contains(attack)
+    }
+
+    fn is_weak(&self, attack: &String) -> bool {
+        self.weak.contains(attack)
+    }
+
+    fn damage(&self, defender: &Group) -> i64 {
+        if defender.is_immune(&self.attack) {
+            0
+        } else if defender.is_weak(&self.attack) {
+            2 * self.effective_power()
+        } else {
+            self.effective_power()
+        }
+    }
 }
 
 fn solve(path: &Path, b: i64) {

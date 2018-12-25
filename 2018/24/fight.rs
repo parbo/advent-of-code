@@ -1,4 +1,3 @@
-use std::cmp::Ordering;
 use std::env;
 use std::fs::File;
 use std::io::BufReader;
@@ -8,6 +7,7 @@ use std::path::Path;
 use std::str::FromStr;
 use std::num::ParseIntError;
 use std::collections::HashMap;
+use std::collections::HashSet;
 
 // 2202 units each with 4950 hit points (weak to fire; immune to slashing) with an attack that does 18 cold damage at initiative 2
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -48,10 +48,10 @@ impl FromStr for Group {
             hp_end = b - 26;
         }
         let d = s[b..].find(" ").unwrap() + b;
-        let e = s.find("at initiative").unwrap();
+        let e = s.find("damage at initiative").unwrap();
         let hp = s[n..hp_end].trim_start_matches(" units each with ").trim_end_matches(" hit points").parse::<i64>()?;
         let dmg = s[b..d].parse::<i64>()?;
-        let initiative = s[(e+14)..].parse::<i64>()?;
+        let initiative = s[(e+21)..].parse::<i64>()?;
         let attack = s[d..e].trim().to_string();
         Ok(Group { faction: "".to_string(), num, hp, weak, immune, attack, dmg, initiative })
     }
@@ -81,68 +81,104 @@ impl Group {
     }
 }
 
-fn solve(path: &Path) {
+fn solve(path: &Path, b: i64) {
     let input = File::open(path).unwrap();
     let buffered = BufReader::new(input);
     let lines : Vec<String> = buffered.lines().filter_map(Result::ok).collect();
-    let mut groups = vec![];
-    let mut in_immune = false;
-    let mut in_infection = false;
-    for line in lines {
-        if line == "" {
-            continue;
-        }
-        if line == "Immune System:" {
-            in_immune = true;
-            in_infection = false;
-            continue;
-        }
-        if line == "Infection:" {
-            in_infection = true;
-            in_immune = false;
-            continue;
-        }
-        let mut group = line.parse::<Group>().unwrap();
-        if in_infection {
-            group.faction = "infection".to_string();
-        } else if in_immune {
-            group.faction = "immune".to_string();
-        }
-        groups.push(group);
-    }
+    let mut boost = b;
     loop {
-        // Selection phase
-        groups.sort_by(|a, b| b.effective_power().cmp(&a.effective_power())
-                       .then_with(|| b.initiative.cmp(&a.initiative)));
-        let mut selection = HashMap::new();
-        for (i, g) in groups.iter().enumerate() {
-            let (j, _) = groups.iter().enumerate().filter(|(_, c)| g.faction != c.faction).max_by(|a, b| g.damage(&a.1).cmp(&g.damage(&b.1))).unwrap();
-            selection.insert(i, j);
+        println!("boost: {}", boost);
+        let mut groups = vec![];
+        let mut in_immune = false;
+        let mut in_infection = false;
+        for line in &lines {
+            if line == "" {
+                continue;
+            }
+            if line == "Immune System:" {
+                in_immune = true;
+                in_infection = false;
+                continue;
+            }
+            if line == "Infection:" {
+                in_infection = true;
+                in_immune = false;
+                continue;
+            }
+            let mut group = line.parse::<Group>().unwrap();
+            if in_infection {
+                group.faction = "infection".to_string();
+            } else if in_immune {
+                group.faction = "immune".to_string();
+                group.dmg += boost;
+            }
+            groups.push(group);
         }
-        for (i, j) in selection {
-            let d = groups[i].damage(&groups[j]);
-            let killed = d / groups[j].hp;
-            if killed < groups[j].num {
-                groups[j].num -= killed;
-            } else {
-                groups[j].num = 0;
+        let mut initiative_indices : Vec<usize> = (0..groups.len()).collect();
+        initiative_indices.sort_by(|&a, &b| groups[b].initiative.cmp(&groups[a].initiative));
+        loop {
+            // Selection phase
+            let mut selection = HashMap::new();
+            let mut selected = HashSet::new();
+            let mut indices : Vec<usize> = (0..groups.len()).collect();
+            indices.sort_by(|&a, &b| groups[b].effective_power().cmp(&groups[a].effective_power())
+                            .then_with(|| groups[b].initiative.cmp(&groups[a].initiative)));
+            for i in indices.iter().cloned() {
+                if groups[i].num == 0 {
+                    continue;
+                }
+                let g = &groups[i];
+                if let Some(j) = indices.iter().cloned()
+                    .filter(|&c| !selected.contains(&c) && g.faction != groups[c].faction && groups[c].num > 0)
+                    .max_by(|&a, &b| g.damage(&groups[a]).cmp(&g.damage(&groups[b]))
+                            .then_with(|| groups[a].effective_power().cmp(&groups[b].effective_power()))
+                            .then_with(|| groups[a].initiative.cmp(&groups[b].initiative))) {
+                        if g.damage(&groups[j]) > 0 {
+                            selection.insert(i, j);
+                            selected.insert(j);
+                        }
+                    }
+            }
+            // Attack phase
+            let mut attacks = 0;
+            let mut kills = 0;
+            for i in initiative_indices.iter().cloned() {
+                if groups[i].num == 0 {
+                    continue;
+                }
+                if let Some(&j) = selection.get(&i) {
+                    let d = groups[i].damage(&groups[j]);
+                    let killed = std::cmp::min(d / groups[j].hp, groups[j].num);
+                    groups[j].num -= killed;
+                    attacks += 1;
+                    kills += killed;
+                }
+            }
+            let immune_count : i64 = groups.iter().filter(|c| c.faction == "immune".to_string()).map(|c| c.num).sum();
+            let infection_count : i64 = groups.iter().filter(|c| c.faction == "infection".to_string()).map(|c| c.num).sum();
+//            println!("{}, {}", immune_count, infection_count);
+            if immune_count == 0 || infection_count == 0 {
+                if immune_count == 0 {
+                    println!("infection wins: {}", infection_count);
+                } else if infection_count == 0 {
+                    println!("immune wins: {}", immune_count);
+                    return;
+                }
+                break;
+            }
+            if attacks == 0 || kills == 0 {
+                println!("this fight won't end");
+                break;
             }
         }
-        let immune_count : i64 = groups.iter().filter(|c| c.faction == "immune".to_string()).map(|c| c.num).sum();
-        let infection_count : i64 = groups.iter().filter(|c| c.faction == "infection".to_string()).map(|c| c.num).sum();
-        if immune_count == 0 || infection_count == 0 {
-            break;
-        }
-        println!("immune: {}, infection: {}", immune_count, infection_count);
-    }
-    for g in &groups {
-        println!("{:?}", g);
+        boost += 1;
     }
 }
 
 fn main() {
     let args: Vec<String> = env::args().collect();
     let filename = &args[1];
+    let boost = args[2].parse::<i64>().unwrap();
 
-    solve(Path::new(&filename));
+    solve(Path::new(&filename), boost);
 }

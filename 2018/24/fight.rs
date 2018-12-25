@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::env;
 use std::fs::File;
 use std::io::BufReader;
@@ -10,6 +11,7 @@ use std::num::ParseIntError;
 // 2202 units each with 4950 hit points (weak to fire; immune to slashing) with an attack that does 18 cold damage at initiative 2
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 struct Unit {
+    faction: String,
     num: i64,
     hp: i64,
     weak: Vec<String>,
@@ -50,7 +52,26 @@ impl FromStr for Unit {
         let dmg = s[b..d].parse::<i64>()?;
         let initiative = s[(e+14)..].parse::<i64>()?;
         let attack = s[d..e].trim().to_string();
-        Ok(Unit { num, hp, weak, immune, attack, dmg, initiative })
+        Ok(Unit { faction: "".to_string(), num, hp, weak, immune, attack, dmg, initiative })
+    }
+}
+
+impl Ord for Unit {
+    fn cmp(&self, other: &Unit) -> Ordering {
+        other.effective_power().cmp(&self.effective_power())
+            .then_with(|| other.initiative.cmp(&self.initiative))
+    }
+}
+
+impl PartialOrd for Unit {
+    fn partial_cmp(&self, other: &Unit) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Unit {
+    fn effective_power(&self) -> i64 {
+        self.num * self.dmg
     }
 }
 
@@ -58,8 +79,7 @@ fn solve(path: &Path) {
     let input = File::open(path).unwrap();
     let buffered = BufReader::new(input);
     let lines : Vec<String> = buffered.lines().filter_map(Result::ok).collect();
-    let mut immune = vec![];
-    let mut infection = vec![];
+    let mut units = vec![];
     let mut in_immune = false;
     let mut in_infection = false;
     for line in lines {
@@ -76,13 +96,17 @@ fn solve(path: &Path) {
             in_immune = false;
             continue;
         }
-        let unit = line.parse::<Unit>().unwrap();
+        let mut unit = line.parse::<Unit>().unwrap();
         println!("{:?}", unit);
         if in_infection {
-            infection.push(unit);
+            unit.faction = "infection".to_string();
         } else if in_immune {
-            immune.push(unit);
+            unit.faction = "immune".to_string();
         }
+        units.push(unit);
+    }
+    for u in &units {
+        println!("{:?}", u);
     }
 }
 

@@ -156,7 +156,6 @@ fn solve(path: &Path, b: i64) {
             }
             let immune_count : i64 = groups.iter().filter(|c| c.faction == "immune".to_string()).map(|c| c.num).sum();
             let infection_count : i64 = groups.iter().filter(|c| c.faction == "infection".to_string()).map(|c| c.num).sum();
-//            println!("{}, {}", immune_count, infection_count);
             if immune_count == 0 || infection_count == 0 {
                 if immune_count == 0 {
                     println!("infection wins: {}", infection_count);

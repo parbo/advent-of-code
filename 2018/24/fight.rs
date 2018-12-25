@@ -81,6 +81,36 @@ impl Group {
     }
 }
 
+fn parse(lines: &[String], boost: i64) -> Vec<Group> {
+    let mut groups = vec![];
+    let mut in_immune = false;
+    let mut in_infection = false;
+    for line in lines {
+        if line == "" {
+            continue;
+        }
+        if line == "Immune System:" {
+            in_immune = true;
+            in_infection = false;
+            continue;
+        }
+        if line == "Infection:" {
+            in_infection = true;
+            in_immune = false;
+            continue;
+        }
+        let mut group = line.parse::<Group>().unwrap();
+        if in_infection {
+            group.faction = "infection".to_string();
+        } else if in_immune {
+            group.faction = "immune".to_string();
+            group.dmg += boost;
+        }
+        groups.push(group);
+    }
+    groups
+}
+
 fn solve(path: &Path, b: i64) {
     let input = File::open(path).unwrap();
     let buffered = BufReader::new(input);
@@ -88,32 +118,7 @@ fn solve(path: &Path, b: i64) {
     let mut boost = b;
     loop {
         println!("boost: {}", boost);
-        let mut groups = vec![];
-        let mut in_immune = false;
-        let mut in_infection = false;
-        for line in &lines {
-            if line == "" {
-                continue;
-            }
-            if line == "Immune System:" {
-                in_immune = true;
-                in_infection = false;
-                continue;
-            }
-            if line == "Infection:" {
-                in_infection = true;
-                in_immune = false;
-                continue;
-            }
-            let mut group = line.parse::<Group>().unwrap();
-            if in_infection {
-                group.faction = "infection".to_string();
-            } else if in_immune {
-                group.faction = "immune".to_string();
-                group.dmg += boost;
-            }
-            groups.push(group);
-        }
+        let mut groups = parse(&lines, boost);
         let mut initiative_indices : Vec<usize> = (0..groups.len()).collect();
         initiative_indices.sort_by(|&a, &b| groups[b].initiative.cmp(&groups[a].initiative));
         loop {

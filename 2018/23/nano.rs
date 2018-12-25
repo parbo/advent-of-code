@@ -1,7 +1,5 @@
 use std::env;
-use std::collections::HashSet;
-use std::collections::HashMap;
-use std::collections::VecDeque;
+use std::cmp::Ordering;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::prelude::*;
@@ -9,15 +7,16 @@ use std::iter::*;
 use std::path::Path;
 use std::str::FromStr;
 use std::num::ParseIntError;
+use std::collections::BinaryHeap;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 struct Point {
     x: i64,
     y: i64,
     z: i64
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 struct Bot {
     p: Point,
     r: i64
@@ -43,175 +42,44 @@ fn manhattan(a: &Point, b: &Point) -> i64 {
     (a.x - b.x).abs() + (a.y - b.y).abs() + (a.z - b.z).abs()
 }
 
-fn fill(a: &Bot, b: &Bot, pos: Point, pred: &Fn(&Bot, &Bot, &Point) -> bool, result: &mut HashSet<Point>) {
-    let mut ps = VecDeque::new();
-    ps.push_back(pos);
-    while let Some(pos) = ps.pop_front() {
-        for dx in -1..2 {
-            for dy in -1..2 {
-                for dz in -1..2 {
-                    if dx == 0 && dy == 0 && dz == 0 {
-                        continue;
-                    }
-                    let p = Point { x: pos.x + dx, y: pos.y + dy, z: pos.z + dz };
-                    if result.contains(&p) {
-                        continue;
-                    }
-                    if pred(a, b, &p) {
-                        result.insert(p);
-                        ps.push_back(p);
-                    }
-                }
-            }
-        }
+fn overlap(a: &Bot, b: &Bot) -> bool {
+    if b.r == 1 {
+        manhattan(&a.p, &b.p) <= a.r
+    } else {
+        manhattan(&a.p, &b.p) <= a.r + 3 * b.r
     }
 }
 
-fn find_intersection_point(a: &Bot, b: &Bot) -> Point {
-    let mut edge_a = a.p;
-    edge_a.x += a.r;
-    // Walk towards the intersection
-    let mut p = edge_a;
-    let db = manhattan(&p, &b.p);
-//    println!("db: {}", db);
-    if db == b.r {
-        return p;
-    }
-    let mut found = false;
-    // println!("a: {:?}", a);
-    // println!("b: {:?}", b);
-    while !found {
-       // println!("p: {:?}", p);
-        // Only need to walk in -x and +-z
-        for dx in -1..1 {
-            for dz in -1..2 {
-                let c = Point { x: p.x + dx, y: p.y, z: p.z + dz };
-               // println!("c: {:?}", c);
-                let da = manhattan(&c, &a.p);
-               // println!("da: {}", da);
-                if da != a.r {
-                    continue;
-                }
-                p = c;
-                let db = manhattan(&c, &b.p);
-               // println!("db: {}", db);
-                if db == b.r {
-                    found = true;
-                    break;
-                }
-            }
+fn overlapping(bots: &[Bot], bot: &Bot) -> i64 {
+    let mut c = 0;
+    for b in bots {
+        let overlaps = overlap(b, bot);
+        if overlaps {
+            c += 1;
         }
     }
-    p
+    c
 }
 
-fn intersect(a: &Bot, b: &Bot) -> HashSet<Point> {
-    let mut intersections = HashSet::new();
-    let pred = |ba: &Bot, bb: &Bot, pc: &Point| manhattan(&pc, &ba.p) == ba.r && manhattan(&pc, &bb.p) == bb.r;
-    let p = find_intersection_point(a, b);
-    fill(a, b, p, &pred, &mut intersections);
-    intersections
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+struct Thing {
+    overlaps: i64,
+    bot: Bot
 }
 
-fn draw(i: i64, bots: &[Bot], scale: i64, from: i64, to: i64) -> (i64, Point) {
-    println!("draw: {}, {}, {}, {}", i, scale, from, to);
-    // let name = format!("nano_x_{}.ppm", scale);
-    // let path = Path::new(&name);
-    // let mut file = File::create(&path).unwrap();
-    let min_a = from;
-    let min_b = from;
-    let w = (to - from) / scale;
-    let h = (to - from) / scale;
-    println!("w: {}, h: {}", w, h);
-    // let header = format!("P6 {} {} 255\n", w, h);
-    // let mut data = vec![];
-    // data.extend(header.as_bytes());
-    let mut max_in = 0;
-    let mut max_a = -1;
-    let mut max_b = -1;
-    for a in 0..h {
-        for b in 0..w {
-            let mut inside = 0;
-            for bot in bots {
-                let p = match i {
-                    0 => Point { x: bot.p.x, y: a * scale + min_a, z: b * scale + min_b },
-                    1 => Point { x: a * scale + min_a, y: bot.p.y, z: b * scale + min_b },
-                    2 => Point { x: a * scale + min_a, y: b * scale + min_b, z: bot.p.z },
-                    _ => panic!()
-                };
-                if manhattan(&p, &bot.p) <= bot.r {
-                    inside += 1;
-                }
-            }
-            // let shade = (255.0 * (inside as f64) / (bots.len() as f64)) as u8;
-            // // if shade != 0 {
-            // //     println!("shade: {}", shade);
-            // // }
-            // data.push(shade);
-            // data.push(shade);
-            // data.push(shade);
-            if inside > max_in {
-                max_in = inside;
-                max_a = a;
-                max_b = b;
-            }
-        }
+impl Ord for Thing {
+    fn cmp(&self, other: &Thing) -> Ordering {
+        self.overlaps.cmp(&other.overlaps)
+            .then_with(|| other.bot.r.cmp(&self.bot.r))
+            .then_with(|| self.bot.p.cmp(&other.bot.p))
     }
-    let p = match i {
-        0 => Point { x: 0, y: max_a * scale + min_a, z: max_b * scale + min_b },
-        1 => Point { x: max_a * scale + min_a, y: 0, z: max_b * scale + min_b },
-        2 => Point { x: max_a * scale + min_a, y: max_b * scale + min_b, z: 0 },
-        _ => panic!()
-    };
-    println!("in: {}, {:?}", max_in, p);
-    // file.write(&data).unwrap();
-    (max_in, p)
 }
 
-fn brute(bots: &[Bot], scale: i64) {
-    let sbots : Vec<Bot> = bots.iter().map(|c| Bot { p: Point { x: c.p.x / scale, y: c.p.y / scale, z: c.p.z / scale }, r: c.r / scale }).collect();
-    let min_x = sbots.iter().map(|a| a.p.x - a.r).min().unwrap();
-    let max_x = sbots.iter().map(|a| a.p.x + a.r).max().unwrap();
-    let min_y = sbots.iter().map(|a| a.p.y - a.r).min().unwrap();
-    let max_y = sbots.iter().map(|a| a.p.y + a.r).max().unwrap();
-    let min_z = sbots.iter().map(|a| a.p.z - a.r).min().unwrap();
-    let max_z = sbots.iter().map(|a| a.p.z + a.r).max().unwrap();
-    let mut insides = vec![];
-    for x in min_x..(max_x+1) {
-        for y in min_y..(max_y+1) {
-            for z in min_z..(max_z+1) {
-                let mut inside = 0;
-                for b in &sbots {
-                    let p = Point { x: x * scale, y: y * scale, z: z * scale };
-                    if manhattan(&p, &b.p) <= b.r {
-                        inside += 1;
-                    }
-                }
-                insides.push((inside, Point { x, y, z }));
-            }
-        }
+// `PartialOrd` needs to be implemented as well.
+impl PartialOrd for Thing {
+    fn partial_cmp(&self, other: &Thing) -> Option<Ordering> {
+        Some(self.cmp(other))
     }
-    let max_i = insides.iter().map(|c| c.0).max().unwrap();
-    let c : Vec<Point> = insides.iter().filter(|c| c.0 == max_i).map(|c| c.1).collect();
-    println!("found: {} / {}, max_i: {}", c.len(), insides.len(), max_i);
-}
-
-fn foo(bots: &[Bot]) -> Vec<Bot> {
-    if bots.len() == 0 {
-        return vec![];
-    }
-    let mut ret = vec![bots[0]];
-    let mut overlapping = vec![];
-    let a = bots[0];
-    for j in 1..bots.len() {
-        let b = bots[j];
-        let d = manhattan(&a.p, &b.p);
-        if d <= (a.r + b.r) {
-            overlapping.push(b);
-        }
-    }
-    ret.extend(foo(&overlapping));
-    ret
 }
 
 fn solve(path: &Path) {
@@ -221,110 +89,55 @@ fn solve(path: &Path) {
     let max_r = bots.iter().max_by(|a, b| a.r.cmp(&b.r)).unwrap();
     let in_range = bots.iter().filter(|c| manhattan(&c.p, &max_r.p) <= max_r.r).count();
     println!("in range: {}", in_range);
-    // brute(&bots, 897454);
-    let mut min_x :i64 = bots.iter().map(|a| a.p.x - a.r).min().unwrap();
-    let mut max_x : i64 = bots.iter().map(|a| a.p.x + a.r).max().unwrap();
-    let mut min_y : i64 = bots.iter().map(|a| a.p.y - a.r).min().unwrap();
-    let mut max_y : i64 = bots.iter().map(|a| a.p.y + a.r).max().unwrap();
-    let mut min_z : i64 = bots.iter().map(|a| a.p.z - a.r).min().unwrap();
-    let mut max_z : i64 = bots.iter().map(|a| a.p.z + a.r).max().unwrap();
-    let xscale = (max_x - min_x) / 500;
-    let yscale = (max_y - min_y) / 500;
-    let zscale = (max_z - min_z) / 500;
-    let (inx, px) = draw(0, &bots, xscale, min_x, max_x);
-    let (iny, py) = draw(1, &bots, yscale, min_y, max_y);
-    let (inz, pz) = draw(2, &bots, zscale, min_z, max_z);
-    min_x = std::cmp::min(py.x, pz.x);
-    max_x = std::cmp::max(py.x, pz.x);
-    min_y = std::cmp::min(px.y, pz.y);
-    max_y = std::cmp::max(px.y, pz.y);
-    min_z = std::cmp::min(py.z, px.z);
-    max_z = std::cmp::max(py.z, px.z);
-    let mut points = vec![];
+
+    let max_x = bots.iter().map(|a| (a.p.x.abs() + a.r)).max().unwrap();
+    let max_y = bots.iter().map(|a| (a.p.y.abs() + a.r)).max().unwrap();
+    let max_z = bots.iter().map(|a| (a.p.z.abs() + a.r)).max().unwrap();
+    let extents = vec![max_x, max_y, max_z];
+    let extent = (extents.iter().cloned().max().unwrap() as u64).checked_next_power_of_two().unwrap() as i64;
+    let radius = extent;
+
+    let initial = Bot { p: Point { x: 0, y: 0, z: 0}, r: radius };
+    let mut q = BinaryHeap::new();
+    q.push(Thing { overlaps: overlapping(&bots, &initial), bot: initial });
+    let mut cnt = 0;
+    let mut max_ovl = 0;
+    let mut pts = vec![];
     let origin = Point { x: 0, y: 0, z: 0 };
-    for x in min_x..max_x {
-        if x % 100000 == 0 {
-            println!("{} / {}, {}", x, min_x, max_x);
-        }
-        let p = Point { x: x, y: px.y, z: px.z };
-        let mut inside = 0;
-        for b in &bots {
-            let d = manhattan(&p, &b.p);
-            if d <= b.r {
-                inside += 1;
+    while let Some(t) = q.pop() {
+        cnt += 1;
+//        if cnt % 10000 == 0 {
+            println!("cnt: {}, ovl: {}, {:?}", cnt, t.overlaps, t.bot);
+//        }
+        if t.bot.r == 1 {
+            if t.overlaps < max_ovl {
+                break;
             }
+            max_ovl = t.overlaps;
+            println!("answer: {}, {}", t.overlaps, manhattan(&t.bot.p, &origin));
+            pts.push(t);
+            continue;
         }
-        let dist = manhattan(&p, &origin);
-        points.push((inside, dist, p));
-    }
-    for y in min_y..max_y {
-        if y % 100000 == 0 {
-            println!("{} / {}, {}", y, min_y, max_y);
-        }
-        let p = Point { x: py.x, y: y, z: px.z };
-        let mut inside = 0;
-        for b in &bots {
-            let d = manhattan(&p, &b.p);
-            if d <= b.r {
-                inside += 1;
-            }
-        }
-        let dist = manhattan(&p, &origin);
-        points.push((inside, dist, p));
-    }
-    for z in min_z..max_z {
-        if z % 100000 == 0 {
-            println!("{} / {}, {}", z, min_z, max_z);
-        }
-        let p = Point { x: pz.x, y: pz.y, z: z };
-        let mut inside = 0;
-        for b in &bots {
-            let d = manhattan(&p, &b.p);
-            if d <= b.r {
-                inside += 1;
-            }
-        }
-        let dist = manhattan(&p, &origin);
-        points.push((inside, dist, p));
-    }
-    println!("{}", points.len());
-    points.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| a.0.cmp(&b.0)));
-    println!("{:?}", points[0]);
-    // Walk from here towards origin until the count drops
-    let point = points[0];
-    let mut p = point.2;
-    let mut last_p = p;
-    let mut min_d = point.1;
-    let c = point.0;
-    loop {
-        for dx in -1..2 {
-            for dy in -1..2 {
-                for dz in -1..2 {
-                    if dx == 0 && dy == 0 && dz == 0 {
-                        continue;
-                    }
-                    let new_p = Point { x: p.x + dx, y: p.y + dy, z: p.z + dz };
-                    let new_d = manhattan(&new_p, &origin);
-                    if new_d < min_d {
-                        min_d = new_d;
-                        p = new_p;
+        // Subdivide
+        let radius = t.bot.r / 2;
+        for x in 0..2 {
+            let new_x = t.bot.p.x + radius * x;
+            for y in 0..2 {
+                let new_y = t.bot.p.y + radius * y;
+                for z in 0..2 {
+                    let new_z = t.bot.p.z + radius * z;
+                    let p = Point { x: new_x, y: new_y,  z: new_z };
+                    let new_b = Bot { p: p, r: radius };
+                    let o = overlapping(&bots, &new_b);
+                    if o > 0 {
+                        q.push(Thing { overlaps: o, bot: new_b });
                     }
                 }
             }
         }
-        let mut inside = 0;
-        for b in &bots {
-            let d = manhattan(&p, &b.p);
-            if d <= b.r {
-                inside += 1;
-            }
-        }
-        if inside < c {
-            break;
-        }
-        last_p = p;
     }
-    println!("p: {:?}, last_p: {:?}, min_d: {:?}", p, last_p, min_d);
+    let answer = pts.iter().map(|p| manhattan(&origin, &p.bot.p)).min().unwrap();
+    println!("answer: {}", answer);
 }
 
 fn main() {

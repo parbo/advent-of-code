@@ -1,28 +1,8 @@
-use std::env;
-use std::fs::File;
-use std::io::BufReader;
-use std::io::prelude::*;
+use aoc_runner_derive::{aoc, aoc_generator};
+use std::error::Error;
 use std::iter::*;
-use std::path::Path;
+use crate::ppm::*;
 
-pub type Color = [f64; 3];
-pub type Pixel = [f64; 3];
-fn write_ppm_file(pixels: &[Pixel], w: i64, h: i64, filename: &str) {
-    let path = Path::new(filename);
-    let mut file = File::create(&path).unwrap();
-    let header = format!("P6 {} {} 255\n", w, h);
-    let mut data = vec![];
-    data.reserve(header.len() + pixels.len() * 3);
-    data.extend(header.as_bytes());
-    for p in pixels {
-        data.push((255.0 * p[0].max(0.0).min(1.0)) as u8);
-        data.push((255.0 * p[1].max(0.0).min(1.0)) as u8);
-        data.push((255.0 * p[2].max(0.0).min(1.0)) as u8);
-    }
-    file.write(&data).unwrap();
-}
-
-#[derive(Debug)]
 struct Claim {
     id: i64,
     left: i64,
@@ -63,7 +43,6 @@ impl Claim {
             }
         }
     }
-
 }
 
 fn draw(claims: &[Claim], id: i64) {
@@ -82,10 +61,30 @@ fn draw(claims: &[Claim], id: i64) {
     write_ppm_file(&pixels, max_x, max_y, &filename);
 }
 
-fn solve(path: &Path) -> i64 {
-    let input = File::open(path).unwrap();
-    let buffered = BufReader::new(input);
-    let claims : Vec<Claim> = buffered.lines().filter_map(Result::ok).map(|s| Claim::new(&s)).collect();
+#[aoc_generator(day3)]
+fn parse(input: &str) -> Vec<Claim> {
+    input.lines().map(|s| Claim::new(&s)).collect()
+}
+
+#[aoc(day3, part1)]
+fn solve_pt1(claims: &[Claim]) -> Result<i64, Box<Error>> {
+    let max_x = claims.iter().map(|c| c.right).max().unwrap();
+    let max_y = claims.iter().map(|c| c.bottom).max().unwrap();
+    let mut pixels = vec![];
+    pixels.resize((max_y * max_x) as usize, 0);
+    for claim in claims.iter() {
+        for y in claim.top..claim.bottom {
+            for x in claim.left..claim.right {
+                pixels[(y * max_x + x) as usize] += 1;
+            }
+        }
+    }
+    let area = pixels.iter().filter(|&p| *p >= 2).count();
+    Ok(area as i64)
+}
+
+#[aoc(day3, part2)]
+fn solve_pt2(claims: &[Claim]) -> i64 {
     for a in 0..claims.len() {
         let claim_a = &claims[a];
         let mut overlap = false;
@@ -104,12 +103,4 @@ fn solve(path: &Path) -> i64 {
         }
     }
     return -1;
-}
-
-fn main() {
-    let args: Vec<String> = env::args().collect();
-    let filename = &args[1];
-
-    let result = solve(Path::new(&filename));
-    println!("{}", result);
 }

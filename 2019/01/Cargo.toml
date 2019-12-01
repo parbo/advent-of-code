@@ -1,0 +1,15 @@
+[package]
+name = 'day01'
+version = '0.0.1'
+edition = '2018'
+
+[profile.release]
+debug = true
+
+[[bin]]
+name = '1'
+path = '1.rs'
+
+[[bin]]
+name = '2'
+path = '2.rs'

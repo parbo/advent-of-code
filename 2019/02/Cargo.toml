@@ -6,6 +6,9 @@ edition = '2018'
 [profile.release]
 debug = true
 
+[dependencies]
+intcode = {path = "../intcode"}
+
 [[bin]]
 name = 'day02'
 path = 'main.rs'

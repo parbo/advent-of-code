@@ -4,29 +4,7 @@ use std::io::prelude::*;
 use std::iter::*;
 use std::path::Path;
 
-fn run(result: &mut Vec<usize>) -> Option<usize> {
-    let mut pos : usize = 0;
-    while result[pos] != 99 {
-        let op = result[pos];
-        match op {
-            1 => {
-                let res = result[result[pos + 1]] + result[result[pos + 2]];
-                let p = result[pos + 3];
-                result[p] = res;
-            },
-            2 => {
-                let res = result[result[pos + 1]] * result[result[pos + 2]];
-                let p = result[pos + 3];
-                result[p] = res;
-            }
-            _ => {
-                return None
-            }
-        }
-        pos += 4;
-    }
-    Some(result[0])
-}
+extern crate intcode;
 
 fn run_all(numbers: &Vec<usize>) -> Option<(usize, usize)> {
     for ai in 0..=99 {
@@ -35,7 +13,7 @@ fn run_all(numbers: &Vec<usize>) -> Option<(usize, usize)> {
             // Init
             num[1] = ai;
             num[2] = bi;
-            let res = run(&mut num);
+            let res = intcode::run(&mut num);
             if res == Some(19690720) {
                 return Some((ai, bi));
             }
@@ -49,7 +27,7 @@ fn part1(numbers: &Vec<usize>) -> usize {
     // Init
     num[1] = 12;
     num[2] = 02;
-    run(&mut num).unwrap()
+    intcode::run(&mut num).unwrap()
 }
 
 fn part2(numbers: &Vec<usize>) -> usize {
@@ -79,15 +57,4 @@ fn main() {
         part2(&parsed)
     };
     println!("{}", result);
-}
-
-#[cfg(test)]
-mod tests {
-    use super::run;
-
-    #[test]
-    fn test() {
-        let mut input = vec![1,9,10,3,2,3,11,0,99,30,40,50];
-        assert_eq!(run(&mut input), Some(3500));
-    }
 }

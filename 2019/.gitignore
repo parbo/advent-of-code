@@ -8,3 +8,5 @@
 template/Cargo.lock
 
 Cargo.lock
+
+.cookie.txt

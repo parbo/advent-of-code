@@ -6,7 +6,7 @@ use std::path::Path;
 
 extern crate intcode;
 
-fn run_all(numbers: &Vec<usize>) -> Option<(usize, usize)> {
+fn run_all(numbers: &Vec<i64>) -> Option<(i64, i64)> {
     for ai in 0..=99 {
         for bi in 0..=99 {
             let mut num = numbers.clone();
@@ -22,7 +22,7 @@ fn run_all(numbers: &Vec<usize>) -> Option<(usize, usize)> {
     None
 }
 
-fn part1(numbers: &Vec<usize>) -> usize {
+fn part1(numbers: &Vec<i64>) -> i64 {
     let mut num = numbers.clone();
     // Init
     num[1] = 12;
@@ -30,17 +30,17 @@ fn part1(numbers: &Vec<usize>) -> usize {
     intcode::run(&mut num).unwrap()
 }
 
-fn part2(numbers: &Vec<usize>) -> usize {
+fn part2(numbers: &Vec<i64>) -> i64 {
     let (noun, verb) = run_all(numbers).unwrap();
     100 * noun + verb
 }
 
-fn input(path: &Path) -> Vec<usize> {
+fn input(path: &Path) -> Vec<i64> {
     let mut inp = File::open(path).unwrap();
     let mut buffer = String::new();
     inp.read_to_string(&mut buffer).unwrap();
 
-    let result : Vec<usize> = buffer.split(|c| c == ',').map(|s| s.trim()).map(|v| v.parse::<usize>().unwrap()).collect();
+    let result : Vec<i64> = buffer.split(|c| c == ',').map(|s| s.trim()).map(|v| v.parse::<i64>().unwrap()).collect();
     result
 }
 

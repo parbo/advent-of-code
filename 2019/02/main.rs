@@ -4,17 +4,6 @@ use std::io::prelude::*;
 use std::iter::*;
 use std::path::Path;
 
-
-
-fn solve(path: &Path) -> Vec<usize> {
-    let mut input = File::open(path).unwrap();
-    let mut buffer = String::new();
-    input.read_to_string(&mut buffer).unwrap();
-
-    let result : Vec<usize> = buffer.split(|c| c == ',').map(|s| s.trim()).map(|v| v.parse::<usize>().unwrap()).collect();
-    result
-}
-
 fn run(result: &mut Vec<usize>) -> Option<usize> {
     let mut pos : usize = 0;
     while result[pos] != 99 {
@@ -55,18 +44,41 @@ fn run_all(numbers: &Vec<usize>) -> Option<(usize, usize)> {
     None
 }
 
+fn part1(numbers: &Vec<usize>) -> usize {
+    let mut num = numbers.clone();
+    // Init
+    num[1] = 12;
+    num[2] = 02;
+    run(&mut num).unwrap()
+}
+
+fn part2(numbers: &Vec<usize>) -> usize {
+    let (noun, verb) = run_all(numbers).unwrap();
+    100 * noun + verb
+}
+
+fn input(path: &Path) -> Vec<usize> {
+    let mut inp = File::open(path).unwrap();
+    let mut buffer = String::new();
+    inp.read_to_string(&mut buffer).unwrap();
+
+    let result : Vec<usize> = buffer.split(|c| c == ',').map(|s| s.trim()).map(|v| v.parse::<usize>().unwrap()).collect();
+    result
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let filename = &args[1];
+    let part = args[1].parse::<i32>().unwrap();
+    let filename = &args[2];
 
-    let numbers = solve(Path::new(&filename));
+    let parsed = input(Path::new(&filename));
 
-    if let Some((a, b)) = run_all(&numbers) {
-        println!("{}, {}", a, b);
-        println!("{}", 100 * a + b);
+    let result = if part == 1 {
+        part1(&parsed)
     } else {
-        println!("no solution");
-    }
+        part2(&parsed)
+    };
+    println!("{}", result);
 }
 
 #[cfg(test)]
@@ -76,6 +88,6 @@ mod tests {
     #[test]
     fn test() {
         let mut input = vec![1,9,10,3,2,3,11,0,99,30,40,50];
-        assert_eq!(run(&mut input), 3500);
+        assert_eq!(run(&mut input), Some(3500));
     }
 }

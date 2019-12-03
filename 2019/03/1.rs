@@ -89,8 +89,8 @@ fn solve(lines: &Vec<String>) -> i64 {
     println!("{}, {}", xsize, ysize);
     let mut space : Vec<char> = vec!['.'; (xsize * ysize) as usize];
     space[((0 - yoffs) * xsize + 0) as usize] = 'o';
-    let mut seg_ix = 0;
     for seg in segments {
+        let orig_space = space.clone();
         let mut x = 0;
         let mut y = 0;
         let mut segno = 0;
@@ -113,7 +113,7 @@ fn solve(lines: &Vec<String>) -> i64 {
                 let xx = x - xoffs;
                 let yy = y - yoffs;
                 let i = (yy * xsize + xx) as usize;
-                if space[i] != 'o' && space[i] != '.' && seg_ix != 0 {
+                if space[i] != 'o' && orig_space[i] != '.' {
                     space[i] = 'X';
                 } else {
                     match dir {
@@ -126,7 +126,6 @@ fn solve(lines: &Vec<String>) -> i64 {
                 }
             }
         }
-        seg_ix += 1;
     }
     // for y in (f.1).0..=(f.1).1 {
     //     for x in (f.0).0..=(f.0).1 {

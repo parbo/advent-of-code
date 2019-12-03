@@ -2,6 +2,3 @@
 name = 'intcode'
 version = '0.0.1'
 edition = '2018'
-
-[profile.release]
-debug = true

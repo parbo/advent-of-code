@@ -1,0 +1,8 @@
+[workspace]
+members = [
+  "intcode",
+  "??"
+]
+
+[profile.release]
+debug = true

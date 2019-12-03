@@ -9,11 +9,11 @@ extern crate intcode;
 fn run_all(numbers: &Vec<i64>) -> Option<(i64, i64)> {
     for ai in 0..=99 {
         for bi in 0..=99 {
-            let mut num = numbers.clone();
+            let mut m = intcode::Machine::new(&numbers);
             // Init
-            num[1] = ai;
-            num[2] = bi;
-            let res = intcode::run(&mut num);
+            m.write(1, ai);
+            m.write(2, bi);
+            let res = m.run();
             if res == Some(19690720) {
                 return Some((ai, bi));
             }
@@ -23,11 +23,11 @@ fn run_all(numbers: &Vec<i64>) -> Option<(i64, i64)> {
 }
 
 fn part1(numbers: &Vec<i64>) -> i64 {
-    let mut num = numbers.clone();
+    let mut m = intcode::Machine::new(&numbers);
     // Init
-    num[1] = 12;
-    num[2] = 02;
-    intcode::run(&mut num).unwrap()
+    m.write(1, 12);
+    m.write(2, 02);
+    m.run().unwrap()
 }
 
 fn part2(numbers: &Vec<i64>) -> i64 {

@@ -65,19 +65,41 @@ fn field(exts: &[((i64, i64), (i64, i64))]) -> ((i64, i64), (i64, i64)) {
     ((min_x, max_x), (min_y, max_y))
 }
 
-fn solve_input(path: &Path) -> i64 {
-    let input = File::open(path).unwrap();
-    let buffered = BufReader::new(input);
-    let lines : Vec<String> = buffered.lines().filter_map(Result::ok).collect();
-    solve(&lines)
+fn seg_steps(seg: &Vec<Segment>, pos: (i64, i64)) -> Option<i64> {
+    let mut x = 0;
+    let mut y = 0;
+    let mut step = 0;
+    for Segment{dir, length} in seg {
+        for _a in 0..*length {
+            if (x, y) == pos {
+                return Some(step);
+            }
+            match dir {
+                'U' => y += 1,
+                'R' => x += 1,
+                'L' => x -= 1,
+                'D' => y -= 1,
+                _ => panic!("OH NOES")
+            }
+            step += 1;
+            if (x, y) == pos {
+                return Some(step);
+            }
+        }
+    }
+    println!("{:?}, {:?}", seg, pos);
+    None
 }
 
-fn solve(lines: &Vec<String>) -> i64 {
-    let mut segments : Vec<Vec<Segment>> = Vec::new();
-    for line in lines {
-        let seg = line.split(|c| c == ',').map(|s| s.trim()).map(|v| v.parse::<Segment>().unwrap()).collect();
-        segments.push(seg);
+fn steps(segments: &Vec<Vec<Segment>>, pos: (i64, i64)) -> Vec<i64> {
+    let mut s = vec![];
+    for seg in segments {
+        s.push(seg_steps(&seg, pos).unwrap());
     }
+    s
+}
+
+fn solve(segments: &Vec<Vec<Segment>>, part: i32) -> i64 {
     let exts : Vec<((i64, i64), (i64, i64))> = segments.iter().map(|s| extents(s)).collect();
     let f = field(&exts);
     let xoffs = (f.0).0;
@@ -95,7 +117,7 @@ fn solve(lines: &Vec<String>) -> i64 {
         let mut y = 0;
         let mut segno = 0;
         for Segment{dir, length} in seg {
-            for a in 0..length {
+            for a in 0..*length {
                 if segno != 0 && a == 0 {
                     let x0 = x - xoffs;
                     let y0 = y - yoffs;
@@ -136,38 +158,77 @@ fn solve(lines: &Vec<String>) -> i64 {
     //     }
     //     println!();
     // }
-    println!("find mh");
-    let mut min_mh = xsize + ysize;
+    let mut result = std::i64::MAX;
     for x in (f.0).0..=(f.0).1 {
         for y in (f.1).0..=(f.1).1 {
             let xx = x - xoffs;
             let yy = y - yoffs;
             let i = (yy * xsize + xx) as usize;
             if space[i] == 'X' {
-                println!("{}, {}, {}, {}, {}", x, y, xx, yy, x.abs() + y.abs());
-                min_mh = std::cmp::min(min_mh, x.abs() + y.abs());
+                if part == 1 {
+                    let mh = x.abs() + y.abs();
+                    result = std::cmp::min(result, mh);
+                } else {
+                    let step = steps(&segments, (x, y));
+                    let sum = step.iter().sum();
+                    result = std::cmp::min(result, sum);
+                }
             }
         }
     }
-    min_mh
+    result
+}
+
+fn part1(segments: &Vec<Vec<Segment>>) -> i64 {
+    solve(segments, 1)
+}
+
+fn part2(segments: &Vec<Vec<Segment>>) -> i64 {
+    solve(segments, 2)
+}
+
+fn segments(line: &str) -> Vec<Segment> {
+    line.split(|c| c == ',').map(|s| s.trim()).map(|v| v.parse::<Segment>().unwrap()).collect()
+}
+
+fn input(path: &Path) -> Vec<Vec<Segment>> {
+    let input = File::open(path).unwrap();
+    let buffered = BufReader::new(input);
+    let lines : Vec<String> = buffered.lines().filter_map(Result::ok).collect();
+    lines.iter().map(|line| segments(&line)).collect()
 }
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let filename = &args[1];
+    let part = args[1].parse::<i32>().unwrap();
+    let filename = &args[2];
 
-    let result = solve_input(Path::new(&filename));
+    let parsed = input(Path::new(&filename));
+
+    let result = if part == 1 {
+        part1(&parsed)
+    } else {
+        part2(&parsed)
+    };
     println!("{}", result);
 }
 
 #[cfg(test)]
 mod tests {
-    use super::solve;
+    use super::{part1, part2, segments};
 
     #[test]
-    fn test() {
-        assert_eq!(solve(&vec!["R8,U5,L5,D3".to_string(), "U7,R6,D4,L4".to_string()]), 6);
-        assert_eq!(solve(&vec!["R75,D30,R83,U83,L12,D49,R71,U7,L72".to_string(), "U62,R66,U55,R34,D71,R55,D58,R83".to_string()]), 159);
-        assert_eq!(solve(&vec!["R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51".to_string(), "U98,R91,D20,R16,D67,R40,U7,R15,U6,R7".to_string()]), 135);
+    fn test_part1() {
+        assert_eq!(part1(&vec![segments("R8,U5,L5,D3"), segments("U7,R6,D4,L4")]), 6);
+        assert_eq!(part1(&vec![segments("R75,D30,R83,U83,L12,D49,R71,U7,L72"), segments("U62,R66,U55,R34,D71,R55,D58,R83")]), 159);
+        assert_eq!(part1(&vec![segments("R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51"), segments("U98,R91,D20,R16,D67,R40,U7,R15,U6,R7")]), 135);
     }
+
+    #[test]
+    fn test_part2() {
+        assert_eq!(part2(&vec![segments("R8,U5,L5,D3"), segments("U7,R6,D4,L4")]), 30);
+        assert_eq!(part2(&vec![segments("R75,D30,R83,U83,L12,D49,R71,U7,L72"), segments("U62,R66,U55,R34,D71,R55,D58,R83")]), 610);
+        assert_eq!(part2(&vec![segments("R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51"), segments("U98,R91,D20,R16,D67,R40,U7,R15,U6,R7")]), 410);
+    }
+
 }

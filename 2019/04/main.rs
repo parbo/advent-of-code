@@ -1,50 +1,44 @@
 use std::env;
 use std::fs::File;
-use std::io::BufReader;
 use std::io::prelude::*;
 use std::iter::*;
 use std::path::Path;
+use itertools::Itertools;
+
+fn is_sorted<I>(data: I) -> bool
+where
+    I: IntoIterator,
+    I::Item: Ord,
+{
+    let mut it = data.into_iter();
+    match it.next() {
+        None => true,
+        Some(first) => it.scan(first, |state, next| {
+            let cmp = *state <= next;
+            *state = next;
+            Some(cmp)
+        }).all(|b| b),
+    }
+}
 
 fn check(number: i64) -> bool {
-    let mut prev = None;
-    let mut two_same = false;
-    let mut num = number;
-    while num != 0 {
-        let digit = num % 10;
-        if let Some(p) = prev {
-            if digit > p {
-                return false;
-            }
-            if digit == p {
-                two_same = true;
-            }
-        }
-        prev = Some(digit);
-        num /= 10;
-    }
-    return two_same;
+    let s = number.to_string();
+    is_sorted(s.chars()) && s.chars()
+        .group_by(|elt| *elt)
+        .into_iter()
+        .map(|(_, group)| group.count())
+        .filter(|c| *c >= 2)
+        .count() > 0
 }
 
 fn check2(number: i64) -> bool {
-    let mut prev = None;
-    let mut count_same = vec![1];
-    let mut num = number;
-    while num != 0 {
-        let digit = num % 10;
-        if let Some(p) = prev {
-            if digit > p {
-                return false;
-            }
-            if digit == p {
-                *count_same.last_mut().unwrap() += 1;
-            } else {
-                count_same.push(1);
-            }
-        }
-        prev = Some(digit);
-        num /= 10;
-    }
-    count_same.iter().filter(|&&x| x == 2).count() > 0
+    let s = number.to_string();
+    is_sorted(s.chars()) && s.chars()
+        .group_by(|elt| *elt)
+        .into_iter()
+        .map(|(_, group)| group.count())
+        .filter(|c| *c == 2)
+        .count() > 0
 }
 
 fn part1(range: (i64, i64)) -> i64 {

@@ -109,14 +109,41 @@ impl Machine {
                         println!("Program halted");
                     } else if line.starts_with("p ") {
                         if let Ok(addr) = line[2..].trim().parse::<usize>() {
-                            self.memory.iter().enumerate().skip(addr).take(8).for_each(|(a, &v)| println!("{}, {}", a, v));
+                            self.memory.iter().enumerate().skip(addr).take(8).for_each(|(a, &v)| println!("{:>04}, {}", a, v));
                         } else {
                             println!("Invalid command: {}", line);
                         }
                     } else if line == "l" {
-                        self.memory.iter().enumerate().skip(self.ip).take(8).for_each(|(a, &v)| println!("{}, {}", a, v));
+                        self.memory.iter().enumerate().skip(self.ip).take(8).for_each(|(a, &v)| println!("{:>04}, {}", a, v));
                     } else if line == "ds" {
                         self.dump(5);
+                    } else if line == "dis" {
+                        let mut addr = self.ip;
+                        loop {
+                            let op = self.memory.get(addr).and_then(|&x| Op::from_i64(x));
+                            let inc = match op {
+                                Some(Op::ADD) => {
+                                    println!("{:>04} ADD {} {} {}", addr, self.memory.get(addr + 1).unwrap_or(&-1), self.memory.get(addr + 2).unwrap_or(&-1), self.memory.get(addr + 3).unwrap_or(&-1));
+                                    4
+                                },
+                                Some(Op::MUL) => {
+                                    println!("{:>04} MUL {} {} {}", addr, self.memory.get(addr + 1).unwrap_or(&-1), self.memory.get(addr + 2).unwrap_or(&-1), self.memory.get(addr + 3).unwrap_or(&-1));
+                                    4
+                                },
+                                Some(Op::HLT) => {
+                                    println!("{:>04} HLT", addr);
+                                    1
+                                },
+                                None => {
+                                    println!("{:>04} {}", addr, self.memory.get(addr).unwrap_or(&-1));
+                                    1
+                                }
+                            };
+                            addr += inc;
+                            if addr - self.ip > 18 {
+                                break;
+                            }
+                        }
                     } else {
                         println!("Invalid command: {}", line);
                     }

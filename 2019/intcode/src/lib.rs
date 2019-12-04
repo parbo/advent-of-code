@@ -1,3 +1,5 @@
+use rustyline::error::ReadlineError;
+use rustyline::Editor;
 use std::collections::HashMap;
 
 enum Op {
@@ -83,6 +85,57 @@ impl Machine {
             }
         }
         Some(*self.memory.get(0)?)
+    }
+
+    pub fn debug(&mut self) {
+        // `()` can be used when no completer is required
+        let mut rl = Editor::<()>::new();
+        if rl.load_history("history.txt").is_err() {
+            println!("No previous history.");
+        }
+        loop {
+            let readline = rl.readline(">> ");
+            match readline {
+                Ok(line) => {
+                    rl.add_history_entry(line.as_str());
+                    if line == "s" {
+                        if let Some(inc) = self.step() {
+                            self.ip += inc;
+                        } else {
+                            println!("Program halted");
+                        }
+                    } else if line == "c" {
+                        let _ = self.run();
+                        println!("Program halted");
+                    } else if line.starts_with("p ") {
+                        if let Ok(addr) = line[2..].trim().parse::<usize>() {
+                            self.memory.iter().enumerate().skip(addr).take(8).for_each(|(a, &v)| println!("{}, {}", a, v));
+                        } else {
+                            println!("Invalid command: {}", line);
+                        }
+                    } else if line == "l" {
+                        self.memory.iter().enumerate().skip(self.ip).take(8).for_each(|(a, &v)| println!("{}, {}", a, v));
+                    } else if line == "ds" {
+                        self.dump(5);
+                    } else {
+                        println!("Invalid command: {}", line);
+                    }
+                },
+                Err(ReadlineError::Interrupted) => {
+                    println!("CTRL-C");
+                    break
+                },
+                Err(ReadlineError::Eof) => {
+                    println!("CTRL-D");
+                    break
+                },
+                Err(err) => {
+                    println!("Error: {:?}", err);
+                    break
+                }
+            }
+        }
+        rl.save_history("history.txt").unwrap();
     }
 
     pub fn dump(&self, n: usize) {

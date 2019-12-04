@@ -2,3 +2,6 @@
 name = 'intcode'
 version = '0.0.1'
 edition = '2018'
+
+[dependencies]
+rustyline = "5.0.4"

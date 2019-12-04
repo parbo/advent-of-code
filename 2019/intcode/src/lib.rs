@@ -5,9 +5,8 @@ use std::collections::HashMap;
 enum Op {
     ADD = 1,
     MUL = 2,
-    HLT = 99
+    HLT = 99,
 }
-
 
 impl Op {
     fn from_i64(value: i64) -> Option<Op> {
@@ -15,7 +14,7 @@ impl Op {
             1 => Some(Op::ADD),
             2 => Some(Op::MUL),
             99 => Some(Op::HLT),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -30,7 +29,13 @@ pub struct Machine {
 
 impl Machine {
     pub fn new(memory: &Vec<i64>) -> Machine {
-        Machine { memory: memory.clone(), ip: 0, executes: HashMap::new(), reads: HashMap::new(), writes: HashMap::new() }
+        Machine {
+            memory: memory.clone(),
+            ip: 0,
+            executes: HashMap::new(),
+            reads: HashMap::new(),
+            writes: HashMap::new(),
+        }
     }
 
     pub fn write(&mut self, pos: usize, value: i64) {
@@ -62,7 +67,7 @@ impl Machine {
                 let res = v1 + v2;
                 self.write_operand(pos + 3, res);
                 Some(4)
-            },
+            }
             Op::MUL => {
                 let v1 = *self.read_operand(pos + 1)?;
                 let v2 = *self.read_operand(pos + 2)?;
@@ -70,9 +75,7 @@ impl Machine {
                 self.write_operand(pos + 3, res);
                 Some(4)
             }
-            Op::HLT => {
-                None
-            }
+            Op::HLT => None,
         }
     }
 
@@ -109,12 +112,22 @@ impl Machine {
                         println!("Program halted");
                     } else if line.starts_with("p ") {
                         if let Ok(addr) = line[2..].trim().parse::<usize>() {
-                            self.memory.iter().enumerate().skip(addr).take(8).for_each(|(a, &v)| println!("{:>04}, {}", a, v));
+                            self.memory
+                                .iter()
+                                .enumerate()
+                                .skip(addr)
+                                .take(8)
+                                .for_each(|(a, &v)| println!("{:>04}, {}", a, v));
                         } else {
                             println!("Invalid command: {}", line);
                         }
                     } else if line == "l" {
-                        self.memory.iter().enumerate().skip(self.ip).take(8).for_each(|(a, &v)| println!("{:>04}, {}", a, v));
+                        self.memory
+                            .iter()
+                            .enumerate()
+                            .skip(self.ip)
+                            .take(8)
+                            .for_each(|(a, &v)| println!("{:>04}, {}", a, v));
                     } else if line == "ds" {
                         self.dump(5);
                     } else if line == "dis" {
@@ -123,19 +136,35 @@ impl Machine {
                             let op = self.memory.get(addr).and_then(|&x| Op::from_i64(x));
                             let inc = match op {
                                 Some(Op::ADD) => {
-                                    println!("{:>04} ADD {} {} {}", addr, self.memory.get(addr + 1).unwrap_or(&-1), self.memory.get(addr + 2).unwrap_or(&-1), self.memory.get(addr + 3).unwrap_or(&-1));
+                                    println!(
+                                        "{:>04} ADD {} {} {}",
+                                        addr,
+                                        self.memory.get(addr + 1).unwrap_or(&-1),
+                                        self.memory.get(addr + 2).unwrap_or(&-1),
+                                        self.memory.get(addr + 3).unwrap_or(&-1)
+                                    );
                                     4
-                                },
+                                }
                                 Some(Op::MUL) => {
-                                    println!("{:>04} MUL {} {} {}", addr, self.memory.get(addr + 1).unwrap_or(&-1), self.memory.get(addr + 2).unwrap_or(&-1), self.memory.get(addr + 3).unwrap_or(&-1));
+                                    println!(
+                                        "{:>04} MUL {} {} {}",
+                                        addr,
+                                        self.memory.get(addr + 1).unwrap_or(&-1),
+                                        self.memory.get(addr + 2).unwrap_or(&-1),
+                                        self.memory.get(addr + 3).unwrap_or(&-1)
+                                    );
                                     4
-                                },
+                                }
                                 Some(Op::HLT) => {
                                     println!("{:>04} HLT", addr);
                                     1
-                                },
+                                }
                                 None => {
-                                    println!("{:>04} {}", addr, self.memory.get(addr).unwrap_or(&-1));
+                                    println!(
+                                        "{:>04} {}",
+                                        addr,
+                                        self.memory.get(addr).unwrap_or(&-1)
+                                    );
                                     1
                                 }
                             };
@@ -147,18 +176,18 @@ impl Machine {
                     } else {
                         println!("Invalid command: {}", line);
                     }
-                },
+                }
                 Err(ReadlineError::Interrupted) => {
                     println!("CTRL-C");
-                    break
-                },
+                    break;
+                }
                 Err(ReadlineError::Eof) => {
                     println!("CTRL-D");
-                    break
-                },
+                    break;
+                }
                 Err(err) => {
                     println!("Error: {:?}", err);
-                    break
+                    break;
                 }
             }
         }
@@ -173,11 +202,20 @@ impl Machine {
         let mut write_vec: Vec<(&usize, &usize)> = self.writes.iter().collect();
         write_vec.sort_by(|a, b| b.1.cmp(a.1));
         println!("Executed:");
-        exec_vec.iter().take(n).for_each(|x| println!("  {} - {}", x.0, x.1));
+        exec_vec
+            .iter()
+            .take(n)
+            .for_each(|x| println!("  {} - {}", x.0, x.1));
         println!("Read:");
-        read_vec.iter().take(n).for_each(|x| println!("  {} - {}", x.0, x.1));
+        read_vec
+            .iter()
+            .take(n)
+            .for_each(|x| println!("  {} - {}", x.0, x.1));
         println!("Written:");
-        write_vec.iter().take(n).for_each(|x| println!("  {} - {}", x.0, x.1));
+        write_vec
+            .iter()
+            .take(n)
+            .for_each(|x| println!("  {} - {}", x.0, x.1));
     }
 }
 
@@ -187,7 +225,7 @@ mod tests {
 
     #[test]
     fn test() {
-        let input = vec![1,9,10,3,2,3,11,0,99,30,40,50];
+        let input = vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50];
         let mut m = Machine::new(&input);
         assert_eq!(m.run(), Some(3500));
         m.dump(10);

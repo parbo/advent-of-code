@@ -7,6 +7,10 @@ enum Op {
     MUL = 2,
     INP = 3,
     OUT = 4,
+    JIT = 5,
+    JIF = 6,
+    LTN = 7,
+    EQL = 8,
     HLT = 99,
 }
 
@@ -18,6 +22,10 @@ impl Op {
             2 => Some(Op::MUL),
             3 => Some(Op::INP),
             4 => Some(Op::OUT),
+            5 => Some(Op::JIT),
+            6 => Some(Op::JIF),
+            7 => Some(Op::LTN),
+            8 => Some(Op::EQL),
             99 => Some(Op::HLT),
             _ => None,
         }
@@ -32,6 +40,7 @@ pub struct Machine {
     memory: Vec<i64>,
     ip: usize,
     input: i64,
+    outputs: Vec<i64>,
     executes: HashMap<usize, usize>,
     reads: HashMap<usize, usize>,
     writes: HashMap<usize, usize>,
@@ -43,10 +52,16 @@ impl Machine {
             memory: memory.clone(),
             ip: 0,
             input: input,
+	    outputs: Vec::new(),
             executes: HashMap::new(),
             reads: HashMap::new(),
             writes: HashMap::new(),
         }
+    }
+
+    pub fn outputs(&self) -> Vec<i64> {
+	let o = self.outputs.clone();
+	o
     }
 
     pub fn write(&mut self, pos: usize, value: i64) {
@@ -105,8 +120,49 @@ impl Machine {
             }
             Op::OUT => {
                 let v1 = if mode(val, 1) { *self.read_immediate(pos + 1)? } else { *self.read_position(pos + 1)? };
+		self.outputs.push(v1);
                 println!("OUT: {}", v1);
                 Some(2)
+            }
+            Op::JIT => {
+                let v1 = if mode(val, 1) { *self.read_immediate(pos + 1)? } else { *self.read_position(pos + 1)? };
+                let v2 = if mode(val, 2) { *self.read_immediate(pos + 2)? } else { *self.read_position(pos + 2)? };
+		if v1 != 0 {
+		    self.ip = v2 as usize;
+		    Some(0)
+		} else {
+		    Some(3)
+		}
+            }
+            Op::JIF => {
+                let v1 = if mode(val, 1) { *self.read_immediate(pos + 1)? } else { *self.read_position(pos + 1)? };
+                let v2 = if mode(val, 2) { *self.read_immediate(pos + 2)? } else { *self.read_position(pos + 2)? };
+		if v1 == 0 {
+		    self.ip = v2 as usize;
+		    Some(0)
+		} else {
+		    Some(3)
+		}
+            }
+            Op::LTN => {
+                let v1 = if mode(val, 1) { *self.read_immediate(pos + 1)? } else { *self.read_position(pos + 1)? };
+                let v2 = if mode(val, 2) { *self.read_immediate(pos + 2)? } else { *self.read_position(pos + 2)? };
+		if v1 < v2 {
+                    self.write_position(pos + 3, 1);
+		} else {
+                    self.write_position(pos + 3, 0);
+		}
+                Some(4)
+            }
+            Op::EQL => {
+                let v1 = if mode(val, 1) { *self.read_immediate(pos + 1)? } else { *self.read_position(pos + 1)? };
+                let v2 = if mode(val, 2) { *self.read_immediate(pos + 2)? } else { *self.read_position(pos + 2)? };
+		if v1 == v2 {
+                    self.write_position(pos + 3, 1);
+		} else {
+                    self.write_position(pos + 3, 0);
+		}
+                Some(4)
             }
             Op::HLT => None,
         }
@@ -215,6 +271,48 @@ impl Machine {
                                     );
                                     2
                                 }
+                                Some(Op::JIT) => {
+                                    println!(
+                                        "{:>04} JIT {} {} {}",
+                                        addr,
+                                        modes,
+                                        self.memory.get(addr + 1).unwrap_or(&-1),
+                                        self.memory.get(addr + 2).unwrap_or(&-1)
+                                    );
+                                    3
+                                }
+                                Some(Op::JIF) => {
+                                    println!(
+                                        "{:>04} JIF {} {} {}",
+                                        addr,
+                                        modes,
+                                        self.memory.get(addr + 1).unwrap_or(&-1),
+                                        self.memory.get(addr + 2).unwrap_or(&-1)
+                                    );
+                                    3
+                                }
+                                Some(Op::LTN) => {
+                                    println!(
+                                        "{:>04} LTN {} {} {} {}",
+                                        addr,
+                                        modes,
+                                        self.memory.get(addr + 1).unwrap_or(&-1),
+                                        self.memory.get(addr + 2).unwrap_or(&-1),
+                                        self.memory.get(addr + 3).unwrap_or(&-1)
+                                    );
+                                    4
+                                }
+                                Some(Op::EQL) => {
+                                    println!(
+                                        "{:>04} EQL {} {} {} {}",
+                                        addr,
+                                        modes,
+                                        self.memory.get(addr + 1).unwrap_or(&-1),
+                                        self.memory.get(addr + 2).unwrap_or(&-1),
+                                        self.memory.get(addr + 3).unwrap_or(&-1)
+                                    );
+                                    4
+                                }
                                 Some(Op::HLT) => {
                                     println!("{:>04} HLT", addr);
                                     1
@@ -289,5 +387,87 @@ mod tests {
         let mut m = Machine::new(&input, 0);
         assert_eq!(m.run(), Some(3500));
         m.dump(10);
+    }
+
+    #[test]
+    fn test_example_1() {
+        let input = vec![3,9,8,9,10,9,4,9,99,-1,8];
+        let mut m = Machine::new(&input, 6);
+	let _ = m.run();
+        assert_eq!(m.outputs[0], 0);
+        let mut m2 = Machine::new(&input, 8);
+	let _2 = m2.run();
+        assert_eq!(m2.outputs[0], 1);
+    }
+
+    #[test]
+    fn test_example_2() {
+        let input = vec![3,9,7,9,10,9,4,9,99,-1,8];
+        let mut m = Machine::new(&input, 6);
+	let _ = m.run();
+        assert_eq!(m.outputs[0], 1);
+        let mut m2 = Machine::new(&input, 8);
+	let _2 = m2.run();
+        assert_eq!(m2.outputs[0], 0);
+    }
+
+    #[test]
+    fn test_example_3() {
+        let input = vec![3,3,1108,-1,8,3,4,3,99];
+        let mut m = Machine::new(&input, 42);
+	let _ = m.run();
+        assert_eq!(m.outputs[0], 0);
+        let mut m2 = Machine::new(&input, 8);
+	let _2 = m2.run();
+        assert_eq!(m2.outputs[0], 1);
+    }
+
+    #[test]
+    fn test_example_4() {
+        let input = vec![3,3,1107,-1,8,3,4,3,99];
+        let mut m = Machine::new(&input, 6);
+	let _ = m.run();
+        assert_eq!(m.outputs[0], 1);
+        let mut m2 = Machine::new(&input, 8);
+	let _2 = m2.run();
+        assert_eq!(m2.outputs[0], 0);
+    }
+
+    #[test]
+    fn test_jump_1() {
+        let input = vec![3,12,6,12,15,1,13,14,13,4,13,99,-1,0,1,9];
+        let mut m = Machine::new(&input, 0);
+	let _ = m.run();
+        assert_eq!(m.outputs[0], 0);
+        let mut m2 = Machine::new(&input, 42);
+	let _2 = m2.run();
+        assert_eq!(m2.outputs[0], 1);
+    }
+
+    #[test]
+    fn test_jump_2() {
+        let input = vec![3,3,1105,-1,9,1101,0,0,12,4,12,99,1];
+        let mut m = Machine::new(&input, 0);
+	let _ = m.run();
+        assert_eq!(m.outputs[0], 0);
+        let mut m2 = Machine::new(&input, 42);
+	let _2 = m2.run();
+        assert_eq!(m2.outputs[0], 1);
+    }
+
+    #[test]
+    fn test_large_example_1() {
+        let input = vec![3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,
+			 1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104,
+			 999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99];
+        let mut m = Machine::new(&input, 6);
+	let _ = m.run();
+        assert_eq!(m.outputs[0], 999);
+        let mut m2 = Machine::new(&input, 8);
+	let _2 = m2.run();
+        assert_eq!(m2.outputs[0], 1000);
+        let mut m3 = Machine::new(&input, 14);
+	let _3 = m3.run();
+        assert_eq!(m3.outputs[0], 1001);
     }
 }

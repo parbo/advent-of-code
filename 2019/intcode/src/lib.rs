@@ -88,14 +88,14 @@ impl Machine {
                 let v1 = if mode(val, 1) { *self.read_immediate(pos + 1)? } else { *self.read_position(pos + 1)? };
                 let v2 = if mode(val, 2) { *self.read_immediate(pos + 2)? } else { *self.read_position(pos + 2)? };
                 let res = v1 + v2;
-                if mode(val, 3) { self.write_immediate(pos + 3, res); } else { self.write_position(pos + 3, res); }
+                self.write_position(pos + 3, res);
                 Some(4)
             }
             Op::MUL => {
                 let v1 = if mode(val, 1) { *self.read_immediate(pos + 1)? } else { *self.read_position(pos + 1)? };
                 let v2 = if mode(val, 2) { *self.read_immediate(pos + 2)? } else { *self.read_position(pos + 2)? };
                 let res = v1 * v2;
-                if mode(val, 3) { self.write_immediate(pos + 3, res); } else { self.write_position(pos + 3, res); }
+                self.write_position(pos + 3, res);
                 Some(4)
             }
             Op::INP => {

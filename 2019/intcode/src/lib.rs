@@ -25,7 +25,7 @@ impl Op {
 }
 
 fn mode(value: i64, pos: i64) -> bool {
-    (value / (100 * pos)) != 0
+    ((value / (100 * pos)) % 10) != 0
 }
 
 pub struct Machine {

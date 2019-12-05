@@ -98,18 +98,34 @@ impl Machine {
         self.memory[pos] = value;
     }
 
-    fn read_immediate(&mut self, pos: usize) -> Option<&i64> {
+    fn read_immediate_mut(&mut self, pos: usize) -> Option<&i64> {
         *self.reads.entry(pos).or_insert(0) += 1;
         self.memory.get(pos)
     }
 
-    fn read_position(&mut self, pos: usize) -> Option<&i64> {
+    fn read_position_mut(&mut self, pos: usize) -> Option<&i64> {
         let addr = *self.memory.get(pos)? as usize;
         *self.reads.entry(addr).or_insert(0) += 1;
         self.memory.get(addr)
     }
 
-    fn read_mode(&mut self, pos: usize, mode: Mode) -> Option<&i64> {
+    fn read_immediate(&self, pos: usize) -> Option<&i64> {
+        self.memory.get(pos)
+    }
+
+    fn read_position(&self, pos: usize) -> Option<&i64> {
+        let addr = *self.memory.get(pos)? as usize;
+        self.memory.get(addr)
+    }
+
+    fn read_mode_mut(&mut self, pos: usize, mode: Mode) -> Option<&i64> {
+        match mode {
+            Mode::Immediate => self.read_immediate_mut(pos),
+            Mode::Position => self.read_position_mut(pos),
+        }
+    }
+
+    fn read_mode(&self, pos: usize, mode: Mode) -> Option<&i64> {
         match mode {
             Mode::Immediate => self.read_immediate(pos),
             Mode::Position => self.read_position(pos),
@@ -141,7 +157,7 @@ impl Machine {
         // Read input
         let mut vals = [0; 4];
         for r in 0..def.1 {
-            vals[r] = match self.read_mode(pos, mode(val, r + 1)) {
+            vals[r] = match self.read_mode_mut(pos, mode(val, r + 1)) {
                 None => return false,
                 Some(v) => *v,
             };
@@ -189,19 +205,32 @@ impl Machine {
         if let Some(op) = Op::from_i64(val) {
             let def = op.definition();
             print!("{:>04} {} ", addr, def.0);
+            for r in 0..4 {
+                if r < def.1 + def.2 {
+                    print!(
+                        "{}{:<10}",
+                        mode_str(val, 1 + r),
+                        self.memory.get(addr + 1 + r).unwrap_or(&-1)
+                    );
+                } else {
+                    print!("           ");
+                }
+            }
+            print!("; ");
             for r in 0..def.1 {
                 print!(
-                    "{}{} ",
-                    mode_str(val, 1 + r),
-                    self.memory.get(addr + 1 + r).unwrap_or(&-1)
+                    "{} ",
+                    self.read_mode(addr + 1 + r, mode(val, 1 + r))
+                        .unwrap_or(&-1)
                 );
             }
+            if def.2 > 0 {
+                print!("-> ");
+            }
             for w in 0..def.2 {
-                print!(
-                    "{}{} ",
-                    mode_str(val, 1 + def.1 + w),
-                    self.memory.get(addr + 1 + def.1 + w).unwrap_or(&-1)
-                );
+                let addr2 = *self.memory.get(addr + 1 + def.1 + w).unwrap_or(&0) as usize;
+                let val = self.memory.get(addr2).unwrap_or(&-1);
+                print!("%{} ({})", addr2, val);
             }
             println!();
             addr += 1 + def.1 + def.2;
@@ -227,6 +256,7 @@ impl Machine {
         if rl.load_history("history.txt").is_err() {
             println!("No previous history.");
         }
+        let _ = self.print_instruction(self.ip);
         loop {
             let readline = rl.readline(">> ");
             match readline {
@@ -235,6 +265,8 @@ impl Machine {
                     if line == "s" {
                         if !self.step() {
                             println!("Program halted");
+                        } else {
+                            let _ = self.print_instruction(self.ip);
                         }
                     } else if line == "c" {
                         let _ = self.run();

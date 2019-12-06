@@ -207,9 +207,11 @@ impl Machine {
             print!("{:>04} {} ", addr, def.0);
             for r in 0..4 {
                 if r < def.1 + def.2 {
+		    // Note: write parameters are never immediate
                     print!(
-                        "{}{:<10}",
-                        mode_str(val, 1 + r),
+                        "{}{}{:<10}",
+			if r < def.1 { "R:" } else { "W:" },
+                        if r < def.1 { mode_str(val, 1 + r) } else {"%"},
                         self.memory.get(addr + 1 + r).unwrap_or(&-1)
                     );
                 } else {

@@ -13,23 +13,16 @@ fn part2(things: &Vec<i64>) -> i64 {
     things[0]
 }
 
-fn input(path: &Path) -> Vec<i64> {
-    // let input = File::open(path).unwrap();
-    // let buffered = BufReader::new(input);
-    // let mut buffer = String::new();
-    // input.read_to_string(&mut buffer).unwrap();
-    // let lines : Vec<String> = buffered.lines().filter_map(Result::ok).collect();
-    // lines.iter().map(|line| segments(&line)).collect()
-    vec![0]
+fn parse(lines: &Vec<String>) -> Vec<i64> {
+    lines
+        .iter()
+        .map(|x| x.parse::<i64>().unwrap()).
+        .collect())
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    let part = args[1].parse::<i32>().unwrap();
-    let filename = &args[2];
-
-    let parsed = input(Path::new(&filename));
-
+    let (part, lines) = aoc::read_lines();
+    let parsed = parse(&lines);
     let result = if part == 1 {
         part1(&parsed)
     } else {

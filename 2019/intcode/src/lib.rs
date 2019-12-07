@@ -264,6 +264,20 @@ impl Machine {
         addr
     }
 
+    pub fn run_to_next_output(&mut self) -> Option<i64> {
+        let res = loop {
+            let cont = self.step();
+            if let Some(v) = self.outputs.last() {
+                break Some(*v);
+            }
+            if !cont {
+                break None;
+            }
+        };
+        self.outputs.clear();
+        res
+    }
+
     pub fn run(&mut self) -> Option<i64> {
         loop {
             if !self.step() {

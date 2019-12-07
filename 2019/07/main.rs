@@ -7,45 +7,15 @@ fn part1(numbers: &Vec<i64>) -> i64 {
     let mut max_power = 0;
     for permutation in permute::lexicographically(&phases) {
         let mut m1 = intcode::Machine::new(&numbers, &vec![*permutation[0], 0]);
-        let out1 = loop {
-            m1.step();
-            let outputs = m1.outputs();
-            if let Some(v) = outputs.last() {
-                break *v;
-            }
-        };
+        let out1 = m1.run_to_next_output().unwrap();
         let mut m2 = intcode::Machine::new(&numbers, &vec![*permutation[1], out1]);
-        let out2 = loop {
-            m2.step();
-            let outputs = m2.outputs();
-            if let Some(v) = outputs.last() {
-                break *v;
-            }
-        };
+        let out2 = m2.run_to_next_output().unwrap();
         let mut m3 = intcode::Machine::new(&numbers, &vec![*permutation[2], out2]);
-        let out3 = loop {
-            m3.step();
-            let outputs = m3.outputs();
-            if let Some(v) = outputs.last() {
-                break *v;
-            }
-        };
+        let out3 = m3.run_to_next_output().unwrap();
         let mut m4 = intcode::Machine::new(&numbers, &vec![*permutation[3], out3]);
-        let out4 = loop {
-            m4.step();
-            let outputs = m4.outputs();
-            if let Some(v) = outputs.last() {
-                break *v;
-            }
-        };
+        let out4 = m4.run_to_next_output().unwrap();
         let mut m5 = intcode::Machine::new(&numbers, &vec![*permutation[4], out4]);
-        let out5 = loop {
-            m5.step();
-            let outputs = m5.outputs();
-            if let Some(v) = outputs.last() {
-                break *v;
-            }
-        };
+        let out5 = m5.run_to_next_output().unwrap();
         println!("phases {:?} produces {}", permutation, out5);
         max_power = std::cmp::max(max_power, out5);
     }
@@ -64,73 +34,22 @@ fn part2(numbers: &Vec<i64>) -> i64 {
         let mut m5 = intcode::Machine::new(&numbers, &vec![*permutation[4]]);
         let mut last_output = None;
         let power = loop {
-            let out1 = loop {
-                let cont = m1.step();
-                let outputs = m1.outputs();
-                if let Some(v) = outputs.last() {
-                    break (cont, Some(*v));
-                }
-                if !cont {
-                    break (false, None);
-                }
-            };
-            if let Some(v) = out1.1 {
+            if let Some(v) = m1.run_to_next_output() {
                 m2.add_inputs(&vec![v]);
             }
-            let out2 = loop {
-                let cont = m2.step();
-                let outputs = m2.outputs();
-                if let Some(v) = outputs.last() {
-                    break (cont, Some(*v));
-                }
-                if !cont {
-                    break (false, None);
-                }
-            };
-            if let Some(v) = out2.1 {
+            if let Some(v) = m2.run_to_next_output() {
                 m3.add_inputs(&vec![v]);
             }
-            let out3 = loop {
-                let cont = m3.step();
-                let outputs = m3.outputs();
-                if let Some(v) = outputs.last() {
-                    break (cont, Some(*v));
-                }
-                if !cont {
-                    break (false, None);
-                }
-            };
-            if let Some(v) = out3.1 {
+            if let Some(v) = m3.run_to_next_output() {
                 m4.add_inputs(&vec![v]);
             }
-            let out4 = loop {
-                let cont = m4.step();
-                let outputs = m4.outputs();
-                if let Some(v) = outputs.last() {
-                    break (cont, Some(*v));
-                }
-                if !cont {
-                    break (false, None);
-                }
-            };
-            if let Some(v) = out4.1 {
+            if let Some(v) = m4.run_to_next_output() {
                 m5.add_inputs(&vec![v]);
             }
-            let out5 = loop {
-                let cont = m5.step();
-                let outputs = m5.outputs();
-                if let Some(v) = outputs.last() {
-                    break (cont, Some(*v));
-                }
-                if !cont {
-                    break (false, None);
-                }
-            };
-            if let Some(v) = out5.1 {
+            if let Some(v) = m5.run_to_next_output() {
                 m1.add_inputs(&vec![v]);
                 last_output = Some(v);
-            }
-            if !out5.0 {
+            } else {
                 break last_output.unwrap();
             }
         };

@@ -6,18 +6,12 @@ fn part1(numbers: &Vec<i64>) -> i64 {
     let phases = vec![0, 1, 2, 3, 4];
     let mut max_power = 0;
     for permutation in permute::lexicographically(&phases) {
-        let mut m1 = intcode::Machine::new(&numbers, &vec![*permutation[0], 0]);
-        let out1 = m1.run_to_next_output().unwrap();
-        let mut m2 = intcode::Machine::new(&numbers, &vec![*permutation[1], out1]);
-        let out2 = m2.run_to_next_output().unwrap();
-        let mut m3 = intcode::Machine::new(&numbers, &vec![*permutation[2], out2]);
-        let out3 = m3.run_to_next_output().unwrap();
-        let mut m4 = intcode::Machine::new(&numbers, &vec![*permutation[3], out3]);
-        let out4 = m4.run_to_next_output().unwrap();
-        let mut m5 = intcode::Machine::new(&numbers, &vec![*permutation[4], out4]);
-        let out5 = m5.run_to_next_output().unwrap();
-        println!("phases {:?} produces {}", permutation, out5);
-        max_power = std::cmp::max(max_power, out5);
+        let mut val = 0;
+        for i in 0..5 {
+            let mut m = intcode::Machine::new(&numbers, &vec![*permutation[i], val]);
+            val = m.run_to_next_output().unwrap();
+        }
+        max_power = std::cmp::max(max_power, val);
     }
     max_power
 }
@@ -27,27 +21,20 @@ fn part2(numbers: &Vec<i64>) -> i64 {
     let mut max_power = 0;
     let mut max_phase = None;
     for permutation in permute::lexicographically(&phases) {
-        let mut m1 = intcode::Machine::new(&numbers, &vec![*permutation[0], 0]);
-        let mut m2 = intcode::Machine::new(&numbers, &vec![*permutation[1]]);
-        let mut m3 = intcode::Machine::new(&numbers, &vec![*permutation[2]]);
-        let mut m4 = intcode::Machine::new(&numbers, &vec![*permutation[3]]);
-        let mut m5 = intcode::Machine::new(&numbers, &vec![*permutation[4]]);
+        let mut machines: Vec<intcode::Machine> = (0..5)
+            .map(|x| intcode::Machine::new(&numbers, &vec![*permutation[x]]))
+            .collect();
+        machines[0].add_inputs(&vec![0]);
         let mut last_output = None;
         let power = loop {
-            if let Some(v) = m1.run_to_next_output() {
-                m2.add_inputs(&vec![v]);
+            let mut out = None;
+            for i in 0..machines.len() {
+                if let Some(v) = machines[i].run_to_next_output() {
+                    machines[(i + 1) % 5].add_inputs(&vec![v]);
+                    out = Some(v)
+                }
             }
-            if let Some(v) = m2.run_to_next_output() {
-                m3.add_inputs(&vec![v]);
-            }
-            if let Some(v) = m3.run_to_next_output() {
-                m4.add_inputs(&vec![v]);
-            }
-            if let Some(v) = m4.run_to_next_output() {
-                m5.add_inputs(&vec![v]);
-            }
-            if let Some(v) = m5.run_to_next_output() {
-                m1.add_inputs(&vec![v]);
+            if let Some(v) = out {
                 last_output = Some(v);
             } else {
                 break last_output.unwrap();

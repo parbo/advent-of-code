@@ -1,0 +1,13 @@
+[package]
+name = 'day07'
+version = '0.0.1'
+edition = '2018'
+
+[dependencies]
+aoc = {path = "../aoc"}
+intcode = {path = "../intcode"}
+permute = {git = "https://github.com/bkputnam/permute.git"}
+
+[[bin]]
+name = 'day07'
+path = 'main.rs'

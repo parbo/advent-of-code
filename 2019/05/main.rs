@@ -7,13 +7,14 @@ use std::path::Path;
 extern crate intcode;
 
 fn part1(numbers: &Vec<i64>) -> i64 {
-    let mut m = intcode::Machine::new(&numbers, 1);
-    m.run().unwrap();
+    let mut m = intcode::Machine::new(&numbers, &vec![1]);
+    m.debug();
+//    m.run().unwrap();
     *m.outputs().last().unwrap()
 }
 
 fn part2(numbers: &Vec<i64>) -> i64 {
-    let mut m = intcode::Machine::new(&numbers, 5);
+    let mut m = intcode::Machine::new(&numbers, &vec![5]);
     m.run().unwrap();
     *m.outputs().last().unwrap()
 }

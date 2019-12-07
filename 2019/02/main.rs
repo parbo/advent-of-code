@@ -9,7 +9,7 @@ extern crate intcode;
 fn run_all(numbers: &Vec<i64>) -> Option<(i64, i64)> {
     for ai in 0..=99 {
         for bi in 0..=99 {
-            let mut m = intcode::Machine::new(&numbers, 0);
+            let mut m = intcode::Machine::new(&numbers, &vec![0]);
             // Init
             m.write(1, ai);
             m.write(2, bi);
@@ -23,7 +23,7 @@ fn run_all(numbers: &Vec<i64>) -> Option<(i64, i64)> {
 }
 
 fn part1(numbers: &Vec<i64>) -> i64 {
-    let mut m = intcode::Machine::new(&numbers, 0);
+    let mut m = intcode::Machine::new(&numbers, &vec![0]);
     // Init
     m.write(1, 12);
     m.write(2, 02);

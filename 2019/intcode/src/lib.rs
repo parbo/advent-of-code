@@ -69,7 +69,8 @@ fn mode_str(value: i64, pos: usize) -> &'static str {
 pub struct Machine {
     memory: Vec<i64>,
     ip: usize,
-    input: i64,
+    inputs: Vec<i64>,
+    curr_input: usize,
     outputs: Vec<i64>,
     executes: HashMap<usize, usize>,
     reads: HashMap<usize, usize>,
@@ -77,11 +78,12 @@ pub struct Machine {
 }
 
 impl Machine {
-    pub fn new(memory: &Vec<i64>, input: i64) -> Machine {
+    pub fn new(memory: &Vec<i64>, inputs: &Vec<i64>) -> Machine {
         Machine {
             memory: memory.clone(),
             ip: 0,
-            input: input,
+            inputs: inputs.clone(),
+            curr_input: 0,
             outputs: Vec::new(),
             executes: HashMap::new(),
             reads: HashMap::new(),
@@ -89,8 +91,13 @@ impl Machine {
         }
     }
 
-    pub fn outputs(&self) -> Vec<i64> {
+    pub fn reset_ip(&mut self) {
+        self.ip = 0;
+    }
+
+    pub fn outputs(&mut self) -> Vec<i64> {
         let o = self.outputs.clone();
+        self.outputs.clear();
         o
     }
 
@@ -139,6 +146,16 @@ impl Machine {
         self.memory[addr] = value;
     }
 
+    fn input(&mut self) -> i64 {
+        let res = self.inputs[self.curr_input];
+        self.curr_input += 1;
+        res
+    }
+
+    pub fn add_inputs(&mut self, inputs: &Vec<i64>) {
+        self.inputs.extend(inputs);
+    }
+
     // Returns instruction size
     pub fn step(&mut self) -> bool {
         // let _ = self.print_instruction(self.ip);
@@ -167,10 +184,10 @@ impl Machine {
         let v = match op {
             Op::ADD => Some(vals[0] + vals[1]),
             Op::MUL => Some(vals[0] * vals[1]),
-            Op::INP => Some(self.input),
+            Op::INP => Some(self.input()),
             Op::OUT => {
                 self.outputs.push(vals[0]);
-                println!("OUT: {}", vals[0]);
+//                println!("OUT: {}", vals[0]);
                 None
             }
             Op::JIT => {
@@ -199,6 +216,10 @@ impl Machine {
         true
     }
 
+    pub fn print_current_instruction(&self) {
+        self.print_instruction(self.ip);
+    }
+
     fn print_instruction(&self, a: usize) -> usize {
         let mut addr = a;
         let val = *self.memory.get(addr).unwrap();
@@ -207,11 +228,11 @@ impl Machine {
             print!("{:>04} {} ", addr, def.0);
             for r in 0..4 {
                 if r < def.1 + def.2 {
-		    // Note: write parameters are never immediate
+                    // Note: write parameters are never immediate
                     print!(
                         "{}{}{:<10}",
-			if r < def.1 { "R:" } else { "W:" },
-                        if r < def.1 { mode_str(val, 1 + r) } else {"%"},
+                        if r < def.1 { "R:" } else { "W:" },
+                        if r < def.1 { mode_str(val, 1 + r) } else { "%" },
                         self.memory.get(addr + 1 + r).unwrap_or(&-1)
                     );
                 } else {
@@ -302,7 +323,7 @@ impl Machine {
                         let mut addr = self.ip;
                         loop {
                             addr = self.print_instruction(addr);
-                            if addr - self.ip > 18 {
+                            if addr > self.memory.len() /*- self.ip > 18*/ {
                                 break;
                             }
                         }
@@ -359,7 +380,7 @@ mod tests {
     #[test]
     fn test() {
         let input = vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50];
-        let mut m = Machine::new(&input, 0);
+        let mut m = Machine::new(&input, &vec![0]);
         assert_eq!(m.run(), Some(3500));
         m.dump(10);
     }
@@ -367,10 +388,10 @@ mod tests {
     #[test]
     fn test_example_1() {
         let input = vec![3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8];
-        let mut m = Machine::new(&input, 6);
+        let mut m = Machine::new(&input, &vec![6]);
         let _ = m.run();
         assert_eq!(m.outputs[0], 0);
-        let mut m2 = Machine::new(&input, 8);
+        let mut m2 = Machine::new(&input, &vec![8]);
         let _2 = m2.run();
         assert_eq!(m2.outputs[0], 1);
     }
@@ -378,10 +399,10 @@ mod tests {
     #[test]
     fn test_example_2() {
         let input = vec![3, 9, 7, 9, 10, 9, 4, 9, 99, -1, 8];
-        let mut m = Machine::new(&input, 6);
+        let mut m = Machine::new(&input, &vec![6]);
         let _ = m.run();
         assert_eq!(m.outputs[0], 1);
-        let mut m2 = Machine::new(&input, 8);
+        let mut m2 = Machine::new(&input, &vec![8]);
         let _2 = m2.run();
         assert_eq!(m2.outputs[0], 0);
     }
@@ -389,10 +410,10 @@ mod tests {
     #[test]
     fn test_example_3() {
         let input = vec![3, 3, 1108, -1, 8, 3, 4, 3, 99];
-        let mut m = Machine::new(&input, 42);
+        let mut m = Machine::new(&input, &vec![42]);
         let _ = m.run();
         assert_eq!(m.outputs[0], 0);
-        let mut m2 = Machine::new(&input, 8);
+        let mut m2 = Machine::new(&input, &vec![8]);
         let _2 = m2.run();
         assert_eq!(m2.outputs[0], 1);
     }
@@ -400,10 +421,10 @@ mod tests {
     #[test]
     fn test_example_4() {
         let input = vec![3, 3, 1107, -1, 8, 3, 4, 3, 99];
-        let mut m = Machine::new(&input, 6);
+        let mut m = Machine::new(&input, &vec![6]);
         let _ = m.run();
         assert_eq!(m.outputs[0], 1);
-        let mut m2 = Machine::new(&input, 8);
+        let mut m2 = Machine::new(&input, &vec![8]);
         let _2 = m2.run();
         assert_eq!(m2.outputs[0], 0);
     }
@@ -411,10 +432,10 @@ mod tests {
     #[test]
     fn test_jump_1() {
         let input = vec![3, 12, 6, 12, 15, 1, 13, 14, 13, 4, 13, 99, -1, 0, 1, 9];
-        let mut m = Machine::new(&input, 0);
+        let mut m = Machine::new(&input, &vec![0]);
         let _ = m.run();
         assert_eq!(m.outputs[0], 0);
-        let mut m2 = Machine::new(&input, 42);
+        let mut m2 = Machine::new(&input, &vec![42]);
         let _2 = m2.run();
         assert_eq!(m2.outputs[0], 1);
     }
@@ -422,10 +443,10 @@ mod tests {
     #[test]
     fn test_jump_2() {
         let input = vec![3, 3, 1105, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1];
-        let mut m = Machine::new(&input, 0);
+        let mut m = Machine::new(&input, &vec![0]);
         let _ = m.run();
         assert_eq!(m.outputs[0], 0);
-        let mut m2 = Machine::new(&input, 42);
+        let mut m2 = Machine::new(&input, &vec![42]);
         let _2 = m2.run();
         assert_eq!(m2.outputs[0], 1);
     }
@@ -437,13 +458,13 @@ mod tests {
             0, 1002, 21, 125, 20, 4, 20, 1105, 1, 46, 104, 999, 1105, 1, 46, 1101, 1000, 1, 20, 4,
             20, 1105, 1, 46, 98, 99,
         ];
-        let mut m = Machine::new(&input, 6);
+        let mut m = Machine::new(&input, &vec![6]);
         let _ = m.run();
         assert_eq!(m.outputs[0], 999);
-        let mut m2 = Machine::new(&input, 8);
+        let mut m2 = Machine::new(&input, &vec![8]);
         let _2 = m2.run();
         assert_eq!(m2.outputs[0], 1000);
-        let mut m3 = Machine::new(&input, 14);
+        let mut m3 = Machine::new(&input, &vec![14]);
         let _3 = m3.run();
         assert_eq!(m3.outputs[0], 1001);
     }

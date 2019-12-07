@@ -19,7 +19,6 @@ fn part1(numbers: &Vec<i64>) -> i64 {
 fn part2(numbers: &Vec<i64>) -> i64 {
     let phases = vec![5, 6, 7, 8, 9];
     let mut max_power = 0;
-    let mut max_phase = None;
     for permutation in permute::lexicographically(&phases) {
         let mut machines: Vec<intcode::Machine> = (0..5)
             .map(|x| intcode::Machine::new(&numbers, &vec![*permutation[x]]))
@@ -40,12 +39,8 @@ fn part2(numbers: &Vec<i64>) -> i64 {
                 break last_output.unwrap();
             }
         };
-        if power > max_power {
-            max_power = power;
-            max_phase = Some(permutation.clone());
-        }
+        max_power = std::cmp::max(max_power, power);
     }
-    println!("max power {} produced by {:?}", max_power, max_phase);
     max_power
 }
 

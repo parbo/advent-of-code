@@ -7,5 +7,6 @@ fn main() {
             20, 1105, 1, 46, 98, 99,
     ];
     let mut m = intcode::Machine::new(&input, &vec![6]);
-    m.debug_tui();
+    let mut debugger = intcode::TuiDebugger::new(&mut m);
+    debugger.debug();
 }

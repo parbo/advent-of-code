@@ -264,6 +264,22 @@ impl Machine {
         addr
     }
 
+    fn print_memory(&self, address: usize, count: usize) {
+        self.memory
+            .iter()
+            .enumerate()
+            .skip(address)
+            .take(count)
+            .for_each(|(a, &v)| println!("{:>04}, {}", a, v));
+    }
+
+    fn print_instructions(&self, address: usize, count: usize) {
+        let mut addr = address;
+        for _ in 0..count {
+            addr = self.print_instruction(addr);
+        }
+    }
+
     pub fn run_to_next_output(&mut self) -> Option<i64> {
         let res = loop {
             let cont = self.step();
@@ -308,16 +324,11 @@ impl Machine {
                     } else if line == "c" {
                         let _ = self.run();
                         println!("Program halted");
-                    } else if line.starts_with("p ") {
-                        if let Ok(addr) = line[2..].trim().parse::<usize>() {
-                            self.memory
-                                .iter()
-                                .enumerate()
-                                .skip(addr)
-                                .take(8)
-                                .for_each(|(a, &v)| println!("{:>04}, {}", a, v));
+                    } else if line.starts_with("p") {
+                        if let Ok(addr) = line[1..].trim().parse::<usize>() {
+                            self.print_memory(addr, 8);
                         } else {
-                            println!("Invalid command: {}", line);
+                            self.print_memory(self.ip, 8);
                         }
                     } else if line.starts_with("w ") {
                         let parts: Vec<_> = line.split(' ').map(|x| x.trim()).collect();
@@ -325,21 +336,14 @@ impl Machine {
                         let val = parts[2].parse::<i64>().unwrap();
                         self.write(addr, val);
                     } else if line == "m" {
-                        self.memory
-                            .iter()
-                            .enumerate()
-                            .skip(self.ip)
-                            .take(8)
-                            .for_each(|(a, &v)| println!("{:>04}, {}", a, v));
+                        self.print_memory(self.ip, 8);
                     } else if line == "ds" {
                         self.dump(5);
-                    } else if line == "l" {
-                        let mut addr = self.ip;
-                        loop {
-                            addr = self.print_instruction(addr);
-                            if addr > self.memory.len() /*- self.ip > 18*/ {
-                                break;
-                            }
+                    } else if line.starts_with("l") {
+                        if let Ok(lines) = line[1..].trim().parse::<usize>() {
+                            self.print_instructions(self.ip, lines);
+                        } else {
+                            self.print_instructions(self.ip, 8);
                         }
                     } else {
                         println!("Invalid command: {}", line);

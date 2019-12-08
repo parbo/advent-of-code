@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fmt;
 
-enum Op {
+pub enum Op {
     ADD,
     MUL,
     INP,
@@ -30,7 +30,7 @@ impl Op {
         }
     }
 
-    fn definition(&self) -> (&str, usize, usize) {
+    pub fn definition(&self) -> (&str, usize, usize) {
         match self {
             Op::ADD => ("ADD", 2, 1),
             Op::MUL => ("MUL", 2, 1),
@@ -75,11 +75,20 @@ pub enum Arg {
     Position(MemoryValue),
 }
 
+impl Arg {
+    pub fn value(&self) -> i64 {
+        match self {
+            Arg::Immediate(v) => *v,
+            Arg::Position(mv) => mv.value,
+        }
+    }
+}
+
 pub struct Instruction {
-    address: usize,
-    op: Op,
-    read: Vec<Arg>,
-    write: Vec<MemoryValue>,
+    pub address: usize,
+    pub op: Op,
+    pub read: Vec<Arg>,
+    pub write: Vec<MemoryValue>,
 }
 
 impl Instruction {
@@ -173,17 +182,6 @@ impl Machine {
         self.ip
     }
 
-    fn read_immediate_mut(&mut self, pos: usize) -> Option<&i64> {
-        *self.reads.entry(pos).or_insert(0) += 1;
-        self.memory.get(pos)
-    }
-
-    fn read_position_mut(&mut self, pos: usize) -> Option<&i64> {
-        let addr = *self.memory.get(pos)? as usize;
-        *self.reads.entry(addr).or_insert(0) += 1;
-        self.memory.get(addr)
-    }
-
     fn read_immediate(&self, pos: usize) -> Option<&i64> {
         self.memory.get(pos)
     }
@@ -193,13 +191,6 @@ impl Machine {
         self.memory.get(addr)
     }
 
-    fn read_mode_mut(&mut self, pos: usize, mode: Mode) -> Option<&i64> {
-        match mode {
-            Mode::Immediate => self.read_immediate_mut(pos),
-            Mode::Position => self.read_position_mut(pos),
-        }
-    }
-
     fn read_mode(&self, pos: usize, mode: Mode) -> Option<&i64> {
         match mode {
             Mode::Immediate => self.read_immediate(pos),
@@ -207,11 +198,10 @@ impl Machine {
         }
     }
 
-    fn write_position(&mut self, pos: usize, value: i64) {
+    fn write(&mut self, address: usize, value: i64) {
         // TODO: error handling
-        let addr = self.memory[pos] as usize;
-        *self.writes.entry(addr).or_insert(0) += 1;
-        self.memory[addr] = value;
+        *self.writes.entry(address).or_insert(0) += 1;
+        self.memory[address] = value;
     }
 
     fn input(&mut self) -> i64 {
@@ -226,75 +216,67 @@ impl Machine {
 
     // Returns instruction size
     pub fn step(&mut self) -> bool {
-        let mut pos = self.ip;
-        *self.executes.entry(pos).or_insert(0) += 1;
-        let val = match self.memory.get(pos) {
-            None => return false,
-            Some(v) => *v,
-        };
-        let op = match Op::from_i64(val) {
-            None => return false,
-            Some(v) => v,
-        };
-        let def = op.definition();
-        pos += 1;
-        // Read input
-        let mut vals = [0; 4];
-        for r in 0..def.1 {
-            vals[r] = match self.read_mode_mut(pos, mode(val, r + 1)) {
-                None => return false,
-                Some(v) => *v,
-            };
-            pos += 1;
-        }
-        let mut next_pos = pos + def.2;
-        let v = match op {
-            Op::ADD => Some(vals[0] + vals[1]),
-            Op::MUL => Some(vals[0] * vals[1]),
-            Op::INP => Some(self.input()),
-            Op::OUT => {
-                self.outputs.push(vals[0]);
-                //                println!("OUT: {}", vals[0]);
-                None
-            }
-            Op::JIT => {
-                if vals[0] != 0 {
-                    next_pos = vals[1] as usize;
+        *self.executes.entry(self.ip).or_insert(0) += 1;
+        match self.get_disassembly(self.ip) {
+            Some(Disassembly::Instruction(x)) => {
+                let mut next_pos = self.ip + x.increment();
+                let v = match x.op {
+                    Op::ADD => Some(x.read[0].value() + x.read[1].value()),
+                    Op::MUL => Some(x.read[0].value() * x.read[1].value()),
+                    Op::INP => Some(self.input()),
+                    Op::OUT => {
+                        self.outputs.push(x.read[0].value());
+                        //                println!("OUT: {}", vals[0]);
+                        None
+                    }
+                    Op::JIT => {
+                        if x.read[0].value() != 0 {
+                            next_pos = x.read[1].value() as usize;
+                        }
+                        None
+                    }
+                    Op::JIF => {
+                        if x.read[0].value() == 0 {
+                            next_pos = x.read[1].value() as usize;
+                        }
+                        None
+                    }
+                    Op::LTN => Some(if x.read[0].value() < x.read[1].value() { 1 } else { 0 }),
+                    Op::EQL => Some(if x.read[0].value() == x.read[1].value() { 1 } else { 0 }),
+                    Op::HLT => return false,
+                };
+                if let Some(out) = v {
+                    assert!(x.op.definition().2 == 1);
+                    self.write(x.write[0].address, out);
+                } else {
+                    assert!(x.op.definition().2 == 0);
                 }
-                None
-            }
-            Op::JIF => {
-                if vals[0] == 0 {
-                    next_pos = vals[1] as usize;
+                // Update stats
+                for r in &x.read {
+                    if let Arg::Position(mv) = r {
+                        *self.reads.entry(mv.address).or_insert(0) += 1;
+                    }
                 }
-                None
-            }
-            Op::LTN => Some(if vals[0] < vals[1] { 1 } else { 0 }),
-            Op::EQL => Some(if vals[0] == vals[1] { 1 } else { 0 }),
-            Op::HLT => return false,
-        };
-        if let Some(out) = v {
-            assert!(def.2 == 1, "{:?}", def);
-            self.write_position(pos, out);
-        } else {
-            assert!(def.2 == 0, "{:?}", def);
+                for w in &x.write {
+                    *self.writes.entry(w.address).or_insert(0) += 1;
+                }
+                *self.executes.entry(self.ip).or_insert(0) += 1;
+                // Update ip
+                self.ip = next_pos;
+                true
+            },
+            _ => false,
         }
-        self.ip = next_pos;
-        true
     }
 
-    pub fn get_current_disassembly(&self) -> Disassembly {
-        self.get_disassembly(self.ip)
-    }
-
-    pub fn get_disassembly(&self, address: usize) -> Disassembly {
-        let val = *self.memory.get(address).unwrap();
+    pub fn get_disassembly(&self, address: usize) -> Option<Disassembly> {
+        let val = *self.memory.get(address)?;
         if let Some(op) = Op::from_i64(val) {
             let def = op.definition();
             let mut read = vec![];
             for r in 0..def.1 {
                 let m = mode(val, 1 + r);
-                let v = self.read_mode(address + 1 + r, m).unwrap_or(&-1);
+                let v = self.read_mode(address + 1 + r, m)?;
                 match &m {
                     Mode::Immediate => {
                         read.push(Arg::Immediate(*v));
@@ -307,13 +289,13 @@ impl Machine {
             }
             let mut write = vec![];
             for w in 0..def.2 {
-                let addr2 = *self.memory.get(address + 1 + def.1 + w).unwrap_or(&0) as usize;
-                let val = self.memory.get(addr2).unwrap_or(&-1);
+                let addr2 = *self.memory.get(address + 1 + def.1 + w)? as usize;
+                let val = self.memory.get(addr2)?;
                 write.push(MemoryValue{ address: addr2, value: *val });
             }
-            Disassembly::Instruction(Instruction{address, op, read, write})
+            Some(Disassembly::Instruction(Instruction{address, op, read, write}))
         } else {
-            Disassembly::MemoryValue(MemoryValue{address: address, value: val})
+            Some(Disassembly::MemoryValue(MemoryValue{address: address, value: val}))
         }
     }
 

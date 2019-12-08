@@ -6,6 +6,7 @@ use rustyline::error::ReadlineError;
 use rustyline::Editor;
 use std::collections::HashMap;
 use std::io::Write;
+use std::fmt;
 
 enum Op {
     ADD,
@@ -51,6 +52,7 @@ impl Op {
     }
 }
 
+#[derive(Copy, Clone)]
 enum Mode {
     Position,
     Immediate,
@@ -64,11 +66,75 @@ fn mode(value: i64, pos: usize) -> Mode {
     }
 }
 
-fn mode_str(value: i64, pos: usize) -> &'static str {
-    match mode(value, pos) {
-        Mode::Position => "%",
-        Mode::Immediate => "$",
+pub struct MemoryValue {
+    address: usize,
+    value: i64,
+}
+
+impl fmt::Display for MemoryValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:>04} {}", self.address, self.value)
     }
+}
+
+pub enum Arg {
+    Immediate(i64),
+    Position(MemoryValue),
+}
+
+pub struct Instruction {
+    address: usize,
+    op: Op,
+    read: Vec<Arg>,
+    write: Vec<MemoryValue>,
+}
+
+impl Instruction {
+    fn name(&self) -> &str {
+        self.op.definition().0
+    }
+
+    fn increment(&self) -> usize {
+        let def = self.op.definition();
+        1 + def.1 + def.2
+    }
+}
+
+impl fmt::Display for Instruction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:>04} {} ", self.address, self.name())?;
+        for r in &self.read {
+            match r {
+                Arg::Immediate(val) => write!(f, "${} ", val)?,
+                Arg::Position(mv) => write!(f, "%{} ", mv.address)?,
+            }
+        }
+        if self.write.len() > 0 {
+            write!(f, "-> ")?;
+        }
+        for w in &self.write {
+            write!(f, "%{} ", w.address)?;
+        }
+        write!(f, "; ")?;
+        for r in &self.read {
+            match r {
+                Arg::Immediate(val) => write!(f, "{} ", val)?,
+                Arg::Position(mv) => write!(f, "{} ", mv.value)?,
+            }
+        }
+        if self.write.len() > 0 {
+            write!(f, "-> ")?;
+        }
+        for w in &self.write {
+            write!(f, "%{} ({}) ", w.address, w.value)?;
+        }
+        Ok(())
+    }
+}
+
+pub enum Disassembly {
+    Instruction(Instruction),
+    MemoryValue(MemoryValue),
 }
 
 pub struct Machine {
@@ -221,56 +287,55 @@ impl Machine {
         true
     }
 
+    pub fn get_current_disassembly(&self) -> Disassembly {
+        self.get_disassembly(self.ip)
+    }
+
+    pub fn get_disassembly(&self, address: usize) -> Disassembly {
+        let val = *self.memory.get(address).unwrap();
+        if let Some(op) = Op::from_i64(val) {
+            let def = op.definition();
+            let mut read = vec![];
+            for r in 0..def.1 {
+                let m = mode(val, 1 + r);
+                let v = self.read_mode(address + 1 + r, m).unwrap_or(&-1);
+                match &m {
+                    Mode::Immediate => {
+                        read.push(Arg::Immediate(*v));
+                    },
+                    Mode::Position => {
+                        let mv = MemoryValue{ address: address + 1 + r, value: *v };
+                        read.push(Arg::Position(mv));
+                    }
+                }
+            }
+            let mut write = vec![];
+            for w in 0..def.2 {
+                let addr2 = *self.memory.get(address + 1 + def.1 + w).unwrap_or(&0) as usize;
+                let val = self.memory.get(addr2).unwrap_or(&-1);
+                write.push(MemoryValue{ address: addr2, value: *val });
+            }
+            Disassembly::Instruction(Instruction{address, op, read, write})
+        } else {
+            Disassembly::MemoryValue(MemoryValue{address: address, value: val})
+        }
+    }
+
     pub fn print_current_instruction(&self, w: &mut impl Write) {
         self.print_instruction(w, self.ip);
     }
 
     fn print_instruction(&self, w: &mut impl Write, a: usize) -> usize {
-        let mut addr = a;
-        let val = *self.memory.get(addr).unwrap();
-        if let Some(op) = Op::from_i64(val) {
-            let def = op.definition();
-            write!(w, "{:>04} {} ", addr, def.0).expect("err");
-            for r in 0..4 {
-                if r < def.1 + def.2 {
-                    // Note: write parameters are never immediate
-                    write!(
-                        w,
-                        "{}{}{:<10}",
-                        if r < def.1 { "R:" } else { "W:" },
-                        if r < def.1 { mode_str(val, 1 + r) } else { "%" },
-                        self.memory.get(addr + 1 + r).unwrap_or(&-1)
-                    )
-                    .expect("err");
-                } else {
-                    write!(w, "           ").expect("err");
-                }
+        match self.get_disassembly(a) {
+            Disassembly::Instruction(x) => {
+                writeln!(w, "{}", x).expect("err");
+                a + x.increment()
+            },
+            Disassembly::MemoryValue(x) => {
+                writeln!(w, "{}", x).expect("err");
+                a + 1
             }
-            write!(w, "; ").expect("err");
-            for r in 0..def.1 {
-                write!(
-                    w,
-                    "{} ",
-                    self.read_mode(addr + 1 + r, mode(val, 1 + r))
-                        .unwrap_or(&-1)
-                )
-                .expect("err");
-            }
-            if def.2 > 0 {
-                write!(w, "-> ").expect("err");
-            }
-            for wa in 0..def.2 {
-                let addr2 = *self.memory.get(addr + 1 + def.1 + wa).unwrap_or(&0) as usize;
-                let val = self.memory.get(addr2).unwrap_or(&-1);
-                write!(w, "%{} ({})", addr2, val).expect("err");
-            }
-            writeln!(w).expect("err");
-            addr += 1 + def.1 + def.2;
-        } else {
-            write!(w, "{:>04} {}", addr, self.memory.get(addr).unwrap_or(&-1)).expect("err");
-            addr += 1;
-        };
-        addr
+        }
     }
 
     fn print_memory(&self, address: usize, count: usize) {

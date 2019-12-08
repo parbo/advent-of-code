@@ -12,5 +12,9 @@ default-features = false
 features = ["crossterm-backend"]
 
 [[example]]
+name = "debug"
+path = "examples/debug.rs"
+
+[[example]]
 name = "debug_tui"
 path = "examples/debug_tui.rs"

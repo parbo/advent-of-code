@@ -1,6 +1,11 @@
+use cursive::align::HAlign;
+use cursive::traits::*;
+use cursive::views::{BoxView, DummyView, LinearLayout, Panel, TextView};
+use cursive::Cursive;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 use std::collections::HashMap;
+use std::io::Write;
 
 enum Op {
     ADD,
@@ -187,7 +192,7 @@ impl Machine {
             Op::INP => Some(self.input()),
             Op::OUT => {
                 self.outputs.push(vals[0]);
-//                println!("OUT: {}", vals[0]);
+                //                println!("OUT: {}", vals[0]);
                 None
             }
             Op::JIT => {
@@ -216,49 +221,53 @@ impl Machine {
         true
     }
 
-    pub fn print_current_instruction(&self) {
-        self.print_instruction(self.ip);
+    pub fn print_current_instruction(&self, w: &mut impl Write) {
+        self.print_instruction(w, self.ip);
     }
 
-    fn print_instruction(&self, a: usize) -> usize {
+    fn print_instruction(&self, w: &mut impl Write, a: usize) -> usize {
         let mut addr = a;
         let val = *self.memory.get(addr).unwrap();
         if let Some(op) = Op::from_i64(val) {
             let def = op.definition();
-            print!("{:>04} {} ", addr, def.0);
+            write!(w, "{:>04} {} ", addr, def.0).expect("err");
             for r in 0..4 {
                 if r < def.1 + def.2 {
                     // Note: write parameters are never immediate
-                    print!(
+                    write!(
+                        w,
                         "{}{}{:<10}",
                         if r < def.1 { "R:" } else { "W:" },
                         if r < def.1 { mode_str(val, 1 + r) } else { "%" },
                         self.memory.get(addr + 1 + r).unwrap_or(&-1)
-                    );
+                    )
+                    .expect("err");
                 } else {
-                    print!("           ");
+                    write!(w, "           ").expect("err");
                 }
             }
-            print!("; ");
+            write!(w, "; ").expect("err");
             for r in 0..def.1 {
-                print!(
+                write!(
+                    w,
                     "{} ",
                     self.read_mode(addr + 1 + r, mode(val, 1 + r))
                         .unwrap_or(&-1)
-                );
+                )
+                .expect("err");
             }
             if def.2 > 0 {
-                print!("-> ");
+                write!(w, "-> ").expect("err");
             }
-            for w in 0..def.2 {
-                let addr2 = *self.memory.get(addr + 1 + def.1 + w).unwrap_or(&0) as usize;
+            for wa in 0..def.2 {
+                let addr2 = *self.memory.get(addr + 1 + def.1 + wa).unwrap_or(&0) as usize;
                 let val = self.memory.get(addr2).unwrap_or(&-1);
-                print!("%{} ({})", addr2, val);
+                write!(w, "%{} ({})", addr2, val).expect("err");
             }
-            println!();
+            writeln!(w).expect("err");
             addr += 1 + def.1 + def.2;
         } else {
-            println!("{:>04} {}", addr, self.memory.get(addr).unwrap_or(&-1));
+            write!(w, "{:>04} {}", addr, self.memory.get(addr).unwrap_or(&-1)).expect("err");
             addr += 1;
         };
         addr
@@ -273,13 +282,22 @@ impl Machine {
             .for_each(|(a, &v)| println!("{:>04}, {}", a, v));
     }
 
-    fn print_instructions(&self, address: usize, count: usize) {
+    fn print_instructions(&self, w: &mut impl Write, address: usize, count: usize) {
         let mut addr = address;
         for _ in 0..count {
-            addr = self.print_instruction(addr);
+            addr = self.print_instruction(w, addr);
         }
     }
 
+    fn print_program(&self, w: &mut impl Write, address: usize) {
+        let mut addr = address;
+        loop {
+            addr = self.print_instruction(w, addr);
+            if addr >= self.memory.len() {
+                break;
+            }
+        }
+    }
     pub fn run_to_next_output(&mut self) -> Option<i64> {
         let res = loop {
             let cont = self.step();
@@ -306,10 +324,11 @@ impl Machine {
     pub fn debug(&mut self) {
         // `()` can be used when no completer is required
         let mut rl = Editor::<()>::new();
+        let mut out = std::io::stdout();
         if rl.load_history("history.txt").is_err() {
             println!("No previous history.");
         }
-        let _ = self.print_instruction(self.ip);
+        let _ = self.print_instruction(&mut out, self.ip);
         loop {
             let readline = rl.readline(">> ");
             match readline {
@@ -319,7 +338,7 @@ impl Machine {
                         if !self.step() {
                             println!("Program halted");
                         } else {
-                            let _ = self.print_instruction(self.ip);
+                            let _ = self.print_instruction(&mut out, self.ip);
                         }
                     } else if line == "c" {
                         let _ = self.run();
@@ -341,9 +360,9 @@ impl Machine {
                         self.dump(5);
                     } else if line.starts_with("l") {
                         if let Ok(lines) = line[1..].trim().parse::<usize>() {
-                            self.print_instructions(self.ip, lines);
+                            self.print_instructions(&mut out, self.ip, lines);
                         } else {
-                            self.print_instructions(self.ip, 8);
+                            self.print_instructions(&mut out, self.ip, 8);
                         }
                     } else {
                         println!("Invalid command: {}", line);
@@ -364,6 +383,55 @@ impl Machine {
             }
         }
         rl.save_history("history.txt").unwrap();
+    }
+
+    fn update_tui(&mut self, app: &mut Cursive) {
+        let mut prg = Vec::new();
+        self.print_program(&mut prg, 0);
+        let s = String::from_utf8(prg).unwrap();
+        let mut p = app.find_id::<TextView>("program").unwrap();
+        p.set_content(s);
+        let mut ms = Vec::new();
+        self.memory.iter().enumerate().for_each(|(a, &v)| {
+            if (a % 8) == 0 {
+                write!(&mut ms, "{:>8}: ", a).expect("err");
+            }
+            write!(&mut ms, "{:>8},", v).expect("err");
+            if (a % 8) == 7 {
+                writeln!(&mut ms).expect("err");
+            }
+        });
+        let mut m = app.find_id::<TextView>("mem").unwrap();
+        m.set_content(String::from_utf8(ms).unwrap());
+    }
+
+    pub fn debug_tui(&mut self) {
+        let mut app = Cursive::default();
+        app.add_fullscreen_layer(
+            LinearLayout::vertical()
+                .child(BoxView::with_full_screen(
+                    LinearLayout::horizontal()
+                        .child(BoxView::with_full_width(
+                            Panel::new(TextView::new("").with_id("program").scrollable())
+                                .title("Program")
+                                .title_position(HAlign::Left),
+                        ))
+                        .child(BoxView::with_fixed_width(
+                            12,
+                            Panel::new(TextView::new("").scrollable())
+                                .title("Bp")
+                                .title_position(HAlign::Left),
+                        )),
+                ))
+                .child(BoxView::with_full_screen(
+                    Panel::new(TextView::new("").with_id("mem").scrollable())
+                        .title("Mem")
+                        .title_position(HAlign::Left),
+                )),
+        );
+        app.add_global_callback('q', |a| a.quit());
+        self.update_tui(&mut app);
+        app.run();
     }
 
     pub fn dump(&self, n: usize) {

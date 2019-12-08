@@ -7,5 +7,6 @@ fn main() {
             20, 1105, 1, 46, 98, 99,
     ];
     let mut m = intcode::Machine::new(&input, &vec![6]);
-    m.debug();
+    let mut debugger = intcode::Debugger::new(&mut m);
+    debugger.debug();
 }

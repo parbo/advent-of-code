@@ -162,18 +162,22 @@ impl Machine {
         }
     }
 
-    pub fn reset_ip(&mut self) {
-        self.ip = 0;
-    }
-
     pub fn outputs(&mut self) -> Vec<i64> {
         let o = self.outputs.clone();
         self.outputs.clear();
         o
     }
 
-    pub fn write(&mut self, pos: usize, value: i64) {
-        self.memory[pos] = value;
+    pub fn memory(&self) -> &[i64] {
+        self.memory.as_slice()
+    }
+
+    pub fn memory_mut(&mut self) -> &mut [i64] {
+        self.memory.as_mut_slice()
+    }
+
+    pub fn ip(&self) -> usize {
+        self.ip
     }
 
     fn read_immediate_mut(&mut self, pos: usize) -> Option<&i64> {
@@ -229,7 +233,6 @@ impl Machine {
 
     // Returns instruction size
     pub fn step(&mut self) -> bool {
-        // let _ = self.print_instruction(self.ip);
         let mut pos = self.ip;
         *self.executes.entry(pos).or_insert(0) += 1;
         let val = match self.memory.get(pos) {
@@ -321,48 +324,6 @@ impl Machine {
         }
     }
 
-    pub fn print_current_instruction(&self, w: &mut impl Write) {
-        self.print_instruction(w, self.ip);
-    }
-
-    fn print_instruction(&self, w: &mut impl Write, a: usize) -> usize {
-        match self.get_disassembly(a) {
-            Disassembly::Instruction(x) => {
-                writeln!(w, "{}", x).expect("err");
-                a + x.increment()
-            },
-            Disassembly::MemoryValue(x) => {
-                writeln!(w, "{}", x).expect("err");
-                a + 1
-            }
-        }
-    }
-
-    fn print_memory(&self, address: usize, count: usize) {
-        self.memory
-            .iter()
-            .enumerate()
-            .skip(address)
-            .take(count)
-            .for_each(|(a, &v)| println!("{:>04}, {}", a, v));
-    }
-
-    fn print_instructions(&self, w: &mut impl Write, address: usize, count: usize) {
-        let mut addr = address;
-        for _ in 0..count {
-            addr = self.print_instruction(w, addr);
-        }
-    }
-
-    fn print_program(&self, w: &mut impl Write, address: usize) {
-        let mut addr = address;
-        loop {
-            addr = self.print_instruction(w, addr);
-            if addr >= self.memory.len() {
-                break;
-            }
-        }
-    }
     pub fn run_to_next_output(&mut self) -> Option<i64> {
         let res = loop {
             let cont = self.step();
@@ -386,73 +347,25 @@ impl Machine {
         Some(*self.memory.get(0)?)
     }
 
-    pub fn debug(&mut self) {
-        // `()` can be used when no completer is required
-        let mut rl = Editor::<()>::new();
-        let mut out = std::io::stdout();
-        if rl.load_history("history.txt").is_err() {
-            println!("No previous history.");
-        }
-        let _ = self.print_instruction(&mut out, self.ip);
-        loop {
-            let readline = rl.readline(">> ");
-            match readline {
-                Ok(line) => {
-                    rl.add_history_entry(line.as_str());
-                    if line == "s" {
-                        if !self.step() {
-                            println!("Program halted");
-                        } else {
-                            let _ = self.print_instruction(&mut out, self.ip);
-                        }
-                    } else if line == "c" {
-                        let _ = self.run();
-                        println!("Program halted");
-                    } else if line.starts_with("p") {
-                        if let Ok(addr) = line[1..].trim().parse::<usize>() {
-                            self.print_memory(addr, 8);
-                        } else {
-                            self.print_memory(self.ip, 8);
-                        }
-                    } else if line.starts_with("w ") {
-                        let parts: Vec<_> = line.split(' ').map(|x| x.trim()).collect();
-                        let addr = parts[1].parse::<usize>().unwrap();
-                        let val = parts[2].parse::<i64>().unwrap();
-                        self.write(addr, val);
-                    } else if line == "m" {
-                        self.print_memory(self.ip, 8);
-                    } else if line == "ds" {
-                        self.dump(5);
-                    } else if line.starts_with("l") {
-                        if let Ok(lines) = line[1..].trim().parse::<usize>() {
-                            self.print_instructions(&mut out, self.ip, lines);
-                        } else {
-                            self.print_instructions(&mut out, self.ip, 8);
-                        }
-                    } else {
-                        println!("Invalid command: {}", line);
-                    }
-                }
-                Err(ReadlineError::Interrupted) => {
-                    println!("CTRL-C");
-                    break;
-                }
-                Err(ReadlineError::Eof) => {
-                    println!("CTRL-D");
-                    break;
-                }
-                Err(err) => {
-                    println!("Error: {:?}", err);
-                    break;
-                }
-            }
-        }
-        rl.save_history("history.txt").unwrap();
-    }
-
     fn update_tui(&mut self, app: &mut Cursive) {
         let mut prg = Vec::new();
-        self.print_program(&mut prg, 0);
+        let mut addr = self.ip;
+        loop {
+            addr = match self.get_disassembly(addr) {
+                Disassembly::Instruction(x) => {
+                    writeln!(prg, "{}", x).expect("err");
+                    addr + x.increment()
+                },
+                Disassembly::MemoryValue(x) => {
+                    writeln!(prg, "{}", x).expect("err");
+                    addr + 1
+                }
+            };
+            if addr >= self.memory.len() {
+                break;
+            }
+        }
+
         let s = String::from_utf8(prg).unwrap();
         let mut p = app.find_id::<TextView>("program").unwrap();
         p.set_content(s);
@@ -523,6 +436,113 @@ impl Machine {
             .for_each(|x| println!("  {} - {}", x.0, x.1));
     }
 }
+
+pub struct Debugger<'a> {
+    machine: &'a mut Machine
+}
+
+impl Debugger<'_> {
+    pub fn new<'a>(machine: &'a mut Machine) -> Debugger<'a> {
+        Debugger { machine }
+    }
+
+    fn print_instruction(&self, a: usize) -> usize {
+        match self.machine.get_disassembly(a) {
+            Disassembly::Instruction(x) => {
+                println!("{}", x);
+                a + x.increment()
+            },
+            Disassembly::MemoryValue(x) => {
+                println!("{}", x);
+                a + 1
+            }
+        }
+    }
+
+    fn print_memory(&self, address: usize, count: usize) {
+        self.machine.memory()
+            .iter()
+            .enumerate()
+            .skip(address)
+            .take(count)
+            .for_each(|(a, &v)| println!("{:>04}, {}", a, v));
+    }
+
+    fn print_instructions(&self, address: usize, count: usize) {
+        let mut addr = address;
+        for _ in 0..count {
+            addr = self.print_instruction(addr);
+        }
+    }
+
+    pub fn debug(&mut self) {
+        // `()` can be used when no completer is required
+        let mut rl = Editor::<()>::new();
+        if rl.load_history("history.txt").is_err() {
+            println!("No previous history.");
+        }
+        let _ = self.print_instruction(self.machine.ip());
+        loop {
+            let readline = rl.readline(">> ");
+            match readline {
+                Ok(line) => {
+                    rl.add_history_entry(line.as_str());
+                    if line == "s" {
+                        if !self.machine.step() {
+                            println!("Program halted");
+                        } else {
+                            let _ = self.print_instruction(self.machine.ip());
+                        }
+                    } else if line == "c" {
+                        let _ = self.machine.run();
+                        println!("Program halted");
+                    } else if line.starts_with("p") {
+                        if let Ok(addr) = line[1..].trim().parse::<usize>() {
+                            self.print_memory(addr, 8);
+                        } else {
+                            self.print_memory(self.machine.ip(), 8);
+                        }
+                    } else if line.starts_with("w ") {
+                        let parts: Vec<_> = line.split(' ').map(|x| x.trim()).collect();
+                        let addr = parts[1].parse::<usize>().unwrap();
+                        let val = parts[2].parse::<i64>().unwrap();
+                        if let Some(x) = self.machine.memory_mut().get_mut(addr) {
+                            *x = val;
+                        } else {
+                            println!("Invalid address!");
+                        }
+                    } else if line == "m" {
+                        self.print_memory(self.machine.ip(), 8);
+                    } else if line == "ds" {
+                        self.machine.dump(5);
+                    } else if line.starts_with("l") {
+                        if let Ok(lines) = line[1..].trim().parse::<usize>() {
+                            self.print_instructions(self.machine.ip(), lines);
+                        } else {
+                            self.print_instructions(self.machine.ip(), 8);
+                        }
+                    } else {
+                        println!("Invalid command: {}", line);
+                    }
+                }
+                Err(ReadlineError::Interrupted) => {
+                    println!("CTRL-C");
+                    break;
+                }
+                Err(ReadlineError::Eof) => {
+                    println!("CTRL-D");
+                    break;
+                }
+                Err(err) => {
+                    println!("Error: {:?}", err);
+                    break;
+                }
+            }
+        }
+        rl.save_history("history.txt").unwrap();
+    }
+}
+
 
 #[cfg(test)]
 mod tests {

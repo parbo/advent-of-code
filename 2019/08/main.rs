@@ -22,25 +22,11 @@ fn part2(layers: &Vec<Vec<u32>>) -> usize {
     for y in 0..6 {
         for x in 0..25 {
             let mut pixel = 2u32;
-            for layer in layers {
+            for layer in layers.iter().rev() {
                 let v = layer[y * 25 + x];
                 match v {
-                    0 => {
-                        pixel = match pixel {
-                            0 => 0,
-                            1 => 1,
-                            2 => 0,
-                            _ => panic!("OH NOES"),
-                        }
-                    }
-                    1 => {
-                        pixel = match pixel {
-                            0 => 0,
-                            1 => 1,
-                            2 => 1,
-                            _ => panic!("OH NOES"),
-                        }
-                    }
+                    0 => pixel = 0,
+                    1 => pixel = 1,
                     2 => {},
                     _ => panic!("OH NOES"),
                 }

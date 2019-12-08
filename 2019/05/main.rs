@@ -8,8 +8,7 @@ extern crate intcode;
 
 fn part1(numbers: &Vec<i64>) -> i64 {
     let mut m = intcode::Machine::new(&numbers, &vec![1]);
-    m.debug();
-//    m.run().unwrap();
+    m.run().unwrap();
     *m.outputs().last().unwrap()
 }
 

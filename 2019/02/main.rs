@@ -11,8 +11,8 @@ fn run_all(numbers: &Vec<i64>) -> Option<(i64, i64)> {
         for bi in 0..=99 {
             let mut m = intcode::Machine::new(&numbers, &vec![0]);
             // Init
-            m.write(1, ai);
-            m.write(2, bi);
+            *m.memory_mut().get_mut(1).unwrap() = ai;
+            *m.memory_mut().get_mut(2).unwrap() = bi;
             let res = m.run();
             if res == Some(19690720) {
                 return Some((ai, bi));
@@ -25,11 +25,9 @@ fn run_all(numbers: &Vec<i64>) -> Option<(i64, i64)> {
 fn part1(numbers: &Vec<i64>) -> i64 {
     let mut m = intcode::Machine::new(&numbers, &vec![0]);
     // Init
-    m.write(1, 12);
-    m.write(2, 02);
-    //    m.run().unwrap()
-    m.debug();
-    0
+    *m.memory_mut().get_mut(1).unwrap() = 12;
+    *m.memory_mut().get_mut(2).unwrap() = 02;
+    m.run().unwrap()
 }
 
 fn part2(numbers: &Vec<i64>) -> i64 {

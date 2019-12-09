@@ -253,6 +253,7 @@ impl Machine {
         *self.executes.entry(self.ip).or_insert(0) += 1;
         match self.get_disassembly(self.ip) {
             Some(Disassembly::Instruction(x)) => {
+                // println!("{}", x);
                 let mut next_pos = self.ip + x.increment();
                 let v = match x.op {
                     Op::ADD => Some(x.read[0].value() + x.read[1].value()),
@@ -380,9 +381,8 @@ impl Machine {
                         write.push(Arg::Position(mv));
                     }
                     Mode::Relative => {
-                        let addr2 = *self
-                            .memory
-                            .get((self.relative_base as usize) + address + 1 + def.1 + w)?
+                        let addr2 = (self.relative_base
+                            + *self.memory.get(address + 1 + def.1 + w)?)
                             as usize;
                         let mv = MemoryValue {
                             address: addr2,

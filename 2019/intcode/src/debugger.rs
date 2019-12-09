@@ -14,18 +14,14 @@ impl Debugger<'_> {
 
     fn print_instruction(&self, a: usize) -> usize {
         match self.machine.get_disassembly(a) {
-            Some(Disassembly::Instruction(x)) => {
+            Disassembly::Instruction(x) => {
                 println!("{}", x);
                 a + x.increment()
             },
-            Some(Disassembly::MemoryValue(x)) => {
+            Disassembly::MemoryValue(x) => {
                 println!("{}", x);
                 a + 1
             },
-            _ => {
-                println!("Invalid address");
-                a + 1
-            }
         }
     }
 

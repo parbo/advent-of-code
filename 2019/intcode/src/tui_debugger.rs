@@ -19,18 +19,18 @@ impl TuiDebugger<'_> {
         let mut addr = self.machine.ip();
         loop {
             addr = match self.machine.get_disassembly(addr) {
-                Some(Disassembly::Instruction(x)) => {
+                Disassembly::Instruction(x) => {
                     writeln!(prg, "{}", x).expect("err");
                     addr + x.increment()
                 },
-                Some(Disassembly::MemoryValue(x)) => {
+                Disassembly::MemoryValue(x) => {
                     writeln!(prg, "{}", x).expect("err");
                     addr + 1
                 }
-                _ => {
-                    break;
-                }
             };
+            if addr > self.machine.memory().len() {
+                break;
+            }
         }
 
         let s = String::from_utf8(prg).unwrap();

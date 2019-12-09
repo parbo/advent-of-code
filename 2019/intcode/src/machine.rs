@@ -10,6 +10,7 @@ pub enum Op {
     JIF,
     LTN,
     EQL,
+    REL,
     HLT,
 }
 
@@ -25,6 +26,7 @@ impl Op {
             6 => Some(Op::JIF),
             7 => Some(Op::LTN),
             8 => Some(Op::EQL),
+            9 => Some(Op::REL),
             99 => Some(Op::HLT),
             _ => None,
         }
@@ -40,6 +42,7 @@ impl Op {
             Op::JIF => ("JIF", 2, 0),
             Op::LTN => ("LTN", 2, 1),
             Op::EQL => ("EQL", 2, 1),
+            Op::REL => ("REL", 1, 0),
             Op::HLT => ("HLT", 0, 0),
         }
     }
@@ -55,7 +58,7 @@ enum Mode {
 fn mode(value: i128, pos: usize) -> Mode {
     let mut v = value / 100;
     for _ in 1..pos {
-	v = v / 10;
+        v = v / 10;
     }
     let m = v % 10;
     match m {
@@ -66,6 +69,7 @@ fn mode(value: i128, pos: usize) -> Mode {
     }
 }
 
+#[derive(Debug)]
 pub struct MemoryValue {
     address: usize,
     value: i128,
@@ -172,8 +176,11 @@ pub struct Machine {
 
 impl Machine {
     pub fn new(memory: &Vec<i128>, inputs: &Vec<i128>) -> Machine {
+        let mut m = vec![];
+        m.extend(memory);
+        m.resize(memory.len() + 100000, 0);
         Machine {
-            memory: memory.clone(),
+            memory: m,
             ip: 0,
             inputs: inputs.clone(),
             curr_input: 0,
@@ -253,7 +260,7 @@ impl Machine {
                     Op::INP => Some(self.input()),
                     Op::OUT => {
                         self.outputs.push(x.read[0].value());
-                        //                println!("OUT: {}", vals[0]);
+                        // println!("OUT: {}", x.read[0].value());
                         None
                     }
                     Op::JIT => {
@@ -278,6 +285,10 @@ impl Machine {
                     } else {
                         0
                     }),
+                    Op::REL => {
+                        self.relative_base = self.relative_base + x.read[0].value();
+                        None
+                    }
                     Op::HLT => return false,
                 };
                 if let Some(out) = v {
@@ -318,7 +329,12 @@ impl Machine {
                 self.ip = next_pos;
                 true
             }
-            _ => false,
+            Some(Disassembly::MemoryValue(_)) => {
+                return false;
+            }
+            None => {
+                return false;
+            }
         }
     }
 
@@ -533,5 +549,31 @@ mod tests {
         let mut m3 = Machine::new(&input, &vec![14]);
         let _3 = m3.run();
         assert_eq!(m3.outputs[0], 1001);
+    }
+
+    #[test]
+    fn test_quine() {
+        let input = vec![
+            109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99,
+        ];
+        let mut m = Machine::new(&input, &vec![]);
+        let _ = m.run();
+        assert_eq!(m.outputs, input);
+    }
+
+    #[test]
+    fn test_bignum() {
+        let input = vec![1102, 34915192, 34915192, 7, 4, 7, 99, 0];
+        let mut m = Machine::new(&input, &vec![]);
+        let _ = m.run();
+        assert_eq!(m.outputs[0], 1219070632396864);
+    }
+
+    #[test]
+    fn test_bignum2() {
+        let input = vec![104, 1125899906842624, 99];
+        let mut m = Machine::new(&input, &vec![]);
+        let _ = m.run();
+        assert_eq!(m.outputs[0], 1125899906842624);
     }
 }

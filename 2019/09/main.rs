@@ -1,6 +1,5 @@
 use aoc;
 use intcode;
-use std::iter::*;
 
 fn part1(numbers: &Vec<i128>) -> i128 {
     let mut m = intcode::Machine::new(&numbers, &vec![1]);
@@ -14,18 +13,9 @@ fn part2(numbers: &Vec<i128>) -> i128 {
     *m.outputs().last().unwrap()
 }
 
-fn parse(lines: &Vec<String>) -> Vec<i128> {
-    let result: Vec<i128> = lines[0]
-        .split(|c| c == ',')
-        .map(|s| s.trim())
-        .map(|v| v.parse::<i128>().unwrap())
-        .collect();
-    result
-}
-
 fn main() {
     let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
+    let parsed = aoc::parse_intcode(&lines);
     let result = if part == 1 {
         part1(&parsed)
     } else {

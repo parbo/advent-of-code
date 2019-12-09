@@ -1,9 +1,5 @@
-use std::env;
-use std::fs::File;
-use std::io::BufReader;
-use std::io::prelude::*;
+use aoc;
 use std::iter::*;
-use std::path::Path;
 
 fn part1(things: &Vec<i64>) -> i64 {
     things[0]
@@ -16,8 +12,8 @@ fn part2(things: &Vec<i64>) -> i64 {
 fn parse(lines: &Vec<String>) -> Vec<i64> {
     lines
         .iter()
-        .map(|x| x.parse::<i64>().unwrap()).
-        .collect())
+        .map(|x| x.parse::<i64>().unwrap())
+        .collect()
 }
 
 fn main() {

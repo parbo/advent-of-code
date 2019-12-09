@@ -15,7 +15,17 @@ impl Debugger<'_> {
     fn print_instruction(&self, a: usize) -> usize {
         match self.machine.get_disassembly(a) {
             Disassembly::Instruction(x) => {
-                println!("{}", x);
+                print!("{}", x);
+                print!(" ; ");
+                for r in &x.read {
+                    print!("{} ", self.machine.read_arg(r));
+                }
+                if x.write.len() > 0 {
+                    print!("-> ");
+                }
+                for w in &x.write {
+                    print!("{} ", self.machine.read_arg(w));
+                }
                 a + x.increment()
             },
             Disassembly::MemoryValue(x) => {

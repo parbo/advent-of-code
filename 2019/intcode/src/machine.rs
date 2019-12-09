@@ -179,7 +179,7 @@ impl Machine {
         self.ip
     }
 
-    fn read_arg(&self, arg: &Arg) -> i128 {
+    pub fn read_arg(&self, arg: &Arg) -> i128 {
         match arg {
             Arg::Immediate{value} => *value,
             Arg::Position{address} => *self.memory.get(*address).unwrap_or(&0),

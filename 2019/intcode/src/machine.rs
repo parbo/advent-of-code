@@ -49,13 +49,16 @@ impl Op {
 enum Mode {
     Position,
     Immediate,
+    Relative,
 }
 
 fn mode(value: i128, pos: usize) -> Mode {
-    if ((value / (100 * (pos as i128))) % 10) == 0 {
-        Mode::Position
-    } else {
-        Mode::Immediate
+    let m = (value / (100 * (pos as i128))) % 10;
+    match m {
+        0 => Mode::Position,
+        1 => Mode::Immediate,
+//        2 => Mode::Relative,
+        _ => panic!("OH NOES: {}", m),
     }
 }
 
@@ -73,6 +76,7 @@ impl fmt::Display for MemoryValue {
 pub enum Arg {
     Immediate(i128),
     Position(MemoryValue),
+    Relative(MemoryValue),
 }
 
 impl Arg {
@@ -80,6 +84,7 @@ impl Arg {
         match self {
             Arg::Immediate(v) => *v,
             Arg::Position(mv) => mv.value,
+            Arg::Relative(mv) => mv.value,
         }
     }
 }
@@ -88,7 +93,7 @@ pub struct Instruction {
     pub address: usize,
     pub op: Op,
     pub read: Vec<Arg>,
-    pub write: Vec<MemoryValue>,
+    pub write: Vec<Arg>,
 }
 
 impl Instruction {
@@ -109,26 +114,36 @@ impl fmt::Display for Instruction {
             match r {
                 Arg::Immediate(val) => write!(f, "${} ", val)?,
                 Arg::Position(mv) => write!(f, "%{} ", mv.address)?,
+                Arg::Relative(mv) => write!(f, "~{} ", mv.address)?,
             }
         }
         if self.write.len() > 0 {
             write!(f, "-> ")?;
         }
         for w in &self.write {
-            write!(f, "%{} ", w.address)?;
+            match w {
+                Arg::Immediate(val) => write!(f, "${} ", val)?,
+                Arg::Position(mv) => write!(f, "%{} ", mv.address)?,
+                Arg::Relative(mv) => write!(f, "~{} ", mv.address)?,
+            }
         }
         write!(f, "; ")?;
         for r in &self.read {
             match r {
                 Arg::Immediate(val) => write!(f, "{} ", val)?,
                 Arg::Position(mv) => write!(f, "{} ", mv.value)?,
+                Arg::Relative(mv) => write!(f, "{} ", mv.value)?,
             }
         }
         if self.write.len() > 0 {
             write!(f, "-> ")?;
         }
         for w in &self.write {
-            write!(f, "%{} ({}) ", w.address, w.value)?;
+            match w {
+                Arg::Position(mv) => write!(f, "%{} ({}) ", mv.address, mv.value)?,
+                Arg::Relative(mv) => write!(f, "%{} ({}) ", mv.address, mv.value)?,
+                _ => panic!("OH NOES"),
+            }
         }
         Ok(())
     }
@@ -148,6 +163,7 @@ pub struct Machine {
     executes: HashMap<usize, usize>,
     reads: HashMap<usize, usize>,
     writes: HashMap<usize, usize>,
+    relative_base: i128,
 }
 
 impl Machine {
@@ -161,6 +177,7 @@ impl Machine {
             executes: HashMap::new(),
             reads: HashMap::new(),
             writes: HashMap::new(),
+            relative_base: 0,
         }
     }
 
@@ -191,10 +208,16 @@ impl Machine {
         self.memory.get(addr)
     }
 
+    fn read_relative(&self, pos: usize) -> Option<&i128> {
+        let addr = (self.relative_base + *self.memory.get(pos)?) as usize;
+        self.memory.get(addr)
+    }
+
     fn read_mode(&self, pos: usize, mode: Mode) -> Option<&i128> {
         match mode {
             Mode::Immediate => self.read_immediate(pos),
             Mode::Position => self.read_position(pos),
+            Mode::Relative => self.read_relative(pos),
         }
     }
 
@@ -247,18 +270,36 @@ impl Machine {
                 };
                 if let Some(out) = v {
                     assert!(x.op.definition().2 == 1);
-                    self.write(x.write[0].address, out);
+                    match &x.write[0] {
+                        Arg::Position(mv) => self.write(mv.address, out),
+                        Arg::Relative(mv) => self.write(mv.address, out),
+                        _ => panic!("OH NOES"),
+                    }
                 } else {
                     assert!(x.op.definition().2 == 0);
                 }
                 // Update stats
                 for r in &x.read {
-                    if let Arg::Position(mv) = r {
-                        *self.reads.entry(mv.address).or_insert(0) += 1;
+                    match r {
+                        Arg::Position(mv) => {
+                            *self.reads.entry(mv.address).or_insert(0) += 1;
+                        },
+                        Arg::Relative(mv) => {
+                            *self.reads.entry(mv.address).or_insert(0) += 1;
+                        },
+                        _ => {}
                     }
                 }
                 for w in &x.write {
-                    *self.writes.entry(w.address).or_insert(0) += 1;
+                    match w {
+                        Arg::Position(mv) => {
+                            *self.writes.entry(mv.address).or_insert(0) += 1;
+                        },
+                        Arg::Relative(mv) => {
+                            *self.writes.entry(mv.address).or_insert(0) += 1;
+                        },
+                        _ => {}
+                    }
                 }
                 *self.executes.entry(self.ip).or_insert(0) += 1;
                 // Update ip
@@ -284,14 +325,28 @@ impl Machine {
                     Mode::Position => {
                         let mv = MemoryValue{ address: address + 1 + r, value: *v };
                         read.push(Arg::Position(mv));
+                    },
+                    Mode::Relative => {
+                        let mv = MemoryValue{ address: (self.relative_base as usize) + address + 1 + r, value: *v };
+                        read.push(Arg::Relative(mv));
                     }
                 }
             }
             let mut write = vec![];
             for w in 0..def.2 {
-                let addr2 = *self.memory.get(address + 1 + def.1 + w)? as usize;
-                let val = self.memory.get(addr2)?;
-                write.push(MemoryValue{ address: addr2, value: *val });
+                let m = mode(val, 1 + def.1 + w);
+                let v = self.read_mode(address + 1 + def.1 + w, m)?;
+                match &m {
+                    Mode::Position => {
+                        let mv = MemoryValue{ address: address + 1 + def.1 + w, value: *v };
+                        write.push(Arg::Position(mv));
+                    },
+                    Mode::Relative => {
+                        let mv = MemoryValue{ address: address + 1 + def.1 + w, value: *v };
+                        write.push(Arg::Relative(mv));
+                    },
+                    _ => panic!("OH NOES"),
+                }
             }
             Some(Disassembly::Instruction(Instruction{address, op, read, write}))
         } else {

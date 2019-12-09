@@ -12,23 +12,71 @@ impl Debugger<'_> {
         Debugger { machine }
     }
 
-    fn print_instruction(&self, a: usize) -> usize {
+    pub fn analyze(&self) {
+        let mut a = 0;
+        let mut sp = 0;
+        let mut sp_addr = 0;
+        loop {
+            a = match self.machine.get_disassembly(a) {
+                Disassembly::Instruction(x) => {
+                    match x.op {
+                        // Find function
+                        Op::SP => match &x.read[0] {
+                            Arg::Immediate { value } => {
+                                if value.is_positive() {
+                                    sp = *value;
+                                    sp_addr = a;
+                                } else {
+                                    if *value == -1 * sp {
+                                        sp = 0;
+                                    }
+                                }
+                            },
+                            _ => {}
+                        },
+                        Op::JIT => match &x.read[0] {
+                            Arg::Immediate { value: 1 } => {
+                                match &x.read[1] {
+                                    Arg::Relative { base: _, offset: 0 } => {
+                                        println!("found function {} -> {}", sp_addr, a);
+                                    },
+                                    _ => {}
+                                }
+                            },
+                            _ => {}
+                        }
+                        _ => {}
+                    }
+                    a + x.increment()
+                }
+                Disassembly::MemoryValue(_x) => {
+                    println!("variable at {}", a);
+                    a + 1
+                }
+            };
+            if a >= self.machine.memory().len() {
+                break;
+            }
+        }
+    }
+
+    fn print_instruction(&self, a: usize, print_stack: bool) -> usize {
         match self.machine.get_disassembly(a) {
             Disassembly::Instruction(x) => {
-                print!("SP:{:04},IP:", self.machine.sp());
+                print!("SP:{:04}, IP:", self.machine.sp());
                 print!("{}", x);
                 print!(" ; ");
                 for r in &x.read {
-                    print!("{} ", self.machine.read_arg(r));
+                    print!("{}, ", self.machine.read_arg(r));
                 }
                 if x.write.len() > 0 {
                     print!("-> ");
                 }
                 for w in &x.write {
-                    print!("{} ", self.machine.read_arg(w));
+                    print!("{}, ", self.machine.read_arg(w));
                 }
                 println!();
-                if self.machine.sp() > 0 {
+                if self.machine.sp() > 0 && print_stack {
                     self.print_memory(self.machine.sp(), 16);
                 }
                 a + x.increment()
@@ -41,7 +89,7 @@ impl Debugger<'_> {
     }
 
     fn print_memory(&self, address: usize, count: usize) {
-        for (i, a) in (address..(address+count)).enumerate() {
+        for (i, a) in (address..(address + count)).enumerate() {
             let v = *self.machine.memory().get(a).unwrap_or(&0);
             if (i % 8) == 0 {
                 print!("{:>8}: ", a);
@@ -59,8 +107,9 @@ impl Debugger<'_> {
     fn print_instructions(&self, address: usize, count: usize) {
         let mut addr = address;
         for _ in 0..count {
-            addr = self.print_instruction(addr);
+            addr = self.print_instruction(addr, false);
         }
+        self.print_memory(self.machine.sp(), 16);
     }
 
     pub fn debug(&mut self) {
@@ -69,7 +118,7 @@ impl Debugger<'_> {
         if rl.load_history("history.txt").is_err() {
             println!("No previous history.");
         }
-        let _ = self.print_instruction(self.machine.ip());
+        let _ = self.print_instruction(self.machine.ip(), false);
         let mut last = None;
         loop {
             let readline = rl.readline(">> ");
@@ -84,7 +133,7 @@ impl Debugger<'_> {
                         if !self.machine.step() {
                             println!("Program halted");
                         } else {
-                            let _ = self.print_instruction(self.machine.ip());
+                            let _ = self.print_instruction(self.machine.ip(), true);
                         }
                     } else if line == "c" {
                         let _ = self.machine.run();

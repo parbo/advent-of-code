@@ -10,7 +10,7 @@ pub enum Op {
     JIF,
     LTN,
     EQL,
-    REL,
+    SP,
     HLT,
 }
 
@@ -26,7 +26,7 @@ impl Op {
             6 => Some(Op::JIF),
             7 => Some(Op::LTN),
             8 => Some(Op::EQL),
-            9 => Some(Op::REL),
+            9 => Some(Op::SP),
             99 => Some(Op::HLT),
             _ => None,
         }
@@ -42,7 +42,7 @@ impl Op {
             Op::JIF => ("JIF", 2, 0),
             Op::LTN => ("LTN", 2, 1),
             Op::EQL => ("EQL", 2, 1),
-            Op::REL => ("REL", 1, 0),
+            Op::SP => ("SP", 1, 0),
             Op::HLT => ("HLT", 0, 0),
         }
     }
@@ -82,9 +82,9 @@ impl fmt::Display for MemoryValue {
 }
 
 pub enum Arg {
-    Immediate{value: i128},
-    Position{address: usize},
-    Relative{base: i128, offset: i128},
+    Immediate { value: i128 },
+    Position { address: usize },
+    Relative { base: i128, offset: i128 },
 }
 
 pub struct Instruction {
@@ -110,9 +110,14 @@ impl fmt::Display for Instruction {
         write!(f, "{:>04} {} ", self.address, self.name())?;
         for r in &self.read {
             match r {
-                Arg::Immediate{value} => write!(f, "${} ", value)?,
-                Arg::Position{address} => write!(f, "%{} ", address)?,
-                Arg::Relative{base, offset} => write!(f, "%({}+{}) ", base, offset)?,
+                Arg::Immediate { value } => write!(f, "{}, ", value)?,
+                Arg::Position { address } => write!(f, "[{}], ", address)?,
+                Arg::Relative { base: _, offset } => write!(
+                    f,
+                    "[SP{}{}], ",
+                    if offset.is_positive() { "+" } else { "" },
+                    offset
+                )?,
             }
         }
         if self.write.len() > 0 {
@@ -120,9 +125,14 @@ impl fmt::Display for Instruction {
         }
         for w in &self.write {
             match w {
-                Arg::Immediate{value} => write!(f, "${} ", value)?,
-                Arg::Position{address} => write!(f, "%{} ", address)?,
-                Arg::Relative{base, offset} => write!(f, "%({}+{}) ", base, offset)?,
+                Arg::Immediate { value } => write!(f, "{}, ", value)?,
+                Arg::Position { address } => write!(f, "[{}], ", address)?,
+                Arg::Relative { base: _, offset } => write!(
+                    f,
+                    "[SP{}{}], ",
+                    if offset.is_positive() { "+" } else { "" },
+                    offset
+                )?,
             }
         }
         Ok(())
@@ -185,16 +195,18 @@ impl Machine {
 
     pub fn read_arg(&self, arg: &Arg) -> i128 {
         match arg {
-            Arg::Immediate{value} => *value,
-            Arg::Position{address} => *self.memory.get(*address).unwrap_or(&0),
-            Arg::Relative{base, offset} => *self.memory.get((base + offset) as usize).unwrap_or(&0),
+            Arg::Immediate { value } => *value,
+            Arg::Position { address } => *self.memory.get(*address).unwrap_or(&0),
+            Arg::Relative { base, offset } => {
+                *self.memory.get((base + offset) as usize).unwrap_or(&0)
+            }
         }
     }
 
     fn write_arg(&mut self, arg: &Arg, value: i128) {
         let address = match arg {
-            Arg::Position{address} => *address,
-            Arg::Relative{base, offset} => (base + offset) as usize,
+            Arg::Position { address } => *address,
+            Arg::Relative { base, offset } => (base + offset) as usize,
             _ => panic!("can't write immediate"),
         };
         if address >= self.memory.len() {
@@ -250,7 +262,7 @@ impl Machine {
                     } else {
                         0
                     }),
-                    Op::REL => {
+                    Op::SP => {
                         self.relative_base = self.relative_base + self.read_arg(&x.read[0]);
                         None
                     }
@@ -265,10 +277,10 @@ impl Machine {
                 // Update stats
                 for r in &x.read {
                     match r {
-                        Arg::Position{address} => {
+                        Arg::Position { address } => {
                             *self.reads.entry(*address).or_insert(0) += 1;
                         }
-                        Arg::Relative{base, offset} => {
+                        Arg::Relative { base, offset } => {
                             *self.reads.entry((base + offset) as usize).or_insert(0) += 1;
                         }
                         _ => {}
@@ -276,10 +288,10 @@ impl Machine {
                 }
                 for w in &x.write {
                     match w {
-                        Arg::Position{address} => {
+                        Arg::Position { address } => {
                             *self.writes.entry(*address).or_insert(0) += 1;
                         }
-                        Arg::Relative{base, offset} => {
+                        Arg::Relative { base, offset } => {
                             *self.writes.entry((base + offset) as usize).or_insert(0) += 1;
                         }
                         _ => {}
@@ -306,13 +318,18 @@ impl Machine {
                 let v = self.memory.get(address + 1 + r).unwrap_or(&0);
                 match &m {
                     Mode::Immediate => {
-                        read.push(Arg::Immediate{value: *v});
+                        read.push(Arg::Immediate { value: *v });
                     }
                     Mode::Position => {
-                        read.push(Arg::Position{address: *v as usize});
+                        read.push(Arg::Position {
+                            address: *v as usize,
+                        });
                     }
                     Mode::Relative => {
-                        read.push(Arg::Relative{base: self.relative_base, offset: *v});
+                        read.push(Arg::Relative {
+                            base: self.relative_base,
+                            offset: *v,
+                        });
                     }
                 }
             }
@@ -322,10 +339,15 @@ impl Machine {
                 let v = self.memory.get(address + 1 + def.1 + w).unwrap_or(&0);
                 match &m {
                     Mode::Position => {
-                        write.push(Arg::Position{address: *v as usize});
+                        write.push(Arg::Position {
+                            address: *v as usize,
+                        });
                     }
                     Mode::Relative => {
-                        write.push(Arg::Relative{base: self.relative_base, offset: *v});
+                        write.push(Arg::Relative {
+                            base: self.relative_base,
+                            offset: *v,
+                        });
                     }
                     _ => panic!("OH NOES"),
                 }

@@ -44,5 +44,6 @@ fn main() {
     };
     let mut m = intcode::Machine::new(&program, &input);
     let mut debugger = intcode::Debugger::new(&mut m);
+    debugger.analyze();
     debugger.debug();
 }

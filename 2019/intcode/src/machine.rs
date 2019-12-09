@@ -45,7 +45,7 @@ impl Op {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 enum Mode {
     Position,
     Immediate,
@@ -53,11 +53,15 @@ enum Mode {
 }
 
 fn mode(value: i128, pos: usize) -> Mode {
-    let m = (value / (100 * (pos as i128))) % 10;
+    let mut v = value / 100;
+    for _ in 1..pos {
+	v = v / 10;
+    }
+    let m = v % 10;
     match m {
         0 => Mode::Position,
         1 => Mode::Immediate,
-        //        2 => Mode::Relative,
+        2 => Mode::Relative,
         _ => panic!("OH NOES: {}", m),
     }
 }

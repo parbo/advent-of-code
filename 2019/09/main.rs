@@ -16,8 +16,8 @@ fn part2(things: &Vec<i64>) -> i64 {
 fn parse(lines: &Vec<String>) -> Vec<i64> {
     lines
         .iter()
-        .map(|x| x.parse::<i64>().unwrap()).
-        .collect())
+        .map(|x| x.parse::<i64>().unwrap())
+        .collect()
 }
 
 fn main() {

@@ -336,13 +336,16 @@ impl Machine {
             for w in 0..def.2 {
                 let m = mode(val, 1 + def.1 + w);
                 let v = self.read_mode(address + 1 + def.1 + w, m)?;
+                
                 match &m {
                     Mode::Position => {
-                        let mv = MemoryValue{ address: address + 1 + def.1 + w, value: *v };
+                        let addr2 = *self.memory.get(address + 1 + def.1 + w)? as usize;
+                        let mv = MemoryValue{ address: addr2, value: *v };
                         write.push(Arg::Position(mv));
                     },
                     Mode::Relative => {
-                        let mv = MemoryValue{ address: address + 1 + def.1 + w, value: *v };
+                        let addr2 = (self.relative_base + *self.memory.get(address + 1 + def.1 + w)?) as usize;
+                        let mv = MemoryValue{ address: addr2, value: *v };
                         write.push(Arg::Relative(mv));
                     },
                     _ => panic!("OH NOES"),

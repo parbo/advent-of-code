@@ -14,7 +14,7 @@ pub enum Op {
 }
 
 impl Op {
-    fn from_i64(value: i64) -> Option<Op> {
+    fn from_i128(value: i128) -> Option<Op> {
         let v = value % 100;
         match v {
             1 => Some(Op::ADD),
@@ -51,8 +51,8 @@ enum Mode {
     Immediate,
 }
 
-fn mode(value: i64, pos: usize) -> Mode {
-    if ((value / (100 * (pos as i64))) % 10) == 0 {
+fn mode(value: i128, pos: usize) -> Mode {
+    if ((value / (100 * (pos as i128))) % 10) == 0 {
         Mode::Position
     } else {
         Mode::Immediate
@@ -61,7 +61,7 @@ fn mode(value: i64, pos: usize) -> Mode {
 
 pub struct MemoryValue {
     address: usize,
-    value: i64,
+    value: i128,
 }
 
 impl fmt::Display for MemoryValue {
@@ -71,12 +71,12 @@ impl fmt::Display for MemoryValue {
 }
 
 pub enum Arg {
-    Immediate(i64),
+    Immediate(i128),
     Position(MemoryValue),
 }
 
 impl Arg {
-    pub fn value(&self) -> i64 {
+    pub fn value(&self) -> i128 {
         match self {
             Arg::Immediate(v) => *v,
             Arg::Position(mv) => mv.value,
@@ -140,18 +140,18 @@ pub enum Disassembly {
 }
 
 pub struct Machine {
-    memory: Vec<i64>,
+    memory: Vec<i128>,
     ip: usize,
-    inputs: Vec<i64>,
+    inputs: Vec<i128>,
     curr_input: usize,
-    outputs: Vec<i64>,
+    outputs: Vec<i128>,
     executes: HashMap<usize, usize>,
     reads: HashMap<usize, usize>,
     writes: HashMap<usize, usize>,
 }
 
 impl Machine {
-    pub fn new(memory: &Vec<i64>, inputs: &Vec<i64>) -> Machine {
+    pub fn new(memory: &Vec<i128>, inputs: &Vec<i128>) -> Machine {
         Machine {
             memory: memory.clone(),
             ip: 0,
@@ -164,17 +164,17 @@ impl Machine {
         }
     }
 
-    pub fn outputs(&mut self) -> Vec<i64> {
+    pub fn outputs(&mut self) -> Vec<i128> {
         let o = self.outputs.clone();
         self.outputs.clear();
         o
     }
 
-    pub fn memory(&self) -> &[i64] {
+    pub fn memory(&self) -> &[i128] {
         self.memory.as_slice()
     }
 
-    pub fn memory_mut(&mut self) -> &mut [i64] {
+    pub fn memory_mut(&mut self) -> &mut [i128] {
         self.memory.as_mut_slice()
     }
 
@@ -182,35 +182,35 @@ impl Machine {
         self.ip
     }
 
-    fn read_immediate(&self, pos: usize) -> Option<&i64> {
+    fn read_immediate(&self, pos: usize) -> Option<&i128> {
         self.memory.get(pos)
     }
 
-    fn read_position(&self, pos: usize) -> Option<&i64> {
+    fn read_position(&self, pos: usize) -> Option<&i128> {
         let addr = *self.memory.get(pos)? as usize;
         self.memory.get(addr)
     }
 
-    fn read_mode(&self, pos: usize, mode: Mode) -> Option<&i64> {
+    fn read_mode(&self, pos: usize, mode: Mode) -> Option<&i128> {
         match mode {
             Mode::Immediate => self.read_immediate(pos),
             Mode::Position => self.read_position(pos),
         }
     }
 
-    fn write(&mut self, address: usize, value: i64) {
+    fn write(&mut self, address: usize, value: i128) {
         // TODO: error handling
         *self.writes.entry(address).or_insert(0) += 1;
         self.memory[address] = value;
     }
 
-    fn input(&mut self) -> i64 {
+    fn input(&mut self) -> i128 {
         let res = self.inputs[self.curr_input];
         self.curr_input += 1;
         res
     }
 
-    pub fn add_inputs(&mut self, inputs: &Vec<i64>) {
+    pub fn add_inputs(&mut self, inputs: &Vec<i128>) {
         self.inputs.extend(inputs);
     }
 
@@ -271,7 +271,7 @@ impl Machine {
 
     pub fn get_disassembly(&self, address: usize) -> Option<Disassembly> {
         let val = *self.memory.get(address)?;
-        if let Some(op) = Op::from_i64(val) {
+        if let Some(op) = Op::from_i128(val) {
             let def = op.definition();
             let mut read = vec![];
             for r in 0..def.1 {
@@ -299,7 +299,7 @@ impl Machine {
         }
     }
 
-    pub fn run_to_next_output(&mut self) -> Option<i64> {
+    pub fn run_to_next_output(&mut self) -> Option<i128> {
         let res = loop {
             let cont = self.step();
             if let Some(v) = self.outputs.last() {
@@ -313,7 +313,7 @@ impl Machine {
         res
     }
 
-    pub fn run(&mut self) -> Option<i64> {
+    pub fn run(&mut self) -> Option<i128> {
         loop {
             if !self.step() {
                 break;

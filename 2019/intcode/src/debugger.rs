@@ -75,7 +75,7 @@ impl Debugger<'_> {
                     } else if line.starts_with("w ") {
                         let parts: Vec<_> = line.split(' ').map(|x| x.trim()).collect();
                         let addr = parts[1].parse::<usize>().unwrap();
-                        let val = parts[2].parse::<i64>().unwrap();
+                        let val = parts[2].parse::<i128>().unwrap();
                         if let Some(x) = self.machine.memory_mut().get_mut(addr) {
                             *x = val;
                         } else {

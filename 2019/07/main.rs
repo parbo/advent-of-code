@@ -2,7 +2,7 @@ use aoc;
 use intcode;
 use std::iter::*;
 
-fn part1(numbers: &Vec<i64>) -> i64 {
+fn part1(numbers: &Vec<i128>) -> i128 {
     let phases = vec![0, 1, 2, 3, 4];
     let mut max_power = 0;
     for permutation in permute::lexicographically(&phases) {
@@ -16,7 +16,7 @@ fn part1(numbers: &Vec<i64>) -> i64 {
     max_power
 }
 
-fn part2(numbers: &Vec<i64>) -> i64 {
+fn part2(numbers: &Vec<i128>) -> i128 {
     let phases = vec![5, 6, 7, 8, 9];
     let mut max_power = 0;
     for permutation in permute::lexicographically(&phases) {
@@ -44,11 +44,11 @@ fn part2(numbers: &Vec<i64>) -> i64 {
     max_power
 }
 
-fn parse(lines: &Vec<String>) -> Vec<i64> {
-    let result: Vec<i64> = lines[0]
+fn parse(lines: &Vec<String>) -> Vec<i128> {
+    let result: Vec<i128> = lines[0]
         .split(|c| c == ',')
         .map(|s| s.trim())
-        .map(|v| v.parse::<i64>().unwrap())
+        .map(|v| v.parse::<i128>().unwrap())
         .collect();
     result
 }

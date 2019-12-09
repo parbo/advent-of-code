@@ -6,24 +6,24 @@ use std::path::Path;
 
 extern crate intcode;
 
-fn part1(numbers: &Vec<i64>) -> i64 {
+fn part1(numbers: &Vec<i128>) -> i128 {
     let mut m = intcode::Machine::new(&numbers, &vec![1]);
     m.run().unwrap();
     *m.outputs().last().unwrap()
 }
 
-fn part2(numbers: &Vec<i64>) -> i64 {
+fn part2(numbers: &Vec<i128>) -> i128 {
     let mut m = intcode::Machine::new(&numbers, &vec![5]);
     m.run().unwrap();
     *m.outputs().last().unwrap()
 }
 
-fn input(path: &Path) -> Vec<i64> {
+fn input(path: &Path) -> Vec<i128> {
     let mut inp = File::open(path).unwrap();
     let mut buffer = String::new();
     inp.read_to_string(&mut buffer).unwrap();
 
-    let result : Vec<i64> = buffer.split(|c| c == ',').map(|s| s.trim()).map(|v| v.parse::<i64>().unwrap()).collect();
+    let result : Vec<i128> = buffer.split(|c| c == ',').map(|s| s.trim()).map(|v| v.parse::<i128>().unwrap()).collect();
     result
 }
 

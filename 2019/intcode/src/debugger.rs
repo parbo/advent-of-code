@@ -4,7 +4,7 @@ use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
 pub struct Debugger<'a> {
-    machine: &'a mut Machine
+    machine: &'a mut Machine,
 }
 
 impl Debugger<'_> {
@@ -15,6 +15,7 @@ impl Debugger<'_> {
     fn print_instruction(&self, a: usize) -> usize {
         match self.machine.get_disassembly(a) {
             Disassembly::Instruction(x) => {
+                print!("SP:{:04},IP:", self.machine.sp());
                 print!("{}", x);
                 print!(" ; ");
                 for r in &x.read {
@@ -26,22 +27,33 @@ impl Debugger<'_> {
                 for w in &x.write {
                     print!("{} ", self.machine.read_arg(w));
                 }
+                println!();
+                if self.machine.sp() > 0 {
+                    self.print_memory(self.machine.sp(), 16);
+                }
                 a + x.increment()
-            },
+            }
             Disassembly::MemoryValue(x) => {
                 println!("{}", x);
                 a + 1
-            },
+            }
         }
     }
 
     fn print_memory(&self, address: usize, count: usize) {
-        self.machine.memory()
-            .iter()
-            .enumerate()
-            .skip(address)
-            .take(count)
-            .for_each(|(a, &v)| println!("{:>04}, {}", a, v));
+        for (i, a) in (address..(address+count)).enumerate() {
+            let v = *self.machine.memory().get(a).unwrap_or(&0);
+            if (i % 8) == 0 {
+                print!("{:>8}: ", a);
+            }
+            print!("{:>8},", v);
+            if (i % 8) == 7 {
+                println!();
+            }
+        }
+        if (count % 8) != 0 {
+            println!();
+        }
     }
 
     fn print_instructions(&self, address: usize, count: usize) {
@@ -58,11 +70,16 @@ impl Debugger<'_> {
             println!("No previous history.");
         }
         let _ = self.print_instruction(self.machine.ip());
+        let mut last = None;
         loop {
             let readline = rl.readline(">> ");
             match readline {
-                Ok(line) => {
-                    rl.add_history_entry(line.as_str());
+                Ok(l) => {
+                    rl.add_history_entry(l.as_str());
+                    let mut line = l;
+                    if line == "" && last.is_some() {
+                        line = last.unwrap();
+                    }
                     if line == "s" {
                         if !self.machine.step() {
                             println!("Program halted");
@@ -100,6 +117,7 @@ impl Debugger<'_> {
                     } else {
                         println!("Invalid command: {}", line);
                     }
+                    last = Some(line);
                 }
                 Err(ReadlineError::Interrupted) => {
                     println!("CTRL-C");

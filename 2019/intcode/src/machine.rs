@@ -179,6 +179,10 @@ impl Machine {
         self.ip
     }
 
+    pub fn sp(&self) -> usize {
+        self.relative_base as usize
+    }
+
     pub fn read_arg(&self, arg: &Arg) -> i128 {
         match arg {
             Arg::Immediate{value} => *value,

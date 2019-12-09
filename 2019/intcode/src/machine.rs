@@ -57,7 +57,7 @@ fn mode(value: i128, pos: usize) -> Mode {
     match m {
         0 => Mode::Position,
         1 => Mode::Immediate,
-//        2 => Mode::Relative,
+        //        2 => Mode::Relative,
         _ => panic!("OH NOES: {}", m),
     }
 }
@@ -264,8 +264,16 @@ impl Machine {
                         }
                         None
                     }
-                    Op::LTN => Some(if x.read[0].value() < x.read[1].value() { 1 } else { 0 }),
-                    Op::EQL => Some(if x.read[0].value() == x.read[1].value() { 1 } else { 0 }),
+                    Op::LTN => Some(if x.read[0].value() < x.read[1].value() {
+                        1
+                    } else {
+                        0
+                    }),
+                    Op::EQL => Some(if x.read[0].value() == x.read[1].value() {
+                        1
+                    } else {
+                        0
+                    }),
                     Op::HLT => return false,
                 };
                 if let Some(out) = v {
@@ -283,10 +291,10 @@ impl Machine {
                     match r {
                         Arg::Position(mv) => {
                             *self.reads.entry(mv.address).or_insert(0) += 1;
-                        },
+                        }
                         Arg::Relative(mv) => {
                             *self.reads.entry(mv.address).or_insert(0) += 1;
-                        },
+                        }
                         _ => {}
                     }
                 }
@@ -294,10 +302,10 @@ impl Machine {
                     match w {
                         Arg::Position(mv) => {
                             *self.writes.entry(mv.address).or_insert(0) += 1;
-                        },
+                        }
                         Arg::Relative(mv) => {
                             *self.writes.entry(mv.address).or_insert(0) += 1;
-                        },
+                        }
                         _ => {}
                     }
                 }
@@ -305,7 +313,7 @@ impl Machine {
                 // Update ip
                 self.ip = next_pos;
                 true
-            },
+            }
             _ => false,
         }
     }
@@ -321,13 +329,19 @@ impl Machine {
                 match &m {
                     Mode::Immediate => {
                         read.push(Arg::Immediate(*v));
-                    },
+                    }
                     Mode::Position => {
-                        let mv = MemoryValue{ address: address + 1 + r, value: *v };
+                        let mv = MemoryValue {
+                            address: address + 1 + r,
+                            value: *v,
+                        };
                         read.push(Arg::Position(mv));
-                    },
+                    }
                     Mode::Relative => {
-                        let mv = MemoryValue{ address: (self.relative_base as usize) + address + 1 + r, value: *v };
+                        let mv = MemoryValue {
+                            address: (self.relative_base as usize) + address + 1 + r,
+                            value: *v,
+                        };
                         read.push(Arg::Relative(mv));
                     }
                 }
@@ -336,24 +350,40 @@ impl Machine {
             for w in 0..def.2 {
                 let m = mode(val, 1 + def.1 + w);
                 let v = self.read_mode(address + 1 + def.1 + w, m)?;
-                
                 match &m {
                     Mode::Position => {
                         let addr2 = *self.memory.get(address + 1 + def.1 + w)? as usize;
-                        let mv = MemoryValue{ address: addr2, value: *v };
+                        let mv = MemoryValue {
+                            address: addr2,
+                            value: *v,
+                        };
                         write.push(Arg::Position(mv));
-                    },
+                    }
                     Mode::Relative => {
-                        let addr2 = (self.relative_base + *self.memory.get(address + 1 + def.1 + w)?) as usize;
-                        let mv = MemoryValue{ address: addr2, value: *v };
+                        let addr2 = *self
+                            .memory
+                            .get((self.relative_base as usize) + address + 1 + def.1 + w)?
+                            as usize;
+                        let mv = MemoryValue {
+                            address: addr2,
+                            value: *v,
+                        };
                         write.push(Arg::Relative(mv));
-                    },
+                    }
                     _ => panic!("OH NOES"),
                 }
             }
-            Some(Disassembly::Instruction(Instruction{address, op, read, write}))
+            Some(Disassembly::Instruction(Instruction {
+                address,
+                op,
+                read,
+                write,
+            }))
         } else {
-            Some(Disassembly::MemoryValue(MemoryValue{address: address, value: val}))
+            Some(Disassembly::MemoryValue(MemoryValue {
+                address: address,
+                value: val,
+            }))
         }
     }
 

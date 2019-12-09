@@ -11,6 +11,9 @@ version = "0.13.0"
 default-features = false
 features = ["crossterm-backend"]
 
+[dev-dependencies]
+aoc = {path = "../aoc"}
+
 [[example]]
 name = "debug"
 path = "examples/debug.rs"

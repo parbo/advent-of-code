@@ -80,7 +80,7 @@ fn compare(dx: i64, dy: i64) -> f64 {
         1 => ratio(dx, -dy),
         2 => ratio(dy, dx),
         3 => ratio(-dx, dy),
-        _ => ratio(-dx, -dy),
+        _ => ratio(-dy, -dx),
     }
 }
 
@@ -88,11 +88,6 @@ fn seen(things: &Vec<Vec<char>>, x: i64, y: i64) -> HashSet<(i64, i64)> {
     let h = things.len() as i64;
     let w = things[0].len() as i64;
     let mut seen = HashSet::new();
-    for y in 0..h {
-        for x in 0..w {
-            if things[y as usize][x as usize] != '#' {
-                continue;
-            }
             let mut t = things.clone();
             t[y as usize][x as usize] = 'o';
             for dy in -h..=h {
@@ -123,8 +118,6 @@ fn seen(things: &Vec<Vec<char>>, x: i64, y: i64) -> HashSet<(i64, i64)> {
                         seen.insert((xx, yy));
                     }
                 }
-            }
-        }
     }
     seen
 }
@@ -150,15 +143,14 @@ fn targets(things: &Vec<Vec<char>>, x: i64, y: i64) -> Vec<(i64, i64)> {
 
 fn candidates(t: &Vec<Vec<char>>, x: i64, y: i64) -> Vec<(i64, i64)> {
     let mut seen_set = seen(&t, x, y);
-    let mut asteroids : Vec<_> = seen_set.into_iter().map(|(dx, dy)| (y + dy, x + dy)).collect();
-    println!("{:?}", asteroids);
+    let mut asteroids : Vec<_> = seen_set.into_iter().map(|(xx, yy)| (xx - x, yy - y)).collect();
     // Sort clockwise
     asteroids.sort_by(|a, b| {
         quadrant(a.0, a.1)
             .cmp(&quadrant(b.0, b.1))
             .then(compare(a.0, a.1).partial_cmp(&compare(b.0, b.1)).unwrap())
     });
-    println!("{:?}", asteroids);
+   println!("{:?}", asteroids);
     asteroids
 }
 
@@ -169,14 +161,15 @@ fn solve_part2(things: &Vec<Vec<char>>, x: i64, y: i64) -> i64 {
     t[y as usize][x as usize] = 'o';
     let mut cand = candidates(&t, x, y);
     let mut c = 1;
-    for _ in 0..100 {
+    loop {
+//        println!("round {}", i);
         for (dx, dy) in &cand {
             let yy = y + dy;
             let xx = x + dx;
             if t[yy as usize][xx as usize] == '#' {
-                println!("vaporizing {}: {}, {}", c, xx, yy);
-		return -1;
+                println!("vaporizing {}: {}, {} | {}", c, xx, yy, quadrant(*dx, *dy));
                 t[yy as usize][xx as usize] = c.to_string().chars().next().unwrap(); //'*';
+                //xif c == 2 { return -1;}
                 if c == 200 {
                     // for tt in &t {
                     //     println!("{:?}", tt);
@@ -184,15 +177,14 @@ fn solve_part2(things: &Vec<Vec<char>>, x: i64, y: i64) -> i64 {
                     println!("{}, {}", xx, yy);
                     return 100 * xx + yy;
                 }
-		cand = candidates(&t, x, y);
                 c = c + 1;
-		break;
             } else {
 		panic!();
 	    }
         }
+        cand = candidates(&t, x, y);
+
     }
-    -1
 }
 
 fn part2(things: &Vec<Vec<char>>) -> i64 {

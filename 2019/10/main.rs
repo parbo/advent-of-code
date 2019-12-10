@@ -88,7 +88,7 @@ fn compare(dx: i64, dy: i64) -> f64 {
     }
 }
 
-fn candidates(t: &Vec<Vec<char>>, x: i64, y: i64) -> Vec<(i64, i64)> {
+fn zappable(t: &Vec<Vec<char>>, x: i64, y: i64) -> Vec<(i64, i64)> {
     // Deltas to seen asteroids
     let mut deltas: Vec<_> = seen(&t, x, y)
         .into_iter()
@@ -105,10 +105,10 @@ fn candidates(t: &Vec<Vec<char>>, x: i64, y: i64) -> Vec<(i64, i64)> {
 
 fn solve_part2(things: &Vec<Vec<char>>, x: i64, y: i64) -> i64 {
     let mut t = things.clone();
-    let mut cand = candidates(&t, x, y);
+    let mut zap = zappable(&t, x, y);
     let mut c = 1;
     loop {
-        for (dx, dy) in &cand {
+        for (dx, dy) in &zap {
             let yy = y + dy;
             let xx = x + dx;
             t[yy as usize][xx as usize] = '*';
@@ -117,7 +117,7 @@ fn solve_part2(things: &Vec<Vec<char>>, x: i64, y: i64) -> i64 {
             }
             c = c + 1;
         }
-        cand = candidates(&t, x, y);
+        zap = zappable(&t, x, y);
     }
 }
 

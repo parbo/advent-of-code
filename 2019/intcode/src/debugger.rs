@@ -1,15 +1,23 @@
 use crate::machine::*;
+use std::collections::HashSet;
+use std::collections::HashMap;
 
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
 pub struct Debugger<'a> {
     machine: &'a mut Machine,
+    breakpoints: HashSet<usize>,
+    watches: HashMap<String, usize>,
 }
 
 impl Debugger<'_> {
     pub fn new<'a>(machine: &'a mut Machine) -> Debugger<'a> {
-        Debugger { machine }
+        Debugger {
+            machine,
+            breakpoints: HashSet::new(),
+            watches: HashMap::new(),
+        }
     }
 
     pub fn analyze(&self) {
@@ -31,20 +39,18 @@ impl Debugger<'_> {
                                         sp = 0;
                                     }
                                 }
-                            },
+                            }
                             _ => {}
                         },
                         Op::JIT => match &x.read[0] {
-                            Arg::Immediate { value: 1 } => {
-                                match &x.read[1] {
-                                    Arg::Relative { base: _, offset: 0 } => {
-                                        println!("found function {} -> {}", sp_addr, a);
-                                    },
-                                    _ => {}
+                            Arg::Immediate { value: 1 } => match &x.read[1] {
+                                Arg::Relative { base: _, offset: 0 } => {
+                                    println!("found function {} -> {}", sp_addr, a);
                                 }
+                                _ => {}
                             },
                             _ => {}
-                        }
+                        },
                         _ => {}
                     }
                     a + x.increment()
@@ -63,7 +69,15 @@ impl Debugger<'_> {
     fn print_instruction(&self, a: usize, print_stack: bool) -> usize {
         match self.machine.get_disassembly(a) {
             Disassembly::Instruction(x) => {
-                print!("SP:{:04}, IP:", self.machine.sp());
+                print!(
+                    "{} SP:{:04}, IP:",
+                    if self.breakpoints.contains(&a) {
+                        "*"
+                    } else {
+                        " "
+                    },
+                    self.machine.sp()
+                );
                 print!("{}", x);
                 print!(" ; ");
                 for r in &x.read {
@@ -76,8 +90,11 @@ impl Debugger<'_> {
                     print!("{}, ", self.machine.read_arg(w));
                 }
                 println!();
-                if self.machine.sp() > 0 && print_stack {
-                    self.print_memory(self.machine.sp(), 16);
+                if print_stack {
+                    if self.machine.sp() > 0 {
+                        self.print_memory(self.machine.sp(), 16);
+                    }
+                    self.list_watches();
                 }
                 a + x.increment()
             }
@@ -112,6 +129,53 @@ impl Debugger<'_> {
         self.print_memory(self.machine.sp(), 16);
     }
 
+    fn set_breakpoint(&mut self, address: usize) {
+        if self.breakpoints.insert(address) {
+            println!("Breakpoint set on address {}", address);
+        } else {
+            println!("Breakpoint already set on address {}", address);
+        }
+    }
+
+    fn list_breakpoints(&self) {
+        let mut bp: Vec<_> = self.breakpoints.iter().collect();
+        bp.sort();
+        for addr in bp {
+            println!("b {}", addr);
+        }
+    }
+
+    fn clear_breakpoint(&mut self, address: usize) {
+        if self.breakpoints.remove(&address) {
+            println!("Breakpoint removed on address {}", address);
+        } else {
+            println!("No breakpoint on address {}", address);
+        }
+    }
+
+    fn set_watch(&mut self, name: &str, address: usize) {
+        if let Some(v) = self.watches.insert(name.into(), address) {
+            println!("Set address {} for watch {} (previous address: {})", address, name, v);
+        } else {
+            println!("Added watch {} on address {}", name, address);
+        }
+    }
+
+    fn list_watches(&self) {
+        for (name, a) in &self.watches {
+            let v = *self.machine.memory().get(*a).unwrap_or(&0);
+            println!("w: {:8} - {:>04}: {}", name, a, v);
+        }
+    }
+
+    fn clear_watch(&mut self, name: &str) {
+        if let Some(v) = self.watches.remove(&name.to_string()) {
+            println!("Watch {} - {} removed", name, v);
+        } else {
+            println!("No watch with name {}", name);
+        }
+    }
+
     pub fn debug(&mut self) {
         // `()` can be used when no completer is required
         let mut rl = Editor::<()>::new();
@@ -135,23 +199,58 @@ impl Debugger<'_> {
                         } else {
                             let _ = self.print_instruction(self.machine.ip(), true);
                         }
+                    } else if line.starts_with("b") {
+                        if line == "bl" {
+                            self.list_breakpoints();
+                        } else if line.starts_with("bc") {
+                            if let Ok(addr) = line[2..].trim().parse::<usize>() {
+                                self.clear_breakpoint(addr);
+                            } else {
+                                self.clear_breakpoint(self.machine.ip());
+                            }
+                        } else {
+                            if let Ok(addr) = line[1..].trim().parse::<usize>() {
+                                self.set_breakpoint(addr);
+                            } else {
+                                self.set_breakpoint(self.machine.ip());
+                            }
+                        }
+                    } else if line.starts_with("w") {
+                        if line.starts_with("wr ") {
+                            let parts: Vec<_> = line.split(' ').map(|x| x.trim()).collect();
+                            let addr = parts[1].parse::<usize>().unwrap();
+                            let val = parts[2].parse::<i128>().unwrap();
+                            if let Some(x) = self.machine.memory_mut().get_mut(addr) {
+                                *x = val;
+                            } else {
+                                println!("Invalid address!");
+                            }
+                        } else if line == "wl" {
+                            self.list_watches();
+                        } else if line.starts_with("wc") {
+                            self.clear_watch(&line[2..]);
+                        } else {
+                            let parts: Vec<_> = line.split(' ').map(|x| x.trim()).collect();
+                            let name = parts[1];
+                            let addr = parts[2].parse::<usize>().unwrap();
+                            self.set_watch(name, addr);
+                        }
                     } else if line == "c" {
-                        let _ = self.machine.run();
-                        println!("Program halted");
+                        loop {
+                            if !self.machine.step() {
+                                println!("Program halted");
+                            }
+                            if self.breakpoints.contains(&self.machine.ip()) {
+                                println!("Breakpoint reached");
+                                break;
+                            }
+                        }
+                        let _ = self.print_instruction(self.machine.ip(), true);
                     } else if line.starts_with("p") {
                         if let Ok(addr) = line[1..].trim().parse::<usize>() {
                             self.print_memory(addr, 8);
                         } else {
                             self.print_memory(self.machine.ip(), 8);
-                        }
-                    } else if line.starts_with("w ") {
-                        let parts: Vec<_> = line.split(' ').map(|x| x.trim()).collect();
-                        let addr = parts[1].parse::<usize>().unwrap();
-                        let val = parts[2].parse::<i128>().unwrap();
-                        if let Some(x) = self.machine.memory_mut().get_mut(addr) {
-                            *x = val;
-                        } else {
-                            println!("Invalid address!");
                         }
                     } else if line == "m" {
                         self.print_memory(self.machine.ip(), 8);

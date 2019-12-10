@@ -78,7 +78,7 @@ fn quadrant(dx: i64, dy: i64) -> i64 {
     }
 }
 
-fn compare(dx: i64, dy: i64) -> f64 {
+fn pseudo_angle(dx: i64, dy: i64) -> f64 {
     let q = quadrant(dx, dy);
     match q {
         1 => ratio(dx, -dy),
@@ -98,7 +98,7 @@ fn zappable(t: &Vec<Vec<char>>, x: i64, y: i64) -> Vec<(i64, i64)> {
     deltas.sort_by(|a, b| {
         quadrant(a.0, a.1)
             .cmp(&quadrant(b.0, b.1))
-            .then(compare(a.0, a.1).partial_cmp(&compare(b.0, b.1)).unwrap())
+            .then(pseudo_angle(a.0, a.1).partial_cmp(&pseudo_angle(b.0, b.1)).unwrap())
     });
     deltas
 }

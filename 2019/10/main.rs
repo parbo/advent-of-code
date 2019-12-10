@@ -96,9 +96,11 @@ fn zappable(t: &Vec<Vec<char>>, x: i64, y: i64) -> Vec<(i64, i64)> {
         .collect();
     // Sort in clockwise order
     deltas.sort_by(|a, b| {
-        quadrant(a.0, a.1)
-            .cmp(&quadrant(b.0, b.1))
-            .then(pseudo_angle(a.0, a.1).partial_cmp(&pseudo_angle(b.0, b.1)).unwrap())
+        quadrant(a.0, a.1).cmp(&quadrant(b.0, b.1)).then(
+            pseudo_angle(a.0, a.1)
+                .partial_cmp(&pseudo_angle(b.0, b.1))
+                .unwrap(),
+        )
     });
     deltas
 }

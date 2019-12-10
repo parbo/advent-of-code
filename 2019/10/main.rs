@@ -1,5 +1,6 @@
 use aoc;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::iter::*;
 
 fn part1(things: &Vec<Vec<char>>) -> i64 {
@@ -53,11 +54,159 @@ fn part1(things: &Vec<Vec<char>>) -> i64 {
     //     }
     // }
     let m = seen.iter().max_by(|a, b| (a.1).0.cmp(&(b.1).0)).unwrap();
+    println!("{:?}", m.0);
     (m.1).0
 }
 
+fn ratio(a: i64, b: i64) -> f64 {
+    (a as f64) / (b as f64)
+}
+
+fn quadrant(dx: i64, dy: i64) -> i64 {
+    if dx >= 0 && dy < 0 {
+        1
+    } else if dx >= 0 && dy >= 0 {
+        2
+    } else if dx < 0 && dy >= 0 {
+        3
+    } else {
+        4
+    }
+}
+
+fn compare(dx: i64, dy: i64) -> f64 {
+    let q = quadrant(dx, dy);
+    match q {
+        1 => ratio(dx, -dy),
+        2 => ratio(dy, dx),
+        3 => ratio(-dx, dy),
+        _ => ratio(-dx, -dy),
+    }
+}
+
+fn seen(things: &Vec<Vec<char>>, x: i64, y: i64) -> HashSet<(i64, i64)> {
+    let h = things.len() as i64;
+    let w = things[0].len() as i64;
+    let mut seen = HashSet::new();
+    for y in 0..h {
+        for x in 0..w {
+            if things[y as usize][x as usize] != '#' {
+                continue;
+            }
+            let mut t = things.clone();
+            t[y as usize][x as usize] = 'o';
+            for dy in -h..=h {
+                for dx in -w..=w {
+                    let mut s = false;
+                    if dy == 0 && dx == 0 {
+                        continue;
+                    }
+                    for i in 1..std::i64::MAX {
+                        let yy = y + i * dy;
+                        let xx = x + i * dx;
+                        if xx < 0 || xx >= w || yy < 0 || yy >= h {
+                            break;
+                        }
+                        if t[yy as usize][xx as usize] == '#' {
+                            if s {
+                                t[yy as usize][xx as usize] = '*';
+                            } else {
+                                s = true;
+                            }
+                        }
+                    }
+                }
+            }
+            for yy in 0..h {
+                for xx in 0..w {
+                    if t[yy as usize][xx as usize] == '#' {
+                        seen.insert((xx, yy));
+                    }
+                }
+            }
+        }
+    }
+    seen
+}
+
+fn solve_part2(things: &Vec<Vec<char>>, x: i64, y: i64) -> i64 {
+    let h = things.len() as i64;
+    let w = things[0].len() as i64;
+    let mut t = things.clone();
+    t[y as usize][x as usize] = 'o';
+    let mut asteroids = vec![];
+    for yy in 0..h {
+        for xx in 0..w {
+            if t[yy as usize][xx as usize] != '#' {
+                continue;
+            }
+            let dx = xx - x;
+            let dy = yy - y;
+            asteroids.push((dx, dy));
+        }
+    }
+//    println!("{:?}", asteroids);
+    // Sort clockwise
+    asteroids.sort_by(|a, b| {
+        quadrant(a.0, a.1)
+            .cmp(&quadrant(b.0, b.1))
+            .then(compare(a.0, a.1).partial_cmp(&compare(b.0, b.1)).unwrap())
+            .then((a.0.abs() + a.1.abs()).cmp(&(b.0.abs() + b.1.abs())))
+    });
+    let d: Vec<_> = asteroids.iter().map(|x| (x, quadrant(x.0, x.1))).collect();
+  //  println!("{:?}", d);
+    //    return -1;
+    let mut c = 1;
+    let mut seen_set = seen(&t, x, y);
+    for _ in 0..100 {
+        let mut last_ratio: Option<(i64, f64)> = None;
+        for (dx, dy) in &asteroids {
+	    let q = quadrant(*dx, *dy);
+            let r = compare(*dx, *dy);
+            if let Some((lq, lr)) = last_ratio {
+                if lq == q && (r - lr).abs() < std::f64::EPSILON {
+                    continue;
+                }
+            }
+            last_ratio = Some((q, r));
+            let yy = y + dy;
+            let xx = x + dx;
+            // println!(
+            //     "shooting: {}, {} | {}, {} | {}, {} | {}",
+            //     x,
+            //     y,
+            //     dx,
+            //     dy,
+            //     xx,
+            //     yy,
+            //     quadrant(*dx, *dy)
+            // );
+            if t[yy as usize][xx as usize] == '#' && seen_set.contains(&(xx, yy)) {
+                println!("vaporizing {}: {}, {}", c, xx, yy);
+                t[yy as usize][xx as usize] = c.to_string().chars().next().unwrap(); //'*';
+                                                                                     // for tt in &t {
+                                                                                     //     println!("{:?}", tt);
+                                                                                     // }
+                // for tt in &t {
+                //     println!("{:?}", tt);
+                // }
+                seen_set = seen(&t, x, y);
+                if c == 200 {
+                    // for tt in &t {
+                    //     println!("{:?}", tt);
+                    // }
+                    println!("{}, {}", xx, yy);
+                    return 100 * xx + yy;
+                }
+                c = c + 1;
+            }
+        }
+    }
+    -1
+}
+
 fn part2(things: &Vec<Vec<char>>) -> i64 {
-    0
+    solve_part2(things, 20, 20)
 }
 
 fn parse(lines: &Vec<String>) -> Vec<Vec<char>> {
@@ -77,7 +226,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse, part1, part2};
+    use super::{parse, part1, solve_part2};
 
     #[test]
     fn test_part1_1() {
@@ -123,6 +272,33 @@ mod tests {
             ".####.###.".to_string(),
         ]);
         assert_eq!(part1(&m), 35);
+    }
+
+    #[test]
+    fn test_part2() {
+        let m = parse(&vec![
+            ".#..##.###...#######".to_string(),
+            "##.############..##.".to_string(),
+            ".#.######.########.#".to_string(),
+            ".###.#######.####.#.".to_string(),
+            "#####.##.#.##.###.##".to_string(),
+            "..#####..#.#########".to_string(),
+            "####################".to_string(),
+            "#.####....###.#.#.##".to_string(),
+            "##.#################".to_string(),
+            "#####.##.###..####..".to_string(),
+            "..######..##.#######".to_string(),
+            "####.##.####...##..#".to_string(),
+            ".#####..#.######.###".to_string(),
+            "##...#.##########...".to_string(),
+            "#.##########.#######".to_string(),
+            ".####.#.###.###.#.##".to_string(),
+            "....##.##.###..#####".to_string(),
+            ".#.#.###########.###".to_string(),
+            "#.#.#.#####.####.###".to_string(),
+            "###.##.####.##.#..##".to_string(),
+        ]);
+        assert_eq!(solve_part2(&m, 11, 13), 8 * 100 + 2);
     }
 
     // #[test]

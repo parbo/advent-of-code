@@ -129,7 +129,7 @@ fn seen(things: &Vec<Vec<char>>, x: i64, y: i64) -> HashSet<(i64, i64)> {
     seen
 }
 
-fn solve_part2(things: &Vec<Vec<char>>, x: i64, y: i64) -> i64 {
+fn targets(things: &Vec<Vec<char>>, x: i64, y: i64) -> Vec<(i64, i64)> {
     let h = things.len() as i64;
     let w = things[0].len() as i64;
     let mut t = things.clone();
@@ -145,52 +145,38 @@ fn solve_part2(things: &Vec<Vec<char>>, x: i64, y: i64) -> i64 {
             asteroids.push((dx, dy));
         }
     }
-//    println!("{:?}", asteroids);
+    asteroids
+}
+
+fn candidates(t: &Vec<Vec<char>>, x: i64, y: i64) -> Vec<(i64, i64)> {
+    let mut seen_set = seen(&t, x, y);
+    let mut asteroids : Vec<_> = seen_set.into_iter().map(|(dx, dy)| (y + dy, x + dy)).collect();
+    println!("{:?}", asteroids);
     // Sort clockwise
     asteroids.sort_by(|a, b| {
         quadrant(a.0, a.1)
             .cmp(&quadrant(b.0, b.1))
             .then(compare(a.0, a.1).partial_cmp(&compare(b.0, b.1)).unwrap())
-            .then((a.0.abs() + a.1.abs()).cmp(&(b.0.abs() + b.1.abs())))
     });
-    let d: Vec<_> = asteroids.iter().map(|x| (x, quadrant(x.0, x.1))).collect();
-  //  println!("{:?}", d);
-    //    return -1;
+    println!("{:?}", asteroids);
+    asteroids
+}
+
+fn solve_part2(things: &Vec<Vec<char>>, x: i64, y: i64) -> i64 {
+    let h = things.len() as i64;
+    let w = things[0].len() as i64;
+    let mut t = things.clone();
+    t[y as usize][x as usize] = 'o';
+    let mut cand = candidates(&t, x, y);
     let mut c = 1;
-    let mut seen_set = seen(&t, x, y);
     for _ in 0..100 {
-        let mut last_ratio: Option<(i64, f64)> = None;
-        for (dx, dy) in &asteroids {
-	    let q = quadrant(*dx, *dy);
-            let r = compare(*dx, *dy);
-            if let Some((lq, lr)) = last_ratio {
-                if lq == q && (r - lr).abs() < std::f64::EPSILON {
-                    continue;
-                }
-            }
-            last_ratio = Some((q, r));
+        for (dx, dy) in &cand {
             let yy = y + dy;
             let xx = x + dx;
-            // println!(
-            //     "shooting: {}, {} | {}, {} | {}, {} | {}",
-            //     x,
-            //     y,
-            //     dx,
-            //     dy,
-            //     xx,
-            //     yy,
-            //     quadrant(*dx, *dy)
-            // );
-            if t[yy as usize][xx as usize] == '#' && seen_set.contains(&(xx, yy)) {
+            if t[yy as usize][xx as usize] == '#' {
                 println!("vaporizing {}: {}, {}", c, xx, yy);
+		return -1;
                 t[yy as usize][xx as usize] = c.to_string().chars().next().unwrap(); //'*';
-                                                                                     // for tt in &t {
-                                                                                     //     println!("{:?}", tt);
-                                                                                     // }
-                // for tt in &t {
-                //     println!("{:?}", tt);
-                // }
-                seen_set = seen(&t, x, y);
                 if c == 200 {
                     // for tt in &t {
                     //     println!("{:?}", tt);
@@ -198,8 +184,12 @@ fn solve_part2(things: &Vec<Vec<char>>, x: i64, y: i64) -> i64 {
                     println!("{}, {}", xx, yy);
                     return 100 * xx + yy;
                 }
+		cand = candidates(&t, x, y);
                 c = c + 1;
-            }
+		break;
+            } else {
+		panic!();
+	    }
         }
     }
     -1

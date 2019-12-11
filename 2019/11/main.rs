@@ -2,7 +2,9 @@ use aoc;
 use intcode;
 use std::iter::*;
 use std::collections::HashMap;
+use pancurses::*;
 
+#[derive(Clone, Copy)]
 enum Dir {
     Up,
     Right,
@@ -10,7 +12,27 @@ enum Dir {
     Left
 }
 
-fn paint(numbers: &Vec<i128>, color: i128) -> HashMap<(i128, i128), i128> {
+fn draw(window: &Window, hull: &HashMap<(i128, i128), i128>, robot: ((i128, i128), Dir)) {
+    window.clear();
+    for ((x, y), col) in hull {
+	let ch = match col {
+            1 => '█',
+	    _ => ' ',
+	};
+        window.mvaddch(*y as i32, *x as i32, ch);
+    }
+    let rch = match robot.1 {
+        Dir::Up => '^',
+        Dir::Right => '>',
+        Dir::Down => 'v',
+        Dir::Left => '<',
+    };
+    window.mvaddch((robot.0).1 as i32, (robot.0).0 as i32, rch);
+    let _ = window.getch();
+    window.refresh();
+}
+
+fn paint(numbers: &Vec<i128>, color: i128, window: Option<&Window>) -> HashMap<(i128, i128), i128> {
     let mut m = intcode::Machine::new(&numbers, &vec![]);
     let mut current_color;
     let mut current_dir = Dir::Up;
@@ -42,16 +64,26 @@ fn paint(numbers: &Vec<i128>, color: i128) -> HashMap<(i128, i128), i128> {
             Dir::Down => y += 1,
             Dir::Left => x -= 1,
         }
+	if let Some(w) = window {
+	    draw(w, &hull, ((x, y), current_dir));
+	}
     }
 }
 
 fn part1(numbers: &Vec<i128>) -> i128 {
-    let hull = paint(numbers, 0);
+    let hull = paint(numbers, 0, None);
     hull.iter().count() as i128
 }
 
 fn part2(numbers: &Vec<i128>) -> i128 {
-    let hull = paint(numbers, 1);
+    let window = initscr();
+    nl();
+    noecho();
+    curs_set(0);
+    window.keypad(true);
+    window.scrollok(true);
+    window.timeout(20);
+    let hull = paint(numbers, 1, Some(&window));
     let min_x = hull.iter().map(|p| (p.0).0).min().unwrap();
     let min_y = hull.iter().map(|p| (p.0).1).min().unwrap();
     let max_x = hull.iter().map(|p| (p.0).0).max().unwrap();

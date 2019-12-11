@@ -7,18 +7,9 @@ edition = '2018'
 rustyline = "5.0.4"
 ansi_term = "0.12"
 
-[dependencies.cursive]
-version = "0.13.0"
-default-features = false
-features = ["crossterm-backend"]
-
 [dev-dependencies]
 aoc = {path = "../aoc"}
 
 [[example]]
 name = "debug"
 path = "examples/debug.rs"
-
-[[example]]
-name = "debug_tui"
-path = "examples/debug_tui.rs"

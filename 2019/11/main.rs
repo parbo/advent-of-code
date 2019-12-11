@@ -40,14 +40,12 @@ fn paint(numbers: &Vec<i128>, color: i128) -> HashMap<(i128, i128), i128> {
             Dir::Down => if turn == 0 { Dir::Right } else { Dir::Left },
             Dir::Left => if turn == 0 { Dir::Down } else { Dir::Up },
         };
-        let pos = match current_dir {
-            Dir::Up => (x, y - 1),
-            Dir::Right => (x + 1, y),
-            Dir::Down => (x, y + 1),
-            Dir::Left => (x - 1, y),
-        };
-        x = pos.0;
-        y = pos.1;
+        match current_dir {
+            Dir::Up => y -= 1,
+            Dir::Right => x += 1,
+            Dir::Down => y += 1,
+            Dir::Left => x -= 1,
+        }
     }
 }
 

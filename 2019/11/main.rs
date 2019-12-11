@@ -27,17 +27,11 @@ fn paint(numbers: &Vec<i128>, color: i128) -> HashMap<(i128, i128), i128> {
         m.add_inputs(&vec![current_color]);
         let color = match m.run_to_next_output() {
             Some(c) => c,
-            None => {
-                println!("could not get color");
-                break hull;
-            }
+            None => break hull,
         };
         let turn = match m.run_to_next_output() {
             Some(t) => t,
-            None => {
-                println!("could not get turn");
-                break hull;
-            }
+            None => break hull,
         };
         hull.insert((x, y), color);
         current_dir = match current_dir {
@@ -64,10 +58,10 @@ fn part1(numbers: &Vec<i128>) -> i128 {
 
 fn part2(numbers: &Vec<i128>) -> i128 {
     let hull = paint(numbers, 1);
-    let min_x = hull.iter().min_by_key(|p| (p.0).0).map(|p| (p.0).0).unwrap();
-    let min_y = hull.iter().min_by_key(|p| (p.0).1).map(|p| (p.0).1).unwrap();
-    let max_x = hull.iter().max_by_key(|p| (p.0).0).map(|p| (p.0).0).unwrap();
-    let max_y = hull.iter().max_by_key(|p| (p.0).1).map(|p| (p.0).1).unwrap();
+    let min_x = hull.iter().map(|p| (p.0).0).min().unwrap();
+    let min_y = hull.iter().map(|p| (p.0).1).min().unwrap();
+    let max_x = hull.iter().map(|p| (p.0).0).max().unwrap();
+    let max_y = hull.iter().map(|p| (p.0).1).max().unwrap();
     for y in min_y..=max_y {
         for x in min_x..=max_x {
             let c = match hull.get(&(x, y)) {
@@ -96,17 +90,3 @@ fn main() {
     println!("{}", result);
 }
 
-#[cfg(test)]
-mod tests {
-    use super::{part1, part2};
-
-    #[test]
-    fn test_part1() {
-        assert_eq!(part1(&vec![0]), 0);
-    }
-
-    #[test]
-    fn test_part2() {
-        assert_eq!(part2(&vec![0]), 0);
-    }
-}

@@ -42,7 +42,7 @@ fn main() {
             vec![6],
         )
     };
-    let mut m = intcode::Machine::new(&program, &input);
+    let mut m = intcode::Machine::with_input(&program, &input);
     let mut debugger = intcode::Debugger::new(&mut m);
     debugger.analyze();
     debugger.debug();

@@ -2,14 +2,14 @@ use aoc;
 use intcode;
 
 fn part1(numbers: &Vec<i128>) -> i128 {
-    let mut m = intcode::Machine::new(&numbers, &vec![1]);
-    m.run().unwrap();
+    let mut m = intcode::Machine::with_input(&numbers, &[1]);
+    m.run();
     *m.outputs().last().unwrap()
 }
 
 fn part2(numbers: &Vec<i128>) -> i128 {
-    let mut m = intcode::Machine::new(&numbers, &vec![2]);
-    m.run().unwrap();
+    let mut m = intcode::Machine::with_input(&numbers, &[2]);
+    m.run();
     *m.outputs().last().unwrap()
 }
 

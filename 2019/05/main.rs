@@ -3,14 +3,14 @@ use aoc;
 extern crate intcode;
 
 fn part1(numbers: &Vec<i128>) -> i128 {
-    let mut m = intcode::Machine::new(&numbers, &vec![1]);
-    m.run().unwrap();
+    let mut m = intcode::Machine::with_input(&numbers, &[1]);
+    m.run();
     *m.outputs().last().unwrap()
 }
 
 fn part2(numbers: &Vec<i128>) -> i128 {
-    let mut m = intcode::Machine::new(&numbers, &vec![5]);
-    m.run().unwrap();
+    let mut m = intcode::Machine::with_input(&numbers, &[5]);
+    m.run();
     *m.outputs().last().unwrap()
 }
 

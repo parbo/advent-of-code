@@ -33,7 +33,7 @@ fn draw(window: &Window, hull: &HashMap<(i128, i128), i128>, robot: ((i128, i128
 }
 
 fn paint(numbers: &Vec<i128>, color: i128, window: Option<&Window>) -> HashMap<(i128, i128), i128> {
-    let mut m = intcode::Machine::new(&numbers, &vec![]);
+    let mut m = intcode::Machine::new(&numbers);
     let mut current_color;
     let mut current_dir = Dir::Up;
     let mut x = 0;
@@ -42,7 +42,7 @@ fn paint(numbers: &Vec<i128>, color: i128, window: Option<&Window>) -> HashMap<(
     hull.insert((x, y), color);
     loop {
         current_color = *hull.get(&(x, y)).unwrap_or(&0);
-        m.add_inputs(&vec![current_color]);
+        m.add_input(current_color);
         let color = match m.run_to_next_output() {
             Some(c) => c,
             None => break hull,

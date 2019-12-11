@@ -4,12 +4,12 @@ use intcode;
 fn run_all(numbers: &Vec<i128>) -> Option<(i128, i128)> {
     for ai in 0..=99 {
         for bi in 0..=99 {
-            let mut m = intcode::Machine::new(&numbers, &vec![0]);
+            let mut m = intcode::Machine::with_input(&numbers, &[0]);
             // Init
             *m.memory_mut().get_mut(1).unwrap() = ai;
             *m.memory_mut().get_mut(2).unwrap() = bi;
-            let res = m.run();
-            if res == Some(19690720) {
+            m.run();
+            if m.memory().get(0) == Some(&19690720) {
                 return Some((ai, bi));
             }
         }
@@ -18,11 +18,12 @@ fn run_all(numbers: &Vec<i128>) -> Option<(i128, i128)> {
 }
 
 fn part1(numbers: &Vec<i128>) -> i128 {
-    let mut m = intcode::Machine::new(&numbers, &vec![0]);
+    let mut m = intcode::Machine::with_input(&numbers, &[0]);
     // Init
     *m.memory_mut().get_mut(1).unwrap() = 12;
     *m.memory_mut().get_mut(2).unwrap() = 02;
-    m.run().unwrap()
+    m.run();
+    *m.memory().get(0).unwrap()
 }
 
 fn part2(numbers: &Vec<i128>) -> i128 {

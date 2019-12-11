@@ -8,7 +8,7 @@ fn part1(numbers: &Vec<i128>) -> i128 {
     for permutation in permute::lexicographically(&phases) {
         let mut val = 0;
         for i in 0..5 {
-            let mut m = intcode::Machine::new(&numbers, &vec![*permutation[i], val]);
+            let mut m = intcode::Machine::with_input(&numbers, &[*permutation[i], val]);
             val = m.run_to_next_output().unwrap();
         }
         max_power = std::cmp::max(max_power, val);
@@ -21,15 +21,15 @@ fn part2(numbers: &Vec<i128>) -> i128 {
     let mut max_power = 0;
     for permutation in permute::lexicographically(&phases) {
         let mut machines: Vec<intcode::Machine> = (0..5)
-            .map(|x| intcode::Machine::new(&numbers, &vec![*permutation[x]]))
+            .map(|x| intcode::Machine::with_input(&numbers, &[*permutation[x]]))
             .collect();
-        machines[0].add_inputs(&vec![0]);
+        machines[0].add_input(0);
         let mut last_output = None;
         let power = loop {
             let mut out = None;
             for i in 0..machines.len() {
                 if let Some(v) = machines[i].run_to_next_output() {
-                    machines[(i + 1) % 5].add_inputs(&vec![v]);
+                    machines[(i + 1) % 5].add_input(v);
                     out = Some(v)
                 }
             }

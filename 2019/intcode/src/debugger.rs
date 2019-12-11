@@ -205,7 +205,7 @@ impl Debugger<'_> {
                         line = last.unwrap();
                     }
                     if line == "s" {
-                        if !self.machine.step() {
+                        if self.machine.step() == State::Halted {
                             println!("Program halted");
                         } else {
                             let _ = self.print_instruction(self.machine.ip(), true);
@@ -248,7 +248,7 @@ impl Debugger<'_> {
                         }
                     } else if line == "c" {
                         loop {
-                            if !self.machine.step() {
+                            if self.machine.step() == State::Halted {
                                 println!("Program halted");
                                 break;
                             }

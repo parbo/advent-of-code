@@ -1,9 +1,11 @@
 use crate::machine::*;
-use std::collections::HashSet;
 use std::collections::HashMap;
+use std::collections::HashSet;
 
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
+
+use ansi_term::Colour;
 
 pub struct Debugger<'a> {
     machine: &'a mut Machine,
@@ -13,6 +15,7 @@ pub struct Debugger<'a> {
 
 impl Debugger<'_> {
     pub fn new<'a>(machine: &'a mut Machine) -> Debugger<'a> {
+        let _ = ansi_term::enable_ansi_support();
         Debugger {
             machine,
             breakpoints: HashSet::new(),
@@ -70,13 +73,13 @@ impl Debugger<'_> {
         match self.machine.get_disassembly(a) {
             Disassembly::Instruction(x) => {
                 print!(
-                    "{} SP:{:04}, IP:",
+                    "{} SP:{}, IP:",
                     if self.breakpoints.contains(&a) {
                         "*"
                     } else {
                         " "
                     },
-                    self.machine.sp()
+                    Colour::Green.paint(format!("{:04}", self.machine.sp()))
                 );
                 print!("{}", x);
                 print!(" ; ");
@@ -155,7 +158,10 @@ impl Debugger<'_> {
 
     fn set_watch(&mut self, name: &str, address: usize) {
         if let Some(v) = self.watches.insert(name.into(), address) {
-            println!("Set address {} for watch {} (previous address: {})", address, name, v);
+            println!(
+                "Set address {} for watch {} (previous address: {})",
+                address, name, v
+            );
         } else {
             println!("Added watch {} on address {}", name, address);
         }
@@ -239,6 +245,7 @@ impl Debugger<'_> {
                         loop {
                             if !self.machine.step() {
                                 println!("Program halted");
+                                break;
                             }
                             if self.breakpoints.contains(&self.machine.ip()) {
                                 println!("Breakpoint reached");

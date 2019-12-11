@@ -5,6 +5,7 @@ edition = '2018'
 
 [dependencies]
 rustyline = "5.0.4"
+ansi_term = "0.12"
 
 [dependencies.cursive]
 version = "0.13.0"

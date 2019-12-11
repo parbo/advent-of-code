@@ -13,17 +13,13 @@ enum Dir {
 fn paint(numbers: &Vec<i128>, color: i128) -> HashMap<(i128, i128), i128> {
     let mut m = intcode::Machine::new(&numbers, &vec![]);
     let mut current_color;
-    let mut init_color = color;
     let mut current_dir = Dir::Up;
-    let mut hull = HashMap::new();
     let mut x = 0;
     let mut y = 0;
+    let mut hull = HashMap::new();
+    hull.insert((x, y), color);
     loop {
-        current_color = match hull.get(&(x, y)) {
-            Some(c) => *c,
-            None => init_color,
-        };
-        init_color = 0;
+        current_color = *hull.get(&(x, y)).unwrap_or(&0);
         m.add_inputs(&vec![current_color]);
         let color = match m.run_to_next_output() {
             Some(c) => c,

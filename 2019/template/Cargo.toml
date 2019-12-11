@@ -5,6 +5,7 @@ edition = '2018'
 
 [dependencies]
 aoc = {path = "../aoc"}
+intcode = {path = "../intcode"}
 
 [[bin]]
 name = 'template'

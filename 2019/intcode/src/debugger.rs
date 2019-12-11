@@ -13,9 +13,14 @@ pub struct Debugger<'a> {
     watches: HashMap<String, usize>,
 }
 
+fn config() {
+#[cfg(target_os="windows")]
+    let _ = ansi_term::enable_ansi_support();
+}
+
 impl Debugger<'_> {
     pub fn new<'a>(machine: &'a mut Machine) -> Debugger<'a> {
-        let _ = ansi_term::enable_ansi_support();
+        config();
         Debugger {
             machine,
             breakpoints: HashSet::new(),

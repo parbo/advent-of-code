@@ -9,10 +9,10 @@ fn energy(m: &Vec<Vec<i64>>, steps: usize) -> i64 {
     let mut vel = vec![];
     vel.resize(moons.len(), vec![0, 0, 0]);
     for _s in 0..steps {
-        for a in 0..moons.len() {
-            for b in (a + 1)..moons.len() {
-                // Apply gravity
-                for i in 0..3 {
+        for i in 0..3 {
+            for a in 0..moons.len() {
+		for b in (a + 1)..moons.len() {
+                    // Apply gravity
                     if moons[a][i] < moons[b][i] {
                         vel[a][i] += 1;
                         vel[b][i] -= 1;
@@ -21,12 +21,8 @@ fn energy(m: &Vec<Vec<i64>>, steps: usize) -> i64 {
                         vel[b][i] += 1;
                     }
                 }
-            }
-        }
-        for a in 0..moons.len() {
-            // Apply velocity
-            for i in 0..3 {
-                moons[a][i] += vel[a][i];
+		// Apply velocity
+		moons[a][i] += vel[a][i];
             }
         }
     }
@@ -47,33 +43,20 @@ fn part2(m: &Vec<Vec<i64>>) -> i64 {
     let mut moons = m.clone();
     let mut vel = vec![];
     vel.resize(moons.len(), vec![0, 0, 0]);
-    let mut seen_x = HashSet::new();
-    let mut seen_y = HashSet::new();
-    let mut seen_z = HashSet::new();
-    seen_x.insert((
-        (moons[0][0], vel[0][0]),
-        (moons[1][0], vel[1][0]),
-        (moons[2][0], vel[2][0]),
-    ));
-    seen_y.insert((
-        (moons[0][1], vel[0][1]),
-        (moons[1][1], vel[1][1]),
-        (moons[2][1], vel[2][1]),
-    ));
-    seen_z.insert((
-        (moons[0][2], vel[0][2]),
-        (moons[1][2], vel[1][2]),
-        (moons[2][2], vel[2][2]),
-    ));
-    let mut f_x = 0;
-    let mut f_y = 0;
-    let mut f_z = 0;
-    let mut s = 0;
-    loop {
+    let mut cycles = vec![];
+    for i in 0..3 {
+	let mut seen = HashSet::new();
+	let mut s = 1;
+	let mut state = vec![];
         for a in 0..moons.len() {
-            for b in (a + 1)..moons.len() {
-                // Apply gravity
-                for i in 0..3 {
+	    state.push((moons[a][i], vel[a][i]));
+	}
+	seen.insert(state.clone());
+	let c = loop {
+	    state.clear();
+            for a in 0..moons.len() {
+		for b in (a + 1)..moons.len() {
+                    // Apply gravity
                     if moons[a][i] < moons[b][i] {
                         vel[a][i] += 1;
                         vel[b][i] -= 1;
@@ -82,48 +65,18 @@ fn part2(m: &Vec<Vec<i64>>) -> i64 {
                         vel[b][i] += 1;
                     }
                 }
-            }
-        }
-        for a in 0..moons.len() {
-            // Apply velocity
-            for i in 0..3 {
-                moons[a][i] += vel[a][i];
-            }
-        }
-        s += 1;
-        if f_x == 0
-            && !seen_x.insert((
-                (moons[0][0], vel[0][0]),
-                (moons[1][0], vel[1][0]),
-                (moons[2][0], vel[2][0]),
-            ))
-        {
-            f_x = s;
-        }
-        if f_y == 0
-            && !seen_y.insert((
-                (moons[0][1], vel[0][1]),
-                (moons[1][1], vel[1][1]),
-                (moons[2][1], vel[2][1]),
-            ))
-        {
-            f_y = s;
-        }
-        if f_z == 0
-            && !seen_z.insert((
-                (moons[0][2], vel[0][2]),
-                (moons[1][2], vel[1][2]),
-                (moons[2][2], vel[2][2]),
-            ))
-        {
-            f_z = s;
-        }
-        if f_x != 0 && f_y != 0 && f_z != 0 {
-            break;
-        }
+		// Apply velocity
+		moons[a][i] += vel[a][i];
+		state.push((moons[a][i], vel[a][i]));
+	    }
+	    if !seen.insert(state.clone()) {
+		break s;
+	    }
+            s += 1;
+	};
+	cycles.push(c);
     }
-
-    num::integer::lcm(f_x, num::integer::lcm(f_y, f_z))
+    num::integer::lcm(cycles[0], num::integer::lcm(cycles[1], cycles[2]))
 }
 
 fn parse(lines: &Vec<String>) -> Vec<Vec<i64>> {

@@ -8,11 +8,7 @@ fn energy(m: &Vec<Vec<i64>>, steps: usize) -> i64 {
     let mut moons = m.clone();
     let mut vel = vec![];
     vel.resize(moons.len(), vec![0, 0, 0]);
-    // for a in 0..moons.len() {
-    //     println!("{:?}, {:?}", moons[a], vel[a]);
-    // }
-    // println!();
-    for s in 0..steps {
+    for _s in 0..steps {
         for a in 0..moons.len() {
             for b in (a + 1)..moons.len() {
                 // Apply gravity
@@ -33,16 +29,6 @@ fn energy(m: &Vec<Vec<i64>>, steps: usize) -> i64 {
                 moons[a][i] += vel[a][i];
             }
         }
-        // println!("After {} steps", s + 1);
-        // for a in 0..moons.len() {
-        //     println!("{:?}, {:?}", moons[a], vel[a]);
-        // }
-        // for a in 0..moons.len() {
-        //     let e1 : i64 = moons[a].iter().map(|x| x.abs()).sum();
-        //     let e2 : i64 = vel[a].iter().map(|x| x.abs()).sum();
-        //     println!("energy: {} * {} = {}", e1, e2, e1 * e2);
-        // }
-        // println!();
     }
     let mut e: i64 = 0;
     for a in 0..moons.len() {
@@ -104,10 +90,6 @@ fn part2(m: &Vec<Vec<i64>>) -> i64 {
                 moons[a][i] += vel[a][i];
             }
         }
-        // println!("After {} steps", s + 1);
-        // for a in 0..moons.len() {
-        //     println!("{:?}, {:?}", moons[a], vel[a]);
-        // }
         s += 1;
         if f_x == 0
             && !seen_x.insert((
@@ -141,17 +123,7 @@ fn part2(m: &Vec<Vec<i64>>) -> i64 {
         }
     }
 
-    let mut un = HashSet::new();
-    un.insert(num::integer::gcd(f_x, f_y));
-    un.insert(num::integer::gcd(f_x, f_z));
-    un.insert(num::integer::gcd(f_y, f_z));
-
-    let mut v = f_x * f_y * f_z;
-
-    for u in un {
-        v /= u;
-    }
-    v
+    num::integer::lcm(f_x, num::integer::lcm(f_y, f_z))
 }
 
 fn parse(lines: &Vec<String>) -> Vec<Vec<i64>> {

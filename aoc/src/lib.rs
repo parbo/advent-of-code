@@ -7,6 +7,7 @@ use std::io::BufReader;
 use std::iter::*;
 use std::path::Path;
 
+pub use num::integer::*;
 pub use serde_scan::scan;
 
 // TODO: improve and generalize

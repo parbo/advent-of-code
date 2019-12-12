@@ -80,18 +80,13 @@ fn part2(m: &Vec<Vec<i64>>) -> i64 {
 }
 
 fn parse(lines: &Vec<String>) -> Vec<Vec<i64>> {
-    let mut res = vec![];
-    for line in lines {
-        let mut v = vec![];
-        let pos: Vec<_> = line[1..(line.len() - 1)].split(",").collect();
-        for p in pos {
-            let c: Vec<&str> = p.split("=").skip(1).take(1).map(|s| s.trim()).collect();
-            let cv = c[0].parse::<i64>().unwrap();
-            v.push(cv);
-        }
-        res.push(v);
-    }
-    res
+    lines
+        .iter()
+        .map(|line| {
+            let v: Vec<i64> = aoc::scan!("<x={}, y={}, x={}>" <- line).unwrap();
+            v
+        })
+        .collect()
 }
 
 fn main() {

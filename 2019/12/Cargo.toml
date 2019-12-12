@@ -6,7 +6,6 @@ edition = '2018'
 [dependencies]
 aoc = {path = "../aoc"}
 intcode = {path = "../intcode"}
-num = "0.2.0"
 
 [[bin]]
 name = 'day12'

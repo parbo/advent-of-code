@@ -1,6 +1,5 @@
 use aoc;
 // use intcode;
-use num;
 use std::collections::HashSet;
 use std::iter::*;
 
@@ -76,7 +75,7 @@ fn part2(m: &Vec<Vec<i64>>) -> i64 {
 	};
 	cycles.push(c);
     }
-    num::integer::lcm(cycles[0], num::integer::lcm(cycles[1], cycles[2]))
+    aoc::lcm(cycles[0], aoc::lcm(cycles[1], cycles[2]))
 }
 
 fn parse(lines: &Vec<String>) -> Vec<Vec<i64>> {

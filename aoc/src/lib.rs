@@ -7,6 +7,8 @@ use std::io::BufReader;
 use std::iter::*;
 use std::path::Path;
 
+pub use serde_scan::scan;
+
 // TODO: improve and generalize
 pub struct Tree {
     things: HashSet<String>,

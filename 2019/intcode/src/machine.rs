@@ -228,10 +228,14 @@ impl Machine {
         self.memory[address] = value;
     }
 
-    fn input(&mut self) -> i128 {
-        let res = self.inputs[self.curr_input];
-        self.curr_input += 1;
-        res
+    fn input(&mut self) -> Option<i128> {
+        if self.curr_input < self.inputs.len() {
+            let res = self.inputs[self.curr_input];
+            self.curr_input += 1;
+            Some(res)
+        } else {
+            None
+        }
     }
 
     pub fn add_input(&mut self, input: i128) {
@@ -252,11 +256,10 @@ impl Machine {
                     Op::ADD => Some(self.read_arg(&x.read[0]) + self.read_arg(&x.read[1])),
                     Op::MUL => Some(self.read_arg(&x.read[0]) * self.read_arg(&x.read[1])),
                     Op::INP => {
-                        if self.inputs.len() > 0 {
-                            Some(self.input())
+                        if let Some(x) = self.input() {
+                            Some(x)
                         } else {
-                            state = State::Input;
-                            None
+                            return State::Input;
                         }
                     }
                     Op::OUT => {
@@ -300,7 +303,10 @@ impl Machine {
                     assert!(x.op.definition().2 == 1);
                     self.write_arg(&x.write[0], out);
                 } else {
-                    assert!(x.op.definition().2 == 0);
+                    if x.op.definition().2 != 0 {
+                        println!("{:?}", x.op.definition());
+                        assert!(x.op.definition().2 == 0);
+                    }
                 }
                 // Update stats
                 for r in &x.read {
@@ -409,12 +415,34 @@ impl Machine {
         res
     }
 
+    pub fn drain_output(&mut self) -> Vec<i128> {
+        loop {
+            let cont = self.step();
+            if cont != State::Output {
+                break;
+            }
+        }
+        self.outputs()
+    }
+
     pub fn run_to_next_input(&mut self) -> State {
         loop {
             let s = self.step();
             match s {
                 State::Halted => break s,
                 State::Input => break s,
+                _ => {}
+            }
+        }
+    }
+
+    pub fn run_to_next_io(&mut self) -> State {
+        loop {
+            let s = self.step();
+            match s {
+                State::Halted => break s,
+                State::Input => break s,
+                State::Output => break s,
                 _ => {}
             }
         }

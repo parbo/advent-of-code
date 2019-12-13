@@ -1,0 +1,16 @@
+[package]
+name = 'day13'
+version = '0.0.1'
+edition = '2018'
+
+[dependencies]
+aoc = {path = "../aoc"}
+intcode = {path = "../intcode"}
+
+[dependencies.pancurses]
+version = "0.16"
+features = ["win32"]
+
+[[bin]]
+name = 'day13'
+path = 'main.rs'

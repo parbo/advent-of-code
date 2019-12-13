@@ -25,7 +25,7 @@ fn part1(program: &Vec<i128>) -> i128 {
     blocks.iter().map(|(_k, v)| *v).filter(|v| *v == 2).count() as i128
 }
 
-fn draw(window: &Window, x: i128, y: i128, v: i128, score: i128) -> bool {
+fn draw(window: &Window, x: i128, y: i128, v: i128, score: i128) -> Option<Input> {
     let ch = match v {
         0 => ' ',
         1 => '#',
@@ -36,14 +36,12 @@ fn draw(window: &Window, x: i128, y: i128, v: i128, score: i128) -> bool {
     };
     window.mvaddch(y as i32, x as i32, ch);
     window.mvprintw(0, 2, score.to_string());
-    if v == 4 {
-	let c = window.getch();
-	if c != None {
-	    return false;
-	}
-    }
     window.refresh();
-    true
+    if v == 4 {
+	window.getch()
+    } else {
+	None
+    }
 }
 
 fn part2(program: &Vec<i128>) -> i128 {
@@ -60,6 +58,7 @@ fn part2(program: &Vec<i128>) -> i128 {
     let mut paddle = (0, 0);
     let mut ball = (0, 0);
     let mut dir = 0;
+    let mut skip = false;
     loop {
 	let state = m.run_to_next_io();
 	match state {
@@ -76,15 +75,14 @@ fn part2(program: &Vec<i128>) -> i128 {
 		    } else if t == 4 {
 			ball = (x, y);
 		    }
-		    if ball.0 - paddle.0 > 0 {
-			dir = 1;
-		    } else if ball.0 - paddle.0 == 0 {
-			dir = 0;
-		    } else {
-			dir = -1;
-		    };
-		    if !draw(&window, x, y, t, score) {
-			break;
+		    dir = (ball.0 - paddle.0).signum();
+		    if !skip {
+			let x = draw(&window, x, y, t, score);
+			match x {
+			    Some(pancurses::Input::Character(' ')) => skip = true,
+			    None => {},
+			    _ => break,
+			}
 		    }
 		}
 	    },
@@ -105,14 +103,4 @@ fn main() {
         part2(&parsed)
     };
     println!("{}", result);
-}
-
-#[cfg(test)]
-mod tests {
-    // use super::part1;
-
-    // #[test]
-    // fn test_part1() {
-    //     assert_eq!(part1(&vec![0]), 0);
-    // }
 }

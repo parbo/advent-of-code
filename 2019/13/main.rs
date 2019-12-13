@@ -1,5 +1,4 @@
 use aoc;
-// use intcode;
 use std::iter::*;
 use std::collections::HashMap;
 use pancurses::*;
@@ -26,42 +25,25 @@ fn part1(program: &Vec<i128>) -> i128 {
     blocks.iter().map(|(_k, v)| *v).filter(|v| *v == 2).count() as i128
 }
 
-fn draw(window: &Window, hull: &HashMap<(i128, i128), i128>) {
-    window.clear();
-    for ((x, y), col) in hull {
-	let ch = match col {
-            0 => ' ',
-            1 => '#',
-            2 => 'B',
-            3 => '-',
-            4 => 'o',
-	    _ => ' ',
-	};
-        window.mvaddch(*y as i32, *x as i32, ch);
+fn draw(window: &Window, x: i128, y: i128, v: i128, score: i128) -> bool {
+    let ch = match v {
+        0 => ' ',
+        1 => '#',
+        2 => 'B',
+        3 => '-',
+        4 => 'o',
+	_ => ' ',
+    };
+    window.mvaddch(y as i32, x as i32, ch);
+    window.mvprintw(0, 2, score.to_string());
+    if v == 4 {
+	let c = window.getch();
+	if c != None {
+	    return false;
+	}
     }
-    let _ = window.getch();
     window.refresh();
-}
-
-fn print_screen(screen: &HashMap<(i128, i128), i128>) {
-    let min_x = screen.iter().map(|p| (p.0).0).min().unwrap();
-    let min_y = screen.iter().map(|p| (p.0).1).min().unwrap();
-    let max_x = screen.iter().map(|p| (p.0).0).max().unwrap();
-    let max_y = screen.iter().map(|p| (p.0).1).max().unwrap();
-    for y in min_y..=max_y {
-        for x in min_x..=max_x {
-            match screen.get(&(x, y)) {
-                Some(0) => print!(" "),
-                Some(1) => print!("#"),
-                Some(2) => print!("B"),
-                Some(3) => print!("-"),
-                Some(4) => print!("o"),
-		None => print!(" "),
-                _ => panic!(),
-            }
-        }
-        println!();
-    }
+    true
 }
 
 fn part2(program: &Vec<i128>) -> i128 {
@@ -71,61 +53,44 @@ fn part2(program: &Vec<i128>) -> i128 {
     curs_set(0);
     window.keypad(true);
     window.scrollok(true);
-    window.timeout(20);
+    window.timeout(5);
     let mut m = intcode::Machine::new(&program);
     *m.memory_mut().get_mut(0).unwrap() = 2;
-    let mut screen = HashMap::new();
     let mut score = -1;
     let mut paddle = (0, 0);
     let mut ball = (0, 0);
     let mut dir = 0;
-//    m.add_input(dir);
     loop {
-	let x = m.run_to_next_output();
-	let y = m.run_to_next_output();
-	let tile = m.run_to_next_output();
-	if x.is_some() && y.is_some() && tile.is_some() {
-//	    println!("{:?}, {:?}, {:?}", x, y, tile);
-	    let t = tile.unwrap();
-	    if x.unwrap() == -1 && y.unwrap() == 0  {
-		if score == -1 {
-		    // first screen complete
-		    //		    print_screen(&screen);
-		    draw(&window, &screen);
-//		    m.add_input(dir);
-		}
-//		println!("score: {} -> {}", score, t);
-		score = t;
-	    } else {
-		screen.insert((x.unwrap(), y.unwrap()), t);
-		if t == 3 {
-		    paddle = (x.unwrap(), y.unwrap());
-		    if ball.0 - paddle.0 > 0 {
-			dir = 1;
-		    } else if ball.0 - paddle.0 == 0 {
-			dir = 0;
-		    } else {
-			dir = -1;
-		    };
-		} else if t == 4 {
-		    ball = (x.unwrap(), y.unwrap());
-		    if ball.0 - paddle.0 > 0 {
-			dir = 1;
-		    } else if ball.0 - paddle.0 == 0 {
-			dir = 0;
-		    } else {
-			dir = -1;
-		    };
-		    if score >= 0 {
-			//			print_screen(&screen);
-			draw(&window, &screen);
+	let state = m.run_to_next_io();
+	match state {
+	    intcode::State::Output => {
+		let outputs = m.drain_output();
+		let x = outputs[0];
+		let y = outputs[1];
+		let t = outputs[2];
+		if x == -1 && y == 0  {
+		    score = t;
+		} else {
+		    if t == 3 {
+			paddle = (x, y);
+		    } else if t == 4 {
+			ball = (x, y);
 		    }
-//		    println!("{}", dir);
-		    m.add_input(dir);
+		    if ball.0 - paddle.0 > 0 {
+			dir = 1;
+		    } else if ball.0 - paddle.0 == 0 {
+			dir = 0;
+		    } else {
+			dir = -1;
+		    };
+		    if !draw(&window, x, y, t, score) {
+			break;
+		    }
 		}
-	    }
-	} else {
-	    break;
+	    },
+	    intcode::State::Input => m.add_input(dir),
+	    intcode::State::Halted => break,
+	    _ => panic!()
 	}
     }
     score

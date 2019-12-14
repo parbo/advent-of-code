@@ -54,21 +54,26 @@ fn part1(reqs: &HashMap<Material, (i64, Vec<Product>)>) -> i64 {
 }
 
 fn part2(reqs: &HashMap<Material, (i64, Vec<Product>)>) -> i64 {
-    let p = Product {
-        material: Material::Fuel,
-        amount: 1,
-    };
-    let mut pile = HashMap::new();
-    pile.insert(Material::Ore, 1000000000000);
-    let mut f = 0;
-    loop {
+    let mut a = 1000000000000 / part1(reqs);
+    let mut b = 1000000000000;
+    let mut m = (a + b) / 2;
+    while a <= b {
+        let p = Product {
+            material: Material::Fuel,
+            amount: m,
+        };
+        let mut pile = HashMap::new();
+        pile.insert(Material::Ore, 1000000000000);
         let ore = find_amount(&p, reqs, &mut pile, 0);
         if ore > 0 {
-            break;
+            // Need more ore, so lower fuel
+            b = m - 1;
+        } else {
+            a = m + 1;
         }
-        f += 1;
+	m = (a + b) / 2;
     }
-    f
+    m
 }
 
 fn calculate_hash<T: Hash>(t: &T) -> u64 {

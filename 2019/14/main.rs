@@ -15,8 +15,7 @@ fn find_amount(
 ) -> i64 {
     if let Some((amount, materials)) = reqs.get(&p.material) {
         let mut m = 0;
-        let (q, r) = aoc::div_rem(p.amount, *amount);
-        let x = q + r.signum();
+        let x = (p.amount as f64 / *amount as f64).ceil() as i64;
         for pr in materials {
             let needed = x * pr.amount;
             let pile_amount = pile.entry(pr.material).or_insert(0);
@@ -61,58 +60,15 @@ fn part2(reqs: &HashMap<Material, (i64, Vec<Product>)>) -> i64 {
     };
     let mut pile = HashMap::new();
     pile.insert(Material::Ore, 1000000000000);
-    let mut f: i64 = 0;
-    // let mut seen: HashMap<Vec<(Material, i64)>, i64> = HashMap::new();
-    // seen.insert(vec![], 0);
+    let mut f = 0;
     loop {
         let ore = find_amount(&p, reqs, &mut pile, 0);
         if ore > 0 {
-            println!("f: {}, pile: {:?}", f, pile);
             break;
         }
-        // let mut non_zero_vals: Vec<(Material, i64)> = pile
-        //     .iter()
-        //     .filter(|x| *x.0 != Material::Ore)
-        //     .filter(|x| *x.1 != 0)
-        //     .map(|x| (*x.0, *x.1))
-        //     .collect();
-        // non_zero_vals.sort();
-        let non_zero = pile
-            .iter()
-            .filter(|x| *x.0 != Material::Ore)
-            .any(|x| *x.1 != 0);
         f += 1;
-        // if let Some(old) = seen.insert(non_zero_vals, f) {
-        if !non_zero {
-            println!("cycle found! f: {}", f);
-            println!("f: {}, pile: {:?}", f, pile);
-            break;
-        }
-        if f % 10000 == 0 {
-            println!("f: {}, pile: {:?}", f, pile);
-        }
     }
-    let rem = *pile.get(&Material::Ore).unwrap();
-    let consumed = 1000000000000 - rem;
-    let cycles = 1000000000000 / consumed;
-    let ore = 1000000000000 - cycles * consumed;
-    println!(
-        "consumed: {}, rem: {}, cycles: {}, ore: {}",
-        consumed, rem, cycles, ore
-    );
-    let mut pile2 = HashMap::new();
-    pile2.insert(Material::Ore, ore);
-    let mut f2 = 0;
-    loop {
-        let o2 = find_amount(&p, reqs, &mut pile2, 0);
-        if o2 > 0 {
-            // stockpile depleted
-            break;
-        }
-        f2 += 1;
-    }
-    println!("cycles: {}, f: {}, f2: {}", cycles, f, f2);
-    cycles * f + f2
+    f
 }
 
 fn calculate_hash<T: Hash>(t: &T) -> u64 {

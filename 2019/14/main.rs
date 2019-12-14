@@ -3,11 +3,14 @@ use aoc;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::iter::*;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+use std::str::FromStr;
 
 fn find_amount(
     p: &Product,
-    reqs: &HashMap<String, (i64, Vec<Product>)>,
-    pile: &mut HashMap<String, i64>,
+    reqs: &HashMap<Material, (i64, Vec<Product>)>,
+    pile: &mut HashMap<Material, i64>,
     depth: usize,
 ) -> i64 {
     // println!("{:indent$}lookup: {}", "", p.material, indent = depth);
@@ -28,7 +31,7 @@ fn find_amount(
                 //     pr.material,
                 //     indent = depth
                 // );
-                let pile_amount = pile.entry(pr.material.clone()).or_insert(0);
+                let pile_amount = pile.entry(pr.material).or_insert(0);
                 if *pile_amount > 0 {
                     // Consume from the pile
                     // println!(
@@ -43,17 +46,17 @@ fn find_amount(
                     } else {
                         let pr_left = Product {
                             amount: pr.amount - *pile_amount,
-                            material: pr.material.clone(),
+                            material: pr.material,
                         };
                         *pile_amount = 0;
-                        if pr.material == "ORE" {
+                        if pr.material == Material::Ore {
                             m += pr_left.amount;
                         } else {
                             m += find_amount(&pr_left, reqs, pile, depth + 1);
                         }
                     }
                 } else {
-                    if pr.material == "ORE" {
+                    if pr.material == Material::Ore {
                         m += pr.amount;
                     } else {
                         m += find_amount(&pr, reqs, pile, depth + 1);
@@ -70,7 +73,7 @@ fn find_amount(
             //     p.material,
             //     indent = depth
             // );
-            *pile.entry(p.material.clone()).or_insert(0) += rest;
+            *pile.entry(p.material).or_insert(0) += rest;
         }
         // println!(
         //     "{:indent$}=> {} {} needs {} ORE",
@@ -86,28 +89,28 @@ fn find_amount(
     }
 }
 
-fn part1(reqs: &HashMap<String, (i64, Vec<Product>)>) -> i64 {
+fn part1(reqs: &HashMap<Material, (i64, Vec<Product>)>) -> i64 {
     let p = Product {
-        material: "FUEL".to_string(),
+        material: Material::Fuel,
         amount: 1,
     };
     let mut pile = HashMap::new();
     find_amount(&p, reqs, &mut pile, 0)
 }
 
-fn part2(reqs: &HashMap<String, (i64, Vec<Product>)>) -> i64 {
+fn part2(reqs: &HashMap<Material, (i64, Vec<Product>)>) -> i64 {
     let p = Product {
-        material: "FUEL".to_string(),
+        material: Material::Fuel,
         amount: 1,
     };
     let mut pile = HashMap::new();
-    pile.insert("ORE".to_string(), 1000000000000);
+    pile.insert(Material::Ore, 1000000000000);
     let mut f = 0;
     loop {
         find_amount(&p, reqs, &mut pile, 0);
         let non_zero = pile
             .iter()
-            .filter(|x| x.0 != "ORE")
+            .filter(|x| *x.0 != Material::Ore)
             .any(|x| *x.1 != 0);
         f += 1;
         if !non_zero {
@@ -119,13 +122,13 @@ fn part2(reqs: &HashMap<String, (i64, Vec<Product>)>) -> i64 {
             println!("f: {}, pile: {:?}", f, pile);
         }
     }
-    let rem = *pile.get(&"ORE".to_string()).unwrap();
+    let rem = *pile.get(&Material::Ore).unwrap();
     let consumed = 1000000000000 - rem;
     let cycles = 1000000000000 / consumed;
     let ore = 1000000000000 - cycles * consumed;
     println!("consumed: {}, rem: {}, cycles: {}, ore: {}", consumed, rem, cycles, ore);
     let mut pile2 = HashMap::new();
-    pile2.insert("ORE".to_string(), ore);
+    pile2.insert(Material::Ore, ore);
     let mut f2 = 0;
     loop {
         let o2 = find_amount(&p, reqs, &mut pile2, 0);
@@ -139,24 +142,58 @@ fn part2(reqs: &HashMap<String, (i64, Vec<Product>)>) -> i64 {
     cycles * f + f2
 }
 
+fn calculate_hash<T: Hash>(t: &T) -> u64 {
+    let mut s = DefaultHasher::new();
+    t.hash(&mut s);
+    s.finish()
+}
+
+#[derive(Deserialize, Hash, Debug, PartialEq, Eq, Copy, Clone)]
+enum Material {
+    Ore,
+    Fuel,
+    Other(u64)
+}
+
+
+impl FromStr for Material {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+	match s {
+	    "ORE" => Ok(Material::Ore),
+	    "FUEL" => Ok(Material::Fuel),
+	    _ => Ok(Material::Other(calculate_hash(&s.to_string()))),
+	}
+    }
+}
+
 #[derive(Deserialize, Debug, PartialEq, Eq, Hash, Clone)]
 struct Product {
     amount: i64,
-    material: String,
+    material: Material,
 }
 
-fn parse(lines: &Vec<String>) -> HashMap<String, (i64, Vec<Product>)> {
+fn parse_thing(x: &str) -> (i64, String) {
+    aoc::from_str(x).unwrap()
+}
+
+fn parse(lines: &Vec<String>) -> HashMap<Material, (i64, Vec<Product>)> {
     let mut requirements = HashMap::new();
     for line in lines {
-        let sides: Vec<_> = line.split("=>").collect();
+        let sides: Vec<&str> = line.split("=>").collect();
         let left: Vec<Product> = sides[0]
             .split(",")
             .map(|x| x.trim())
-            .map(|x| aoc::from_str(x).unwrap())
+            .map(parse_thing)
+	    .map(|x| {
+		let m = (x.1).parse::<Material>().unwrap();
+		Product { amount: x.0, material: m }
+	    })
             .collect();
         let rstring = sides[1].trim();
-        let right: Product = aoc::from_str(rstring).unwrap();
-        requirements.insert(right.material, (right.amount, left));
+        let right = parse_thing(rstring);
+        requirements.insert(right.1.parse::<Material>().unwrap(), (right.0, left));
     }
     requirements
 }

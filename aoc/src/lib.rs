@@ -9,6 +9,7 @@ use std::path::Path;
 
 pub use num::integer::*;
 pub use serde_scan::scan;
+pub use serde_scan::from_str;
 
 // TODO: improve and generalize
 pub struct Tree {

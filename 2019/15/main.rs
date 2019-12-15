@@ -99,12 +99,7 @@ fn part2(program: &Vec<i128>) -> i128 {
     let mut minutes = 0;
     loop {
         minutes += 1;
-        let mut expand = vec![];
-        for (pos, v) in &seen {
-            if *v == 2 {
-                expand.push(*pos);
-            }
-        }
+        let expand: Vec<_> = seen.iter().filter(|x| *x.1 == 2).map(|x| *x.0).collect();
         for pos in &expand {
             for d in 1..=4 {
                 let new_pos = get_new_pos(*pos, d);

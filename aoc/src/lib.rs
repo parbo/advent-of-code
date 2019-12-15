@@ -13,12 +13,12 @@ pub use serde_scan::from_str;
 pub use serde_scan::scan;
 
 pub trait Grid {
-    fn get(&self, pos: (i128, i128)) -> Option<i128>;
+    fn get_value(&self, pos: (i128, i128)) -> Option<i128>;
     fn extents(&self) -> ((i128, i128), (i128, i128));
 }
 
 impl Grid for HashMap<(i128, i128), i128> {
-    fn get(&self, pos: (i128, i128)) -> Option<i128> {
+    fn get_value(&self, pos: (i128, i128)) -> Option<i128> {
         if let Some(x) = self.get(&pos) {
             Some(*x)
         } else {
@@ -31,6 +31,29 @@ impl Grid for HashMap<(i128, i128), i128> {
         let max_x = self.iter().map(|p| (p.0).0).max().unwrap();
         let max_y = self.iter().map(|p| (p.0).1).max().unwrap();
         ((min_x, max_x), (min_y, max_y))
+    }
+}
+
+impl Grid for Vec<Vec<i128>> {
+    fn get_value(&self, pos: (i128, i128)) -> Option<i128> {
+        let (x, y) = pos;
+        if let Some(line) = self.get(y as usize) {
+            if let Some(c) = line.get(x as usize) {
+                return Some(*c);
+            }
+        }
+        None
+    }
+    fn extents(&self) -> ((i128, i128), (i128, i128)) {
+        if self.len() > 0 {
+            if self[0].len() > 0 {
+                return (
+                    (0, (self[0].len() - 1) as i128),
+                    (0, (self.len() - 1) as i128),
+                );
+            }
+        }
+        ((0, 0), (0, 0))
     }
 }
 
@@ -79,7 +102,7 @@ where
         let ((min_x, max_x), (min_y, max_y)) = area.extents();
         for y in min_y..=max_y {
             for x in min_x..=max_x {
-                let ch = if let Some(x) = area.get((x, y)) {
+                let ch = if let Some(x) = area.get_value((x, y)) {
                     self.to_char(x)
                 } else {
                     ' '
@@ -138,7 +161,7 @@ where
         let ((min_x, max_x), (min_y, max_y)) = area.extents();
         for y in min_y..=max_y {
             for x in min_x..=max_x {
-                let ch = if let Some(x) = area.get((x, y)) {
+                let ch = if let Some(x) = area.get_value((x, y)) {
                     self.to_char(x)
                 } else {
                     ' '

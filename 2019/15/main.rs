@@ -27,7 +27,7 @@ fn walk(
     path: Vec<i128>,
     pos: (i128, i128),
     seen: &mut HashMap<(i128, i128), i128>,
-    drawer: &mut dyn aoc::GridDrawer,
+    drawer: &mut dyn aoc::GridDrawer<HashMap<(i128, i128), i128>>,
 ) -> Option<Vec<i128>> {
     let mut paths = vec![];
     for d in 1..=4 {

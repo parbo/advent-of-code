@@ -133,7 +133,7 @@ where
         pancurses::curs_set(0);
         window.keypad(true);
         window.scrollok(true);
-        window.timeout(16);
+        window.nodelay(true);
         CursesGridDrawer { window, to_ch }
     }
 

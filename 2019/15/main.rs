@@ -1,4 +1,5 @@
 use aoc;
+use pancurses::*;
 use std::collections::HashMap;
 use std::iter::*;
 
@@ -63,31 +64,34 @@ fn part1(program: &Vec<i128>) -> i128 {
     p.unwrap().len() as i128
 }
 
-fn print_area(area: &HashMap<(i128, i128), i128>) {
-    let min_x = area.iter().map(|p| (p.0).0).min().unwrap();
-    let min_y = area.iter().map(|p| (p.0).1).min().unwrap();
-    let max_x = area.iter().map(|p| (p.0).0).max().unwrap();
-    let max_y = area.iter().map(|p| (p.0).1).max().unwrap();
-    for y in min_y..=max_y {
-        for x in min_x..=max_x {
-            match area.get(&(x, y)) {
-                Some(c) => match c {
-                    0 => print!("#"),
-                    1 => print!("."),
-                    2 => print!("O"),
-                    _ => panic!(),
-                },
-                None => print!(" "),
-            };
-        }
-        println!();
+fn draw(window: &Window, area: &HashMap<(i128, i128), i128>, x_offs: i128, y_offs: i128) {
+    window.clear();
+    for ((x, y), col) in area {
+        let ch = match col {
+            0 => '#',
+            1 => '.',
+            2 => 'O',
+            _ => panic!(),
+        };
+        window.mvaddch((*y - y_offs) as i32, (*x - x_offs) as i32, ch);
     }
+    let _ = window.getch();
+    window.refresh();
 }
 
 fn part2(program: &Vec<i128>) -> i128 {
+    let window = initscr();
+    nl();
+    noecho();
+    curs_set(0);
+    window.keypad(true);
+    window.scrollok(true);
+    window.timeout(20);
     let mut m = intcode::Machine::new(program);
     let mut seen = HashMap::new();
     let _ = walk(&mut m, vec![], (0, 0), &mut seen);
+    let min_x = seen.iter().map(|p| (p.0).0).min().unwrap();
+    let min_y = seen.iter().map(|p| (p.0).1).min().unwrap();
     let mut minutes = 0;
     loop {
         minutes += 1;
@@ -116,7 +120,7 @@ fn part2(program: &Vec<i128>) -> i128 {
         if c == 0 {
             break;
         }
-        print_area(&seen);
+        draw(&window, &seen, min_x, min_y);
     }
     minutes
 }

@@ -117,6 +117,7 @@ fn part2(program: &Vec<i128>) -> i128 {
         }
         draw(&window, &seen, min_x, min_y);
     }
+    endwin();
     minutes
 }
 

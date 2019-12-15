@@ -1,6 +1,7 @@
 use aoc;
 use pancurses::*;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::iter::*;
 
 fn get_new_pos(pos: (i128, i128), dir: i128) -> (i128, i128) {
@@ -97,20 +98,22 @@ fn part2(program: &Vec<i128>) -> i128 {
     let min_x = seen.iter().map(|p| (p.0).0).min().unwrap();
     let min_y = seen.iter().map(|p| (p.0).1).min().unwrap();
     let mut minutes = 0;
+    let mut expand: Vec<_> = seen.iter().filter(|x| *x.1 == 2).map(|x| *x.0).collect();
     loop {
         minutes += 1;
-        let expand: Vec<_> = seen.iter().filter(|x| *x.1 == 2).map(|x| *x.0).collect();
+        let mut new_expand = HashSet::new();
         for pos in &expand {
             for d in 1..=4 {
                 let new_pos = get_new_pos(*pos, d);
                 let p = seen.entry(new_pos).or_insert(0);
                 if *p == 1 {
                     *p = 2;
+                    new_expand.insert(new_pos);
                 }
             }
         }
-        let c = seen.iter().filter(|x| *x.1 == 1).count();
-        if c == 0 {
+        expand = new_expand.into_iter().collect();
+        if expand.len() == 0 {
             break;
         }
         draw(&window, &seen, min_x, min_y);

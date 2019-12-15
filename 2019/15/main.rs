@@ -1,7 +1,16 @@
 use aoc;
-use pancurses::*;
+use aoc::GridDrawer;
 use std::collections::HashMap;
 use std::iter::*;
+
+fn to_char(col: i128) -> char {
+    match col {
+        0 => '#',
+        1 => '.',
+        2 => 'O',
+        _ => panic!(),
+    }
+}
 
 fn get_new_pos(pos: (i128, i128), dir: i128) -> (i128, i128) {
     match dir {
@@ -18,6 +27,7 @@ fn walk(
     path: Vec<i128>,
     pos: (i128, i128),
     seen: &mut HashMap<(i128, i128), i128>,
+    drawer: &mut dyn aoc::GridDrawer,
 ) -> Option<Vec<i128>> {
     let mut paths = vec![];
     for d in 1..=4 {
@@ -30,6 +40,7 @@ fn walk(
         mc.add_input(d);
         let out = mc.run_to_next_output().unwrap();
         seen.insert(new_pos, out);
+        drawer.draw(seen);
         let pp = match out {
             0 => {
                 // Wall, do not expand in this direction
@@ -39,7 +50,7 @@ fn walk(
                 // Move ok
                 let mut p = path.clone();
                 p.push(d);
-                walk(&mut mc, p, new_pos, seen)
+                walk(&mut mc, p, new_pos, seen, drawer)
             }
             2 => {
                 // Found goal
@@ -64,38 +75,15 @@ fn walk(
 fn part1(program: &Vec<i128>) -> i128 {
     let mut m = intcode::Machine::new(program);
     let mut seen = HashMap::new();
-    let p = walk(&mut m, vec![], (0, 0), &mut seen);
+    let p = walk(&mut m, vec![], (0, 0), &mut seen, &mut aoc::NopGridDrawer {});
     p.unwrap().len() as i128
 }
 
-fn draw(window: &Window, area: &HashMap<(i128, i128), i128>, x_offs: i128, y_offs: i128) {
-    window.clear();
-    for ((x, y), col) in area {
-        let ch = match col {
-            0 => '#',
-            1 => '.',
-            2 => 'O',
-            _ => panic!(),
-        };
-        window.mvaddch((*y - y_offs) as i32, (*x - x_offs) as i32, ch);
-    }
-    let _ = window.getch();
-    window.refresh();
-}
-
 fn part2(program: &Vec<i128>) -> i128 {
-    let window = initscr();
-    nl();
-    noecho();
-    curs_set(0);
-    window.keypad(true);
-    window.scrollok(true);
-    window.timeout(20);
+    let mut d = aoc::CursesGridDrawer::new(to_char);
     let mut m = intcode::Machine::new(program);
     let mut seen = HashMap::new();
-    let _ = walk(&mut m, vec![], (0, 0), &mut seen);
-    let min_x = seen.iter().map(|p| (p.0).0).min().unwrap();
-    let min_y = seen.iter().map(|p| (p.0).1).min().unwrap();
+    let _ = walk(&mut m, vec![], (0, 0), &mut seen, &mut d);
     let mut minutes = 0;
     let mut expand: Vec<_> = seen.iter().filter(|x| *x.1 == 2).map(|x| *x.0).collect();
     loop {
@@ -115,9 +103,8 @@ fn part2(program: &Vec<i128>) -> i128 {
         if expand.len() == 0 {
             break;
         }
-        draw(&window, &seen, min_x, min_y);
+        d.draw(&seen);
     }
-    endwin();
     minutes
 }
 

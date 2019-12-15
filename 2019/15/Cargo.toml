@@ -7,10 +7,6 @@ edition = '2018'
 aoc = {path = "../aoc"}
 intcode = {path = "../intcode"}
 
-[dependencies.pancurses]
-version = "0.16"
-features = ["win32"]
-
 [[bin]]
 name = 'day15'
 path = 'main.rs'

@@ -6,3 +6,7 @@ edition = '2018'
 [dependencies]
 num = "0.2.0"
 serde_scan = "0.3.2"
+
+[dependencies.pancurses]
+version = "0.16"
+features = ["win32"]

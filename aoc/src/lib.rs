@@ -6,10 +6,124 @@ use std::io::prelude::*;
 use std::io::BufReader;
 use std::iter::*;
 use std::path::Path;
+use pancurses;
 
 pub use num::integer::*;
 pub use serde_scan::scan;
 pub use serde_scan::from_str;
+
+pub trait GridDrawer {
+    fn draw(&mut self, area: &HashMap<(i128, i128), i128>);
+}
+
+pub struct NopGridDrawer {}
+
+impl GridDrawer for NopGridDrawer {
+    fn draw(&mut self, _: &HashMap<(i128, i128), i128>) {}
+}
+
+pub struct PrintGridDrawer<F>
+where
+    F: Fn(i128) -> char,
+{
+    to_ch: F,
+}
+
+impl<F> PrintGridDrawer<F>
+where
+    F: Fn(i128) -> char,
+{
+    pub fn new(to_ch: F) -> PrintGridDrawer<F> {
+        PrintGridDrawer { to_ch }
+    }
+
+    fn to_char(&self, col: i128) -> char {
+        (self.to_ch)(col)
+    }
+}
+
+impl<F> GridDrawer for PrintGridDrawer<F>
+where
+    F: Fn(i128) -> char,
+{
+    fn draw(&mut self, area: &HashMap<(i128, i128), i128>) {
+        let min_x = area.iter().map(|p| (p.0).0).min().unwrap();
+        let min_y = area.iter().map(|p| (p.0).1).min().unwrap();
+        let max_x = area.iter().map(|p| (p.0).0).max().unwrap();
+        let max_y = area.iter().map(|p| (p.0).1).max().unwrap();
+	for y in min_y..=max_y {
+	    for x in min_x..=max_x {
+		let ch = if let Some(x) = area.get(&(x, y)) {
+		    self.to_char(*x)
+		} else {
+		    ' '
+		};
+		print!("{}", ch);
+	    }
+	    println!();
+	}
+    }
+}
+
+pub struct CursesGridDrawer<F>
+where
+    F: Fn(i128) -> char,
+{
+    window: pancurses::Window,
+    to_ch: F,
+}
+
+impl<F> CursesGridDrawer<F>
+where
+    F: Fn(i128) -> char,
+{
+    pub fn new(to_ch: F) -> CursesGridDrawer<F> {
+        let window = pancurses::initscr();
+        pancurses::nl();
+        pancurses::noecho();
+        pancurses::curs_set(0);
+        window.keypad(true);
+        window.scrollok(true);
+	window.timeout(16);
+        CursesGridDrawer { window, to_ch }
+    }
+
+    fn to_char(&self, col: i128) -> char {
+        (self.to_ch)(col)
+    }
+}
+
+impl<F> Drop for CursesGridDrawer<F>
+where
+    F: Fn(i128) -> char,
+{
+    fn drop(&mut self) {
+        pancurses::endwin();
+    }
+}
+
+impl<F> GridDrawer for CursesGridDrawer<F>
+where
+    F: Fn(i128) -> char,
+{
+    fn draw(&mut self, area: &HashMap<(i128, i128), i128>) {
+        self.window.clear();
+        let min_x = area.iter().map(|p| (p.0).0).min().unwrap();
+        let min_y = area.iter().map(|p| (p.0).1).min().unwrap();
+        for ((x, y), col) in area {
+            let ch = self.to_char(*col);
+            self.window
+                .mvaddch((*y - min_y) as i32, (*x - min_x) as i32, ch);
+        }
+        if let Some(pancurses::Input::Character(c)) = self.window.getch() {
+	    if c == 'q' {
+		pancurses::endwin();
+		std::process::exit(0);
+	    }
+	}
+        self.window.refresh();
+    }
+}
 
 // TODO: improve and generalize
 pub struct Tree {

@@ -153,6 +153,7 @@ pub enum State {
     Invalid,
 }
 
+#[derive(Clone)]
 pub struct Machine {
     memory: Vec<i128>,
     ip: usize,

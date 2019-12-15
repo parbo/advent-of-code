@@ -3,6 +3,16 @@ use pancurses::*;
 use std::collections::HashMap;
 use std::iter::*;
 
+fn get_new_pos(pos: (i128, i128), dir: i128) -> (i128, i128) {
+    match dir {
+        1 => (pos.0, pos.1 - 1),
+        2 => (pos.0, pos.1 + 1),
+        3 => (pos.0 - 1, pos.1),
+        4 => (pos.0 + 1, pos.1),
+        _ => panic!(),
+    }
+}
+
 fn walk(
     m: &mut intcode::Machine,
     path: Vec<i128>,
@@ -12,13 +22,7 @@ fn walk(
     let mut paths = vec![];
     for d in 1..=4 {
         //  north (1), south (2), west (3), and east (4)
-        let new_pos = match d {
-            1 => (pos.0, pos.1 - 1),
-            2 => (pos.0, pos.1 + 1),
-            3 => (pos.0 - 1, pos.1),
-            4 => (pos.0 + 1, pos.1),
-            _ => panic!(),
-        };
+        let new_pos = get_new_pos(pos, d);
         if seen.contains_key(&new_pos) {
             continue;
         }
@@ -103,13 +107,7 @@ fn part2(program: &Vec<i128>) -> i128 {
         }
         for pos in &expand {
             for d in 1..=4 {
-                let new_pos = match d {
-                    1 => (pos.0, pos.1 - 1),
-                    2 => (pos.0, pos.1 + 1),
-                    3 => (pos.0 - 1, pos.1),
-                    4 => (pos.0 + 1, pos.1),
-                    _ => panic!(),
-                };
+                let new_pos = get_new_pos(*pos, d);
                 let p = seen.entry(new_pos).or_insert(0);
                 if *p == 1 {
                     *p = 2;

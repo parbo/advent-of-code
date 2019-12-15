@@ -1,3 +1,4 @@
+use pancurses;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::env;
@@ -6,20 +7,47 @@ use std::io::prelude::*;
 use std::io::BufReader;
 use std::iter::*;
 use std::path::Path;
-use pancurses;
 
 pub use num::integer::*;
-pub use serde_scan::scan;
 pub use serde_scan::from_str;
+pub use serde_scan::scan;
 
-pub trait GridDrawer {
-    fn draw(&mut self, area: &HashMap<(i128, i128), i128>);
+pub trait Grid {
+    fn get(&self, pos: (i128, i128)) -> Option<i128>;
+    fn extents(&self) -> ((i128, i128), (i128, i128));
+}
+
+impl Grid for HashMap<(i128, i128), i128> {
+    fn get(&self, pos: (i128, i128)) -> Option<i128> {
+        if let Some(x) = self.get(&pos) {
+            Some(*x)
+        } else {
+            None
+        }
+    }
+    fn extents(&self) -> ((i128, i128), (i128, i128)) {
+        let min_x = self.iter().map(|p| (p.0).0).min().unwrap();
+        let min_y = self.iter().map(|p| (p.0).1).min().unwrap();
+        let max_x = self.iter().map(|p| (p.0).0).max().unwrap();
+        let max_y = self.iter().map(|p| (p.0).1).max().unwrap();
+        ((min_x, max_x), (min_y, max_y))
+    }
+}
+
+pub trait GridDrawer<G>
+where
+    G: Grid,
+{
+    fn draw(&mut self, area: &G);
 }
 
 pub struct NopGridDrawer {}
 
-impl GridDrawer for NopGridDrawer {
-    fn draw(&mut self, _: &HashMap<(i128, i128), i128>) {}
+impl<G> GridDrawer<G> for NopGridDrawer
+where
+    G: Grid,
+{
+    fn draw(&mut self, _: &G) {}
 }
 
 pub struct PrintGridDrawer<F>
@@ -42,26 +70,24 @@ where
     }
 }
 
-impl<F> GridDrawer for PrintGridDrawer<F>
+impl<F, G> GridDrawer<G> for PrintGridDrawer<F>
 where
     F: Fn(i128) -> char,
+    G: Grid,
 {
-    fn draw(&mut self, area: &HashMap<(i128, i128), i128>) {
-        let min_x = area.iter().map(|p| (p.0).0).min().unwrap();
-        let min_y = area.iter().map(|p| (p.0).1).min().unwrap();
-        let max_x = area.iter().map(|p| (p.0).0).max().unwrap();
-        let max_y = area.iter().map(|p| (p.0).1).max().unwrap();
-	for y in min_y..=max_y {
-	    for x in min_x..=max_x {
-		let ch = if let Some(x) = area.get(&(x, y)) {
-		    self.to_char(*x)
-		} else {
-		    ' '
-		};
-		print!("{}", ch);
-	    }
-	    println!();
-	}
+    fn draw(&mut self, area: &G) {
+        let ((min_x, max_x), (min_y, max_y)) = area.extents();
+        for y in min_y..=max_y {
+            for x in min_x..=max_x {
+                let ch = if let Some(x) = area.get((x, y)) {
+                    self.to_char(x)
+                } else {
+                    ' '
+                };
+                print!("{}", ch);
+            }
+            println!();
+        }
     }
 }
 
@@ -84,7 +110,7 @@ where
         pancurses::curs_set(0);
         window.keypad(true);
         window.scrollok(true);
-	window.timeout(16);
+        window.timeout(16);
         CursesGridDrawer { window, to_ch }
     }
 
@@ -102,25 +128,31 @@ where
     }
 }
 
-impl<F> GridDrawer for CursesGridDrawer<F>
+impl<F, G> GridDrawer<G> for CursesGridDrawer<F>
 where
     F: Fn(i128) -> char,
+    G: Grid,
 {
-    fn draw(&mut self, area: &HashMap<(i128, i128), i128>) {
+    fn draw(&mut self, area: &G) {
         self.window.clear();
-        let min_x = area.iter().map(|p| (p.0).0).min().unwrap();
-        let min_y = area.iter().map(|p| (p.0).1).min().unwrap();
-        for ((x, y), col) in area {
-            let ch = self.to_char(*col);
-            self.window
-                .mvaddch((*y - min_y) as i32, (*x - min_x) as i32, ch);
+        let ((min_x, max_x), (min_y, max_y)) = area.extents();
+        for y in min_y..=max_y {
+            for x in min_x..=max_x {
+                let ch = if let Some(x) = area.get((x, y)) {
+                    self.to_char(x)
+                } else {
+                    ' '
+                };
+                self.window
+                    .mvaddch((y - min_y) as i32, (x - min_x) as i32, ch);
+            }
         }
         if let Some(pancurses::Input::Character(c)) = self.window.getch() {
-	    if c == 'q' {
-		pancurses::endwin();
-		std::process::exit(0);
-	    }
-	}
+            if c == 'q' {
+                pancurses::endwin();
+                std::process::exit(0);
+            }
+        }
         self.window.refresh();
     }
 }

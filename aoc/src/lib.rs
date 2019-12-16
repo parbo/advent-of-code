@@ -1,3 +1,4 @@
+use num;
 use pancurses;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -11,6 +12,35 @@ use std::path::Path;
 pub use num::integer::*;
 pub use serde_scan::from_str;
 pub use serde_scan::scan;
+
+pub fn cum_sum<T: num::Num + Copy>(a: &[T]) -> Vec<T> {
+    a.iter()
+        .scan(T::zero(), |state, x| {
+            *state = *state + *x;
+            Some(*state)
+        })
+        .collect()
+}
+
+pub fn range_sum_inclusive<T: num::Num + Copy>(cum_sum: &[T], a: usize, b: usize) -> T {
+    if b < a {
+        T::zero()
+    } else {
+        if a == 0 {
+            cum_sum[b]
+        } else {
+            cum_sum[b] - cum_sum[a - 1]
+        }
+    }
+}
+
+pub fn range_sum<T: num::Num + Copy>(cum_sum: &[T], a: usize, b: usize) -> T {
+    if b > 0 {
+        range_sum_inclusive(cum_sum, a, b - 1)
+    } else {
+        T::zero()
+    }
+}
 
 pub trait Grid {
     fn get_value(&self, pos: (i128, i128)) -> Option<i128>;

@@ -7,7 +7,6 @@ edition = '2018'
 aoc = {path = "../aoc"}
 intcode = {path = "../intcode"}
 rayon = "1.2.1"
-segment-tree = "2.0.0"
 
 [[bin]]
 name = 'day16'

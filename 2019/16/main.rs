@@ -1,8 +1,4 @@
 use aoc;
-// use intcode;
-use rayon::prelude::*;
-use segment_tree::ops::Add;
-use segment_tree::SegmentPoint;
 use std::iter::*;
 use std::time::Instant;
 
@@ -16,14 +12,14 @@ fn digs_to_num(digs: &[i64], len: usize) -> i64 {
     num
 }
 
-fn calc_digit(tree: &SegmentPoint<i64, Add>, x: usize) -> i64 {
+fn calc_digit(cs: &[i64], x: usize) -> i64 {
     let mut s: i64 = 0;
     let mut i = x;
-    let l = tree.len();
+    let l = cs.len();
     let mut p: i64 = 1;
     while i < l {
         let e = std::cmp::min(i + x + 1, l);
-        let a: i64 = tree.query(i, e);
+        let a: i64 = aoc::range_sum(cs, i, e);
         s += p * a;
         p = p * -1;
         i += 2 * (x + 1);
@@ -37,10 +33,10 @@ fn calc(input: &Vec<i64>, phases: usize, offset: usize) -> i64 {
     for phase in 1..=phases {
         let now = Instant::now();
         println!("phase: {}", phase);
-        let tree = SegmentPoint::build(inp, Add);
+        let cs = aoc::cum_sum(&inp);
         let out: Vec<_> = (0..len)
-            .into_par_iter()
-            .map(|x| calc_digit(&tree, x))
+            .into_iter()
+            .map(|x| calc_digit(&cs, x))
             .collect();
         inp = out;
         println!("done in {} millis", now.elapsed().as_millis());

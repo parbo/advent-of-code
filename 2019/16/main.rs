@@ -16,13 +16,17 @@ fn calc(input: &Vec<i64>, offset: usize) -> i64 {
     let base = [0, 1, 0, - 1];
     let mut inp = input.clone();
     let len = inp.len();
-    for _ in 1..=100 {
-        // println!("phase: {}", phase);
+    for phase in 1..=100 {
+        println!("phase: {}", phase);
 	let mut out = vec![0; inp.len()];
         for x in 0..len {
+//            println!("digit: {}", x);
             let mut base_ix = 0;
 	    let mut s = 0;
-            for i in 0..len {
+            let skip = x - 1 as usize;
+            let cycle = aoc::lcm(10000, 4 * (x + 1)) as usize;
+ //           println!("cycle: {}", cycle);
+            for i in 0..cycle {
 		if ((i + 1) % (x + 1)) == 0 {
                     base_ix += 1
 		}
@@ -32,6 +36,7 @@ fn calc(input: &Vec<i64>, offset: usize) -> i64 {
 		let a = base[base_ix] * inp[i];
 		s += a;
             }
+            s = s * (cycle as i64);
 	    let b = s.abs() % 10;
             out[x] = b;
 	}

@@ -1,60 +1,63 @@
 use aoc;
 // use intcode;
+use rayon::prelude::*;
+use segment_tree::ops::Add;
+use segment_tree::SegmentPoint;
 use std::iter::*;
+use std::time::Instant;
 
 fn digs_to_num(digs: &[i64], len: usize) -> i64 {
     let mut d = 1;
     let mut num = 0;
     for i in 0..len {
-	num += d * digs[len - 1 - i];
-	d = d * 10;
+        num += d * digs[len - 1 - i];
+        d = d * 10;
     }
     num
 }
 
-fn calc(input: &Vec<i64>, offset: usize) -> i64 {
-    let base = [0, 1, 0, - 1];
+fn calc_digit(tree: &SegmentPoint<i64, Add>, x: usize) -> i64 {
+    let mut s: i64 = 0;
+    let mut i = x;
+    let l = tree.len();
+    let mut p: i64 = 1;
+    while i < l {
+        let e = std::cmp::min(i + x + 1, l);
+        let a: i64 = tree.query(i, e);
+        s += p * a;
+        p = p * -1;
+        i += 2 * (x + 1);
+    }
+    s.abs() % 10
+}
+
+fn calc(input: &Vec<i64>, phases: usize, offset: usize) -> i64 {
     let mut inp = input.clone();
     let len = inp.len();
-    for phase in 1..=100 {
+    for phase in 1..=phases {
+        let now = Instant::now();
         println!("phase: {}", phase);
-	let mut out = vec![0; inp.len()];
-        for x in 0..len {
-//            println!("digit: {}", x);
-            let mut base_ix = 0;
-	    let mut s = 0;
-            let skip = x - 1 as usize;
-            let cycle = aoc::lcm(10000, 4 * (x + 1)) as usize;
- //           println!("cycle: {}", cycle);
-            for i in 0..cycle {
-		if ((i + 1) % (x + 1)) == 0 {
-                    base_ix += 1
-		}
-		if base_ix > 3 {
-                    base_ix = 0;
-		}
-		let a = base[base_ix] * inp[i];
-		s += a;
-            }
-            s = s * (cycle as i64);
-	    let b = s.abs() % 10;
-            out[x] = b;
-	}
-	inp = out;
+        let tree = SegmentPoint::build(inp, Add);
+        let out: Vec<_> = (0..len)
+            .into_par_iter()
+            .map(|x| calc_digit(&tree, x))
+            .collect();
+        inp = out;
+        println!("done in {} millis", now.elapsed().as_millis());
     }
     digs_to_num(&inp[offset..], 8)
 }
 
 fn part1(input: &Vec<i64>) -> i64 {
-    calc(input, 0)
+    calc(input, 100, 0)
 }
 
 fn part2(input: &Vec<i64>) -> i64 {
     let mut inp = vec![];
     for _ in 0..10000 {
-	inp.extend(input);
+        inp.extend(input);
     }
-    calc(&inp, digs_to_num(input, 7) as usize)
+    calc(&inp, 100, digs_to_num(input, 7) as usize)
 }
 
 fn parse(lines: &Vec<String>) -> Vec<i64> {
@@ -77,15 +80,28 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::{part1, part2};
+    use super::{calc, part1, part2};
 
     #[test]
     fn test_part1() {
-        assert_eq!(part1(&vec![8,0,8,7,1,2,2,4,5,8,5,9,1,4,5,4,6,6,1,9,0,8,3,2,1,8,6,4,5,5,9,5]), 24176176);
+        assert_eq!(calc(&vec![1, 2, 3, 4, 5, 6, 7, 8], 4, 0), 1029498);
+        assert_eq!(
+            part1(&vec![
+                8, 0, 8, 7, 1, 2, 2, 4, 5, 8, 5, 9, 1, 4, 5, 4, 6, 6, 1, 9, 0, 8, 3, 2, 1, 8, 6, 4,
+                5, 5, 9, 5
+            ]),
+            24176176
+        );
     }
 
     #[test]
     fn test_part2() {
-        assert_eq!(part2(&vec![0,3,0,3,6,7,3,2,5,7,7,2,1,2,9,4,4,0,6,3,4,9,1,5,6,5,4,7,4,6,6,4]), 84462026);
+        assert_eq!(
+            part2(&vec![
+                0, 3, 0, 3, 6, 7, 3, 2, 5, 7, 7, 2, 1, 2, 9, 4, 4, 0, 6, 3, 4, 9, 1, 5, 6, 5, 4, 7,
+                4, 6, 6, 4
+            ]),
+            84462026
+        );
     }
 }

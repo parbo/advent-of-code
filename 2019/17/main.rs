@@ -324,6 +324,7 @@ fn sub_seq(c: &[(i128, i128)]) -> Vec<(Vec<(i128, i128)>, char)> {
 	    let old = char_ids.contains_key(seg);
 	    if !old {
 		char_ids.entry(seg.clone()).or_insert(ids[id]);
+		println!("{} -> {:?}", ids[id], seg);
 		id += 1;
 	    }
 	}
@@ -334,8 +335,11 @@ fn sub_seq(c: &[(i128, i128)]) -> Vec<(Vec<(i128, i128)>, char)> {
 	}
 	println!();
     }
-    println!("===============================================");
     let mut res = vec![];
+    for seg in &results[0] {
+	res.push((seg.clone(), *char_ids.get(seg).unwrap()));
+    }
+    println!("===============================================");
     res
 }
 
@@ -373,7 +377,8 @@ fn part2(program: &Vec<i128>) -> i128 {
         }
         results.push(res);
     }
-    results.sort_by(|a, b| b.len().cmp(&a.len()));
+    results.sort_by(|a, b| a.len().cmp(&b.len()));
+    println!("found: {}", results.len());
 
     let res = &results[0];
 

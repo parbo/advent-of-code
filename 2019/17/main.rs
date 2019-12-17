@@ -261,27 +261,21 @@ fn segments_at_offset(c: &[i128], start: usize) -> Vec<&[i128]> {
     segments
 }
 
-fn assemble_seq(
-    c: &[i128],
-    start: usize,
-    sofar_vec: Vec<Vec<i128>>,
-    sofar: HashSet<Vec<i128>>,
-) -> Vec<Vec<Vec<i128>>> {
+fn assemble_seq(c: &[i128], start: usize, sofar: &Vec<Vec<i128>>) -> Vec<Vec<Vec<i128>>> {
     let mut results = vec![];
     for s in segments_at_offset(c, start) {
         if start + s.len() == c.len() {
-            let mut sf = sofar_vec.clone();
+            let mut sf = sofar.clone();
             sf.push(s.to_vec());
             results.push(sf);
         } else if start + s.len() < c.len() {
             // Look up the rest
             let sv = s.to_vec();
-            let mut new_sofar = sofar.clone();
-            new_sofar.insert(sv.clone());
-            let mut new_sofar_vec = sofar_vec.clone();
-            new_sofar_vec.push(sv.clone());
-            if new_sofar.len() <= 3 {
-                let res = assemble_seq(c, start + s.len(), new_sofar_vec, new_sofar);
+            let mut sf = sofar.clone();
+            sf.push(sv.clone());
+            let set: HashSet<_> = sf.iter().collect();
+            if set.len() <= 3 {
+                let res = assemble_seq(c, start + s.len(), &sf);
                 results.extend(res);
             }
         }
@@ -290,9 +284,7 @@ fn assemble_seq(
 }
 
 fn sub_seq(c: &[i128]) -> Vec<Vec<(Vec<i128>, char)>> {
-    let sofar = HashSet::new();
-    let sofar_vec = Vec::new();
-    let results = assemble_seq(c, 0, sofar_vec, sofar);
+    let results = assemble_seq(c, 0, &vec![]);
     let ids = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
     let mut res = vec![];
     for r in &results {
@@ -305,8 +297,6 @@ fn sub_seq(c: &[i128]) -> Vec<Vec<(Vec<i128>, char)>> {
                 char_ids.entry(seg.clone()).or_insert(ids[id]);
                 id += 1;
             }
-        }
-        for seg in r {
             ress.push((seg.clone(), *char_ids.get(seg).unwrap()));
         }
         res.push(ress);

@@ -251,60 +251,77 @@ fn sub_seq(c: &[(i128, i128)]) -> Vec<(Vec<(i128, i128)>, char)>
                     counts.entry(sg).or_insert(HashSet::new()).insert(i);
                 });
         }
-        if group_size == 1 {
+        if group_size <= 1 {
             break;
         }
         group_size -= 1;
     }
     let mut cvec: Vec<_> = counts.iter().collect();
     // Sort by product of length and occurrences
-    cvec.sort_by(|a, b| (b.0.len() * b.1.len()).cmp(&(a.0.len() * a.1.len())));
-    let mut avail : HashSet<(Vec<(i128, i128)>, usize)>= HashSet::new();
-    for c in &cvec {
-        let vals: Vec<(i128, i128)> = c.0.iter().map(|x| x.to_owned()).collect();
-	for pos in c.1 {
-	    avail.insert((vals.clone(), *pos));
-	}
-    }
+    cvec.sort_by(|a, b| (b.1.len()).cmp(&(a.1.len())));
     // println!("cvec: {:?}", cvec);
     let mut seq = vec![];
     let mut valid: HashSet<usize> = HashSet::new();
-    for i in 0..c.len() {
-        valid.insert(i);
-    }
-    for c in &cvec {
-        for i in c.1 {
-            let mut ok = true;
-            // Check that all indices are valid
-            for ii in *i..(*i + c.0.len()) {
-                if !valid.contains(&ii) {
-                    ok = false;
-                    break;
-                }
-            }
-            if ok {
-		let vals: Vec<(i128, i128)> = c.0.iter().map(|x| x.to_owned()).collect();
-		if !avail.contains(&(vals.clone(), *i)) {
-		    continue;
+    let mut ixx = 0;
+    for permutation in permute::lexicographically(&cvec) {
+	seq.clear();
+	ixx += 1;
+	if ixx % 10000 == 0 {
+	    println!("permutation {}", ixx);
+	}
+	let mut avail : HashSet<(Vec<(i128, i128)>, usize)>= HashSet::new();
+	for c in &cvec {
+            let vals: Vec<(i128, i128)> = c.0.iter().map(|x| x.to_owned()).collect();
+	    for pos in c.1 {
+		avail.insert((vals.clone(), *pos));
+	    }
+	}
+	let mut cnt: HashSet<Vec<(i128, i128)>> = HashSet::new();
+	valid.clear();
+	for i in 0..c.len() {
+            valid.insert(i);
+	}
+	for c in &permutation {
+            for i in c.1 {
+		let mut ok = true;
+		// Check that all indices are valid
+		for ii in *i..(*i + c.0.len()) {
+                    if !valid.contains(&ii) {
+			ok = false;
+			break;
+                    }
 		}
-		avail.remove(&(vals.clone(), *i));
-                // Mark these indices as invalid
-                for ii in *i..(*i + c.0.len()) {
-                    valid.remove(&ii);
-                }
-                seq.push((vals.clone(), *i));
-            }
-        }
-        if valid.len() == 0 {
-            break;
-        }
+		if ok {
+		    let vals: Vec<(i128, i128)> = c.0.iter().map(|x| x.to_owned()).collect();
+		    if !avail.contains(&(vals.clone(), *i)) {
+			continue;
+		    }
+		    avail.remove(&(vals.clone(), *i));
+                    // Mark these indices as invalid
+                    for ii in *i..(*i + c.0.len()) {
+			valid.remove(&ii);
+                    }
+		    cnt.insert(vals.clone());
+                    seq.push((vals.clone(), *i));
+		}
+		if valid.len() == 0 || cnt.len() > 3 {
+		    break;
+		}
+	    }
+	    if valid.len() == 0 {
+		break;
+	    }
+	}
+	if valid.len() == 0 {
+	    break;
+	}
     }
     if valid.len() != 0 {
 	return vec![];
     }
     seq.sort_by(|a, b| a.1.cmp(&b.1));
     let mut id_map : HashMap<Vec<(i128, i128)>, char> = HashMap::new();
-    let ids = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+    let ids = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
     let mut id = 0;
     for s in &seq {
 	if id_map.contains_key(&s.0) {
@@ -348,7 +365,10 @@ fn part2(program: &Vec<i128>) -> i128 {
     let mut results = vec![];
     for c in commands {
         let res = sub_seq(&c);
-	println!("{:?}", res);
+	println!("==============");
+	for r in &res {
+	    println!("{:?}", r);
+	}
 	results.push(res);
     }
     results.sort_by(|a, b| b.len().cmp(&a.len()));

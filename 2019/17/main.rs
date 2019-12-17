@@ -229,12 +229,32 @@ fn prog_to_str(prog: &[(i128, i128)]) -> Vec<char> {
 	}
 	inp.push(',');
     }
-    *inp.last_mut().unwrap() = '\n';
+    if let Some(x) = inp.last_mut() {
+	*x = '\n';
+    }
     inp
 }
 
 fn sub_seq(c: &[(i128, i128)]) -> Vec<(Vec<(i128, i128)>, char)>
 {
+    let mut splits = vec![];
+    for i1 in 1..c.len() {
+	for i2 in i1..c.len() {
+            let sg1 = &c[0..i1];
+	    let s1 = prog_to_str(sg1);
+            let sg2 = &c[i1..i2];
+	    let s2 = prog_to_str(sg2);
+            let sg3 = &c[i2..];
+	    let s3 = prog_to_str(sg3);
+	    if s1.len() > 30 || s2.len() > 30 || s3.len() > 30 {
+//		println!("too loing: {:?}, {:?}, {:?}", s1, s2, s3);
+		continue;
+	    }
+	    println!("yay: {:?}, {:?}, {:?}", s1, s2, s3);
+	    splits.push((i1, i2));
+	}
+    }
+    println!("splits: {:?}", splits);
     let mut group_size = c.len() / 2;
     let mut counts: HashMap<&[(i128, i128)], HashSet<usize>> = HashMap::new();
     loop {

@@ -216,13 +216,34 @@ fn compact(path: &[i128]) -> Vec<(i128, i128)> {
     v
 }
 
-fn sub_seq(c: &[(i128, i128)]) /*-> Vec<Vec<(i128, i128)>>*/
+fn prog_to_str(prog: &[(i128, i128)]) -> Vec<char> {
+    let mut inp = vec![];
+    for (d, c) in prog {
+	match d {
+	    82 => inp.push('R'),
+	    76 => inp.push('L'),
+	    _ => panic!(),
+	}
+	for ch in c.to_string().chars() {
+	    inp.push(ch);
+	}
+	inp.push(',');
+    }
+    *inp.last_mut().unwrap() = '\n';
+    inp
+}
+
+fn sub_seq(c: &[(i128, i128)]) -> Vec<(Vec<(i128, i128)>, char)>
 {
-    let mut group_size = 10; //10; // c.len() / 2;
+    let mut group_size = c.len() / 2;
     let mut counts: HashMap<&[(i128, i128)], HashSet<usize>> = HashMap::new();
     loop {
         for i in 0..(c.len() - group_size) {
             let sg = &c[i..(i + group_size)];
+	    let s = prog_to_str(sg);
+	    if s.len() > 20 {
+		continue;
+	    }
             c.windows(group_size)
                 .enumerate()
                 .filter(|x| x.1 == sg)
@@ -230,14 +251,14 @@ fn sub_seq(c: &[(i128, i128)]) /*-> Vec<Vec<(i128, i128)>>*/
                     counts.entry(sg).or_insert(HashSet::new()).insert(i);
                 });
         }
-        if group_size == 6 {
+        if group_size == 1 {
             break;
         }
         group_size -= 1;
     }
     let mut cvec: Vec<_> = counts.iter().collect();
     // Sort by product of length and occurrences
-    cvec.sort_by(|a, b| (b.1.len()).cmp(&(a.1.len())));
+    cvec.sort_by(|a, b| (b.0.len() * b.1.len()).cmp(&(a.0.len() * a.1.len())));
     let mut avail : HashSet<(Vec<(i128, i128)>, usize)>= HashSet::new();
     for c in &cvec {
         let vals: Vec<(i128, i128)> = c.0.iter().map(|x| x.to_owned()).collect();
@@ -245,7 +266,7 @@ fn sub_seq(c: &[(i128, i128)]) /*-> Vec<Vec<(i128, i128)>>*/
 	    avail.insert((vals.clone(), *pos));
 	}
     }
-    println!("cvec: {:?}", cvec);
+    // println!("cvec: {:?}", cvec);
     let mut seq = vec![];
     let mut valid: HashSet<usize> = HashSet::new();
     for i in 0..c.len() {
@@ -278,6 +299,9 @@ fn sub_seq(c: &[(i128, i128)]) /*-> Vec<Vec<(i128, i128)>>*/
             break;
         }
     }
+    if valid.len() != 0 {
+	return vec![];
+    }
     seq.sort_by(|a, b| a.1.cmp(&b.1));
     let mut id_map : HashMap<Vec<(i128, i128)>, char> = HashMap::new();
     let ids = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
@@ -287,12 +311,13 @@ fn sub_seq(c: &[(i128, i128)]) /*-> Vec<Vec<(i128, i128)>>*/
 	    continue;
 	}
 	id_map.insert(s.0.clone(), ids[id]);
-	println!("{} is {:?}", ids[id], s.0);
 	id += 1;
     }
-    for (i, s) in seq.iter().enumerate() {
-        println!("{}: {:?}", i, id_map.get(&s.0).unwrap());
+    let mut res = vec![];
+    for s in seq {
+	res.push((s.0.clone(), *id_map.get(&s.0).unwrap()));
     }
+    res
 }
 
 fn part2(program: &Vec<i128>) -> i128 {
@@ -320,45 +345,33 @@ fn part2(program: &Vec<i128>) -> i128 {
     for path in paths {
         commands.push(compact(&path));
     }
+    let mut results = vec![];
     for c in commands {
-        println!("=================================");
-        println!("{:?}", c);
-        sub_seq(&c);
+        let res = sub_seq(&c);
+	println!("{:?}", res);
+	results.push(res);
     }
+    results.sort_by(|a, b| b.len().cmp(&a.len()));
 
-    let mut things = HashMap::new();
-    let a = vec![76i128,8,82,10,82,10,82,6,82,4,76,12,76, 8];
-    things.insert(65, a);
-    let b = vec![82i128,4,82,4,82,10,76,12,82,4,76,12];
-    things.insert(66, b);
-    let c = vec![82i128,10, 76, 12, 76, 8,82, 10, 82, 10, 82, 6, 82, 4];
-    things.insert(67, c);
-
-    let prog = vec![65, 66, 65, 67];
+    let res = &results[0];
 
     let mut m = intcode::Machine::new(program);
     *m.memory_mut().get_mut(0).unwrap() = 2;
     let mut inp : Vec<char> = vec![];
-    for i in 0..prog.len() {
-	inp.push(to_char(prog[i]));
+    let mut progs : HashMap<char, Vec<(i128, i128)>> = HashMap::new();
+    for i in 0..res.len() {
+	progs.insert(res[i].1, res[i].0.clone());
+	inp.push(res[i].1);
 	inp.push(',');
     }
     *inp.last_mut().unwrap() = '\n';
-    for i in &[65, 66, 67] {
-	let p = things.get(i).unwrap();
-	for d in p {
-	    match d {
-		82 => inp.push('R'),
-		76 => inp.push('L'),
-		x => {
-		    for c in x.to_string().chars() {
-			inp.push(c);
-		    }
-		}
+    for i in &['A', 'B', 'C', 'D', 'E', 'F'] {
+	if let Some(p) = progs.get(i) {
+	    let s = prog_to_str(p);
+	    for c in s {
+		inp.push(c);
 	    }
-	    inp.push(',');
 	}
-	*inp.last_mut().unwrap() = '\n';
     }
     inp.push('y');
     inp.push('\n');

@@ -140,6 +140,7 @@ fn walk(
                 .map(|x| x.to_owned())
                 .collect();
             if diff.len() == 0 {
+                println!("p: {:?}", path);
                 print_stuff(grid, start, &path);
                 vec![path.clone()]
             } else {
@@ -192,7 +193,7 @@ fn part1(program: &Vec<i128>) -> i128 {
     align.iter().map(|(x, y)| x * y).sum()
 }
 
-fn compact(path: &[i128]) -> Vec<(i128, i128)> {
+fn compact(path: &[i128]) -> Vec<i128> {
     let mut v = vec![];
     let mut last = None;
     let mut count = 0;
@@ -206,26 +207,32 @@ fn compact(path: &[i128]) -> Vec<(i128, i128)> {
                 if *p == 70 {
                     count += 1;
                 } else {
-                    v.push((x, count));
+                    v.push(x);
+                    v.push(count);
                     last = Some(*p);
                     count = 1;
                 }
             }
         }
     }
+    if count > 0 {
+        v.push(last.unwrap());
+        v.push(count);
+    }
     v
 }
 
-fn prog_to_str(prog: &[(i128, i128)]) -> Vec<char> {
+fn prog_to_str(prog: &[i128]) -> Vec<char> {
     let mut inp = vec![];
-    for (d, c) in prog {
+    for d in prog {
         match d {
             82 => inp.push('R'),
             76 => inp.push('L'),
-            _ => panic!(),
-        }
-        for ch in c.to_string().chars() {
-            inp.push(ch);
+            c => {
+                for ch in c.to_string().chars() {
+                    inp.push(ch);
+                }
+            }
         }
         inp.push(',');
     }
@@ -239,19 +246,19 @@ fn assemble_seq(
     start: usize,
     end: usize,
     depth: usize,
-    rev_index: &HashMap<usize, HashSet<&[(i128, i128)]>>,
-    sofar_vec: Vec<Vec<(i128, i128)>>,
-    sofar: HashSet<Vec<(i128, i128)>>,
-) -> Vec<Vec<Vec<(i128, i128)>>> {
-    // println!("{:indent$}assemble: {}, {:?}", "", start, sofar, indent=depth);
+    rev_index: &HashMap<usize, Vec<&[i128]>>,
+    sofar_vec: Vec<Vec<i128>>,
+    sofar: HashSet<Vec<i128>>,
+) -> Vec<Vec<Vec<i128>>> {
+    // println!("{:indent$}assemble: {}, {}, {}, {:?}", "", start, end, sofar.len(), sofar_vec, indent=depth);
     let mut results = vec![];
     if let Some(segments) = rev_index.get(&start) {
         for s in segments {
-            // println!("{:indent$}  {:?}, {}", "", s, segments.len(), indent=depth);
             if start + s.len() == end {
-		let mut sf = sofar_vec.clone();
-		sf.push(s.to_vec());
-		results.push(sf);
+                let mut sf = sofar_vec.clone();
+                sf.push(s.to_vec());
+                println!("{:indent$} done: {:?}", "", s, indent = depth);
+                results.push(sf);
             } else if start + s.len() < end {
                 // Look up the rest
                 let sv = s.to_vec();
@@ -259,52 +266,47 @@ fn assemble_seq(
                 new_sofar.insert(sv.clone());
                 let mut new_sofar_vec = sofar_vec.clone();
                 new_sofar_vec.push(sv.clone());
-                if new_sofar.len() < 3 {
-                    let res = assemble_seq(start + s.len(), end, depth + 4, rev_index, new_sofar_vec, new_sofar);
-		    results.extend(res);
+                if new_sofar.len() <= 3 {
+                    let res = assemble_seq(
+                        start + s.len(),
+                        end,
+                        depth + 4,
+                        rev_index,
+                        new_sofar_vec,
+                        new_sofar,
+                    );
+                    results.extend(res);
+                } else {
+                    // println!("{:indent$} too many parts!: {:?}", "", s, indent=depth);
                 }
+            } else {
+                println!("{:indent$} too long!: {:?}", "", s, indent = depth);
             }
         }
+    } else {
+        // println!("{:indent$} done", "", indent=depth);
+        results.push(sofar_vec.clone());
     }
     results
 }
 
-fn sub_seq(c: &[(i128, i128)]) -> Vec<(Vec<(i128, i128)>, char)> {
-    let mut group_size = c.len();
-    let mut counts: HashMap<&[(i128, i128)], HashSet<usize>> = HashMap::new();
-    loop {
-        for i in 0..(c.len() - group_size) {
-            let sg = &c[i..(i + group_size)];
-            let s = prog_to_str(sg);
-            if s.len() > 25 {
+fn sub_seq(c: &[i128]) -> Vec<(Vec<i128>, char)> {
+    let mut rev_index: HashMap<usize, Vec<&[i128]>> = HashMap::new();
+    for i in 0..c.len() {
+        for j in 1..c.len() {
+            let e = i + j;
+            if e > c.len() {
                 continue;
             }
-            c.windows(group_size)
-                .enumerate()
-                .filter(|x| x.1 == sg)
-                .for_each(|(i, _)| {
-                    counts.entry(sg).or_insert(HashSet::new()).insert(i);
-                });
-        }
-        if group_size <= 1 {
-            break;
-        }
-        group_size -= 1;
-    }
-    let mut cvec: Vec<_> = counts.iter().collect();
-    // Sort by product of length and occurrences
-    cvec.sort_by(|a, b| (b.1.len()).cmp(&(a.1.len())));
-    println!("===============================================");
-    println!("cvec: {}", cvec.len());
-    println!("----------------");
-    let mut rev_index = HashMap::new();
-    for c in &cvec {
-        println!("  {:?}", c);
-        for pos in c.1 {
-            rev_index
-                .entry(*pos)
-                .or_insert(HashSet::new())
-                .insert(c.0.clone());
+            let sg = &c[i..e];
+            if sg.len() == 0 {
+                continue;
+            }
+            let s = prog_to_str(sg);
+            if s.len() > 21 {
+                continue;
+            }
+            rev_index.entry(i).or_insert(Vec::new()).push(sg);
         }
     }
     println!("----------------");
@@ -322,24 +324,22 @@ fn sub_seq(c: &[(i128, i128)]) -> Vec<(Vec<(i128, i128)>, char)> {
         let mut ress = vec![];
         let mut id = 0;
         let mut char_ids = HashMap::new();
-	for seg in r {
-	    let old = char_ids.contains_key(seg);
-	    if !old {
-		char_ids.entry(seg.clone()).or_insert(ids[id]);
-		println!("{} -> {:?}", ids[id], seg);
-		id += 1;
-	    }
-	}
+        for seg in r {
+            let old = char_ids.contains_key(seg);
+            if !old {
+                char_ids.entry(seg.clone()).or_insert(ids[id]);
+                println!("{} -> {:?}", ids[id], seg);
+                id += 1;
+            }
+        }
 
-	for seg in r {
+        for seg in r {
             print!("{:?}, ", char_ids.get(seg).unwrap());
             ress.push((seg.clone(), *char_ids.get(seg).unwrap()));
-
-	}
-	println!();
+        }
+        println!();
         res.push(ress);
     }
-
 
     println!("===============================================");
     res[0].clone()
@@ -372,6 +372,8 @@ fn part2(program: &Vec<i128>) -> i128 {
     }
     let mut results = vec![];
     for c in commands {
+        println!("==============");
+        println!("{:?}", c);
         let res = sub_seq(&c);
         println!("==============");
         for r in &res {
@@ -387,7 +389,7 @@ fn part2(program: &Vec<i128>) -> i128 {
     let mut m = intcode::Machine::new(program);
     *m.memory_mut().get_mut(0).unwrap() = 2;
     let mut inp: Vec<char> = vec![];
-    let mut progs: HashMap<char, Vec<(i128, i128)>> = HashMap::new();
+    let mut progs: HashMap<char, Vec<i128>> = HashMap::new();
     for i in 0..res.len() {
         progs.insert(res[i].1, res[i].0.clone());
         inp.push(res[i].1);
@@ -402,7 +404,12 @@ fn part2(program: &Vec<i128>) -> i128 {
             }
         }
     }
-    inp.push('y');
+    let live = false;
+    if live {
+        inp.push('y');
+    } else {
+        inp.push('n');
+    }
     inp.push('\n');
     for i in &inp {
         print!("{}", i);
@@ -410,6 +417,7 @@ fn part2(program: &Vec<i128>) -> i128 {
     for c in inp {
         m.add_input(c as i128);
     }
+    let mut res = 0;
     loop {
         let state = m.run_to_next_io();
         if state != intcode::State::Output {
@@ -417,10 +425,15 @@ fn part2(program: &Vec<i128>) -> i128 {
         }
         let o = m.outputs();
         for c in o {
-            print!("{}", to_char(c));
+            if c > 255 {
+                res = c;
+                println!("{}", c);
+            } else {
+                print!("{}", to_char(c));
+            }
         }
     }
-    0
+    res
 }
 
 fn main() {

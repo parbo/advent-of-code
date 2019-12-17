@@ -6,6 +6,7 @@ edition = '2018'
 [dependencies]
 aoc = {path = "../aoc"}
 intcode = {path = "../intcode"}
+permute = {git = "https://github.com/bkputnam/permute.git"}
 
 [[bin]]
 name = 'day17'

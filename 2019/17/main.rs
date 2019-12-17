@@ -259,7 +259,7 @@ fn assemble_seq(
                 new_sofar.insert(sv.clone());
                 let mut new_sofar_vec = sofar_vec.clone();
                 new_sofar_vec.push(sv.clone());
-                if new_sofar.len() <= 3 {
+                if new_sofar.len() < 3 {
                     let res = assemble_seq(start + s.len(), end, depth + 4, rev_index, new_sofar_vec, new_sofar);
 		    results.extend(res);
                 }
@@ -270,13 +270,13 @@ fn assemble_seq(
 }
 
 fn sub_seq(c: &[(i128, i128)]) -> Vec<(Vec<(i128, i128)>, char)> {
-    let mut group_size = c.len() / 2;
+    let mut group_size = c.len();
     let mut counts: HashMap<&[(i128, i128)], HashSet<usize>> = HashMap::new();
     loop {
         for i in 0..(c.len() - group_size) {
             let sg = &c[i..(i + group_size)];
             let s = prog_to_str(sg);
-            if s.len() > 20 {
+            if s.len() > 25 {
                 continue;
             }
             c.windows(group_size)
@@ -317,9 +317,11 @@ fn sub_seq(c: &[(i128, i128)]) -> Vec<(Vec<(i128, i128)>, char)> {
     let results = assemble_seq(0, c.len(), 0, &rev_index, sofar_vec, sofar);
     println!("===============================================");
     let ids = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
-    let mut id = 0;
-    let mut char_ids = HashMap::new();
+    let mut res = vec![];
     for r in &results {
+        let mut ress = vec![];
+        let mut id = 0;
+        let mut char_ids = HashMap::new();
 	for seg in r {
 	    let old = char_ids.contains_key(seg);
 	    if !old {
@@ -328,19 +330,19 @@ fn sub_seq(c: &[(i128, i128)]) -> Vec<(Vec<(i128, i128)>, char)> {
 		id += 1;
 	    }
 	}
-    }
-    for r in &results {
+
 	for seg in r {
             print!("{:?}, ", char_ids.get(seg).unwrap());
+            ress.push((seg.clone(), *char_ids.get(seg).unwrap()));
+
 	}
 	println!();
+        res.push(ress);
     }
-    let mut res = vec![];
-    for seg in &results[0] {
-	res.push((seg.clone(), *char_ids.get(seg).unwrap()));
-    }
+
+
     println!("===============================================");
-    res
+    res[0].clone()
 }
 
 fn part2(program: &Vec<i128>) -> i128 {

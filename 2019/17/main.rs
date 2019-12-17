@@ -140,7 +140,6 @@ fn walk(
                 .map(|x| x.to_owned())
                 .collect();
             if diff.len() == 0 {
-                println!("p: {:?}", path);
                 print_stuff(grid, start, &path);
                 vec![path.clone()]
             } else {
@@ -242,82 +241,58 @@ fn prog_to_str(prog: &[i128]) -> Vec<char> {
     inp
 }
 
+fn segments_at_offset(c: &[i128], start: usize) -> Vec<&[i128]> {
+    let mut segments = vec![];
+    for j in 1..c.len() {
+        let e = start + j;
+        if e > c.len() {
+            continue;
+        }
+        let sg = &c[start..e];
+        if sg.len() == 0 {
+            continue;
+        }
+        let s = prog_to_str(sg);
+        if s.len() > 21 {
+            continue;
+        }
+        segments.push(sg);
+    }
+    segments
+}
+
 fn assemble_seq(
+    c: &[i128],
     start: usize,
-    end: usize,
-    depth: usize,
-    rev_index: &HashMap<usize, Vec<&[i128]>>,
     sofar_vec: Vec<Vec<i128>>,
     sofar: HashSet<Vec<i128>>,
 ) -> Vec<Vec<Vec<i128>>> {
-    // println!("{:indent$}assemble: {}, {}, {}, {:?}", "", start, end, sofar.len(), sofar_vec, indent=depth);
     let mut results = vec![];
-    if let Some(segments) = rev_index.get(&start) {
-        for s in segments {
-            if start + s.len() == end {
-                let mut sf = sofar_vec.clone();
-                sf.push(s.to_vec());
-                println!("{:indent$} done: {:?}", "", s, indent = depth);
-                results.push(sf);
-            } else if start + s.len() < end {
-                // Look up the rest
-                let sv = s.to_vec();
-                let mut new_sofar = sofar.clone();
-                new_sofar.insert(sv.clone());
-                let mut new_sofar_vec = sofar_vec.clone();
-                new_sofar_vec.push(sv.clone());
-                if new_sofar.len() <= 3 {
-                    let res = assemble_seq(
-                        start + s.len(),
-                        end,
-                        depth + 4,
-                        rev_index,
-                        new_sofar_vec,
-                        new_sofar,
-                    );
-                    results.extend(res);
-                } else {
-                    // println!("{:indent$} too many parts!: {:?}", "", s, indent=depth);
-                }
-            } else {
-                println!("{:indent$} too long!: {:?}", "", s, indent = depth);
+    for s in segments_at_offset(c, start) {
+        if start + s.len() == c.len() {
+            let mut sf = sofar_vec.clone();
+            sf.push(s.to_vec());
+            results.push(sf);
+        } else if start + s.len() < c.len() {
+            // Look up the rest
+            let sv = s.to_vec();
+            let mut new_sofar = sofar.clone();
+            new_sofar.insert(sv.clone());
+            let mut new_sofar_vec = sofar_vec.clone();
+            new_sofar_vec.push(sv.clone());
+            if new_sofar.len() <= 3 {
+                let res = assemble_seq(c, start + s.len(), new_sofar_vec, new_sofar);
+                results.extend(res);
             }
         }
-    } else {
-        // println!("{:indent$} done", "", indent=depth);
-        results.push(sofar_vec.clone());
     }
     results
 }
 
-fn sub_seq(c: &[i128]) -> Vec<(Vec<i128>, char)> {
-    let mut rev_index: HashMap<usize, Vec<&[i128]>> = HashMap::new();
-    for i in 0..c.len() {
-        for j in 1..c.len() {
-            let e = i + j;
-            if e > c.len() {
-                continue;
-            }
-            let sg = &c[i..e];
-            if sg.len() == 0 {
-                continue;
-            }
-            let s = prog_to_str(sg);
-            if s.len() > 21 {
-                continue;
-            }
-            rev_index.entry(i).or_insert(Vec::new()).push(sg);
-        }
-    }
-    println!("----------------");
-    for (k, v) in &rev_index {
-        println!("  {} -> {:?}", k, v);
-    }
-    println!("===============================================");
+fn sub_seq(c: &[i128]) -> Vec<Vec<(Vec<i128>, char)>> {
     let sofar = HashSet::new();
     let sofar_vec = Vec::new();
-    let results = assemble_seq(0, c.len(), 0, &rev_index, sofar_vec, sofar);
-    println!("===============================================");
+    let results = assemble_seq(c, 0, sofar_vec, sofar);
     let ids = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
     let mut res = vec![];
     for r in &results {
@@ -328,21 +303,15 @@ fn sub_seq(c: &[i128]) -> Vec<(Vec<i128>, char)> {
             let old = char_ids.contains_key(seg);
             if !old {
                 char_ids.entry(seg.clone()).or_insert(ids[id]);
-                println!("{} -> {:?}", ids[id], seg);
                 id += 1;
             }
         }
-
         for seg in r {
-            print!("{:?}, ", char_ids.get(seg).unwrap());
             ress.push((seg.clone(), *char_ids.get(seg).unwrap()));
         }
-        println!();
         res.push(ress);
     }
-
-    println!("===============================================");
-    res[0].clone()
+    res
 }
 
 fn part2(program: &Vec<i128>) -> i128 {
@@ -372,17 +341,12 @@ fn part2(program: &Vec<i128>) -> i128 {
     }
     let mut results = vec![];
     for c in commands {
-        println!("==============");
-        println!("{:?}", c);
         let res = sub_seq(&c);
-        println!("==============");
         for r in &res {
-            println!("{:?}", r);
+            results.push(r.clone());
         }
-        results.push(res);
     }
     results.sort_by(|a, b| a.len().cmp(&b.len()));
-    println!("found: {}", results.len());
 
     let res = &results[0];
 
@@ -445,14 +409,4 @@ fn main() {
         part2(&parsed)
     };
     println!("{}", result);
-}
-
-#[cfg(test)]
-mod tests {
-    // use super::part1;
-
-    // #[test]
-    // fn test_part1() {
-    //     assert_eq!(part1(&vec![0]), 0);
-    // }
 }

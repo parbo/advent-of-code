@@ -56,7 +56,7 @@ struct Map<'a> {
     key_state: KeyState,
     dist: HashMap<(usize, usize), usize>,
     heap: BinaryHeap<State>,
-    came_from: HashMap<(usize, usize), Vec<(usize, usize)>>,
+    came_from: HashMap<(usize, usize), (usize, usize)>,
 }
 
 impl<'a> Map<'a> {
@@ -128,7 +128,7 @@ fn shortest_path(
                     let mut p: Vec<(usize, usize)> = vec![];
                     let mut curr = goal;
                     while curr != start {
-                        curr = *state.came_from.get(&curr).unwrap().last().unwrap();
+                        curr = *state.came_from.get(&curr).unwrap();
                         p.push(curr)
                     }
                     res = p;
@@ -138,7 +138,7 @@ fn shortest_path(
                 let mut p: Vec<(usize, usize)> = vec![];
                 let mut curr = goal;
                 while curr != start {
-                    curr = *state.came_from.get(&curr).unwrap().last().unwrap();
+                    curr = *state.came_from.get(&curr).unwrap();
                     p.push(curr)
                 }
                 res = p;
@@ -180,13 +180,7 @@ fn shortest_path(
                 state.dist.insert(next.position, next.cost);
                 state.heap.push(next);
                 // Remember the path
-                state.came_from.insert(*neighbour_position, vec![position]);
-            } else if next.cost == d {
-                state
-                    .came_from
-                    .entry(*neighbour_position)
-                    .or_insert(vec![])
-                    .push(position);
+                state.came_from.insert(*neighbour_position, position);
             }
         }
     }
@@ -360,11 +354,11 @@ fn solve<'a>(map: &'a Vec<Vec<char>>, curr: &Vec<(usize, usize)>) -> usize {
 
                     let mut new_keys = map_state.keys;
                     new_keys.set(*key);
-                    for p in &p.1 {
+                    p.1.iter().for_each(|p| {
                         if let Some(k) = all_keys.get(p) {
                             new_keys.set(*k);
                         }
-                    }
+                    });
                     let mut new_pos = map_state.positions.clone();
                     new_pos[i] = *pos;
                     let next = PathState {

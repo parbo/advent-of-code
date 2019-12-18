@@ -280,9 +280,16 @@ fn solve<'a>(map: &'a Vec<Vec<char>>, curr: &Vec<(usize, usize)>) -> usize {
         },
         paths: vec![],
     });
+    let mut cached_paths: HashMap<
+        ((usize, usize), (usize, usize), KeyState),
+        Option<(usize, Vec<(usize, usize)>)>,
+    > = HashMap::new();
+
     let mut goal_cost = None;
     let mut res = vec![];
-    let mut last_keys = std::usize::MAX;
+    let mut last_cost = 0;
+    let mut cached = 0;
+    let mut total = 0;
     while let Some(PathState {
         cost,
         map_state,
@@ -293,9 +300,15 @@ fn solve<'a>(map: &'a Vec<Vec<char>>, curr: &Vec<(usize, usize)>) -> usize {
             .iter()
             .filter(|(_, v)| !map_state.keys.get(**v))
             .collect();
-        if keys.len() != last_keys {
-            println!("keys: {:?}, cost: {}", keys.len(), cost);
-            last_keys = keys.len();
+        if cost / 100 != last_cost {
+            println!(
+                "keys: {:?}, cost: {}, cache: {}%, total: {}",
+                keys.len(),
+                cost,
+                100 * cached / total,
+                total
+            );
+            last_cost = cost / 100;
         }
         if keys.len() == 0 {
             if let Some(gc) = goal_cost {
@@ -325,9 +338,21 @@ fn solve<'a>(map: &'a Vec<Vec<char>>, curr: &Vec<(usize, usize)>) -> usize {
         for (pos, key) in keys {
             let pos_len = map_state.positions.len();
             for i in 0..pos_len {
-                let mut m = Map::new(&map, map_state.keys);
                 let rob_pos = map_state.positions[i];
-                if let Some(p) = m.shortest_path(rob_pos, *pos) {
+                total += 1;
+                let mp = match cached_paths.get(&(rob_pos, *pos, map_state.keys)) {
+                    None => {
+                        let mut m = Map::new(&map, map_state.keys);
+                        let res = shortest_path(&mut m, rob_pos, *pos);
+                        cached_paths.insert((rob_pos, *pos, map_state.keys), res.clone());
+                        res
+                    }
+                    Some(x) => {
+                        cached += 1;
+                        x.clone()
+                    }
+                };
+                if let Some(p) = mp {
                     // println!("found path from {:?} {}, to {} at {:?}", map_state.positions, i, key, pos);
                     // println!("{:?}", p);
                     let mut new_paths = paths.clone();

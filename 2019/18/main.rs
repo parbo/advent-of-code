@@ -4,6 +4,24 @@ use std::collections::BinaryHeap;
 use std::collections::HashMap;
 use std::iter::*;
 
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+struct KeyState {
+    state: u32,
+}
+
+impl KeyState {
+    fn set(&mut self, ch: char) {
+        let bit = (ch as u32) - 97;
+        self.state |= 1 << bit;
+    }
+
+    fn get(&self, ch: char) -> bool {
+        let bit = (ch as u32) - 97;
+        let mask = 1 << bit;
+        (self.state & mask) == mask
+    }
+}
+
 #[derive(Clone, Eq, PartialEq)]
 struct State {
     cost: usize,
@@ -35,15 +53,17 @@ impl PartialOrd for State {
 
 struct Map<'a> {
     map: &'a Vec<Vec<char>>,
+    key_state: KeyState,
     dist: HashMap<(usize, usize), usize>,
     heap: BinaryHeap<State>,
     came_from: HashMap<(usize, usize), Vec<(usize, usize)>>,
 }
 
 impl<'a> Map<'a> {
-    fn new(m: &'a Vec<Vec<char>>) -> Map {
+    fn new(map: &'a Vec<Vec<char>>, key_state: KeyState) -> Map<'a> {
         let mut map = Map {
-            map: m,
+            map,
+            key_state,
             dist: HashMap::new(),
             heap: BinaryHeap::new(),
             came_from: HashMap::new(),
@@ -56,9 +76,20 @@ impl<'a> Map<'a> {
 
     fn dijkstra_neighbours(&self, pos: (usize, usize)) -> Vec<(usize, usize)> {
         self.neighbours(pos, |p| {
-            self.map[p.0][p.1] == '.'
-                || (self.map[p.0][p.1].is_ascii_alphabetic()
-                    && self.map[p.0][p.1].is_ascii_lowercase())
+            let ch = self.map[p.0][p.1];
+            if ch == '.' {
+                return true;
+            }
+            if ch == '#' {
+                return false;
+            }
+            if ch.is_ascii_lowercase() {
+                return true;
+            }
+            if ch.is_ascii_uppercase() {
+                return self.key_state.get(ch.to_ascii_lowercase());
+            }
+            return false;
         })
     }
 
@@ -181,18 +212,18 @@ impl<'a> Map<'a> {
 }
 
 fn find_keys(map: &Vec<Vec<char>>) -> HashMap<(usize, usize), char> {
-    let mut keys = HashMap::new();
+    let mut things = HashMap::new();
     let h = map.len();
     let w = map[0].len();
     for y in 0..h {
         for x in 0..w {
             let ch = map[y][x];
             if ch.is_ascii_alphabetic() && ch.is_ascii_lowercase() {
-                keys.insert((y, x), ch);
+                things.insert((y, x), ch);
             }
         }
     }
-    keys
+    things
 }
 
 fn find_self(map: &Vec<Vec<char>>) -> Option<(usize, usize)> {
@@ -208,25 +239,6 @@ fn find_self(map: &Vec<Vec<char>>) -> Option<(usize, usize)> {
     None
 }
 
-fn remove_thing(map: &mut Vec<Vec<char>>, thing: char) {
-    let h = map.len();
-    let w = map[0].len();
-    for y in 0..h {
-        for x in 0..w {
-            let ch = map[y][x];
-            if ch == thing {
-                map[y][x] = '.';
-            }
-        }
-    }
-}
-
-fn clear_path(map: &mut Vec<Vec<char>>, path: &Vec<(usize, usize)>) {
-    for p in path {
-        map[p.0][p.1] = '.'
-    }
-}
-
 fn total_cost(paths: &Vec<(usize, Vec<(usize, usize)>)>) -> usize {
     paths.iter().map(|x| x.1.len()).sum()
 }
@@ -234,7 +246,7 @@ fn total_cost(paths: &Vec<(usize, Vec<(usize, usize)>)>) -> usize {
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 struct MapState {
     positions: Vec<(usize, usize)>,
-    map: Vec<Vec<char>>,
+    keys: KeyState,
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
@@ -252,12 +264,10 @@ impl Ord for PathState {
         // Notice that the we flip the ordering on costs.
         // In case of a tie we compare positions - this step is necessary
         // to make implementations of `PartialEq` and `Ord` consistent.
-        let other_keys = find_keys(&other.map_state.map);
-        let self_keys = find_keys(&self.map_state.map);
         other
             .cost
             .cmp(&self.cost)
-            .then_with(|| other_keys.len().cmp(&self_keys.len()))
+            .then_with(|| other.map_state.positions.cmp(&self.map_state.positions))
     }
 }
 
@@ -271,11 +281,12 @@ impl PartialOrd for PathState {
 fn solve<'a>(map: &'a Vec<Vec<char>>, curr: &Vec<(usize, usize)>) -> usize {
     let mut dist = HashMap::new();
     let mut frontier: BinaryHeap<PathState> = BinaryHeap::new();
+    let all_keys = find_keys(&map);
     frontier.push(PathState {
         cost: 0,
         map_state: MapState {
             positions: curr.clone(),
-            map: map.clone(),
+            keys: KeyState { state: 0 },
         },
         paths: vec![],
     });
@@ -288,7 +299,10 @@ fn solve<'a>(map: &'a Vec<Vec<char>>, curr: &Vec<(usize, usize)>) -> usize {
         paths,
     }) = frontier.pop()
     {
-        let keys = find_keys(&map_state.map);
+        let keys: Vec<_> = all_keys
+            .iter()
+            .filter(|(_, v)| !map_state.keys.get(**v))
+            .collect();
         if keys.len() != last_keys {
             println!("keys: {:?}, cost: {}", keys.len(), cost);
             last_keys = keys.len();
@@ -319,48 +333,48 @@ fn solve<'a>(map: &'a Vec<Vec<char>>, curr: &Vec<(usize, usize)>) -> usize {
 
         // println!("at {:?}, {}, looking for {:?} keys", map_state.position, cost, keys.len());
         for (pos, key) in keys {
-	    let pos_len = map_state.positions.len();
-	    for i in 0..pos_len {
-                let mut m = Map::new(&map_state.map);
+            let pos_len = map_state.positions.len();
+            for i in 0..pos_len {
+                let mut m = Map::new(&map, map_state.keys);
                 let rob_pos = map_state.positions[i];
-                if let Some(p) = m.shortest_path(rob_pos, pos) {
+                if let Some(p) = m.shortest_path(rob_pos, *pos) {
                     // println!("found path from {:?} {}, to {} at {:?}", map_state.positions, i, key, pos);
                     // println!("{:?}", p);
                     let mut new_paths = paths.clone();
                     new_paths.push(p.clone());
 
-                    let mut new_map = map_state.map.clone();
-                    remove_thing(&mut new_map, key);
-                    if key.is_ascii_alphabetic() {
-			remove_thing(&mut new_map, key.to_ascii_uppercase());
+                    let mut new_keys = map_state.keys;
+                    new_keys.set(*key);
+                    for p in &p.1 {
+                        if let Some(k) = all_keys.get(p) {
+                            new_keys.set(*k);
+                        }
                     }
-                    clear_path(&mut new_map, &p.1);
-                    new_map[pos.0][pos.1] = '.';
-		    let mut new_pos = map_state.positions.clone();
-                    new_pos[i] = pos;
-		    let next = PathState {
-			cost: total_cost(&new_paths),
-			map_state: MapState {
+                    let mut new_pos = map_state.positions.clone();
+                    new_pos[i] = *pos;
+                    let next = PathState {
+                        cost: total_cost(&new_paths),
+                        map_state: MapState {
                             positions: new_pos,
-                            map: new_map,
-			},
-			paths: new_paths,
+                            keys: new_keys,
+                        },
+                        paths: new_paths,
                     };
 
                     let d = *dist
-			.entry(next.map_state.clone())
-			.or_insert(std::usize::MAX);
+                        .entry(next.map_state.clone())
+                        .or_insert(std::usize::MAX);
 
                     // println!("next: {}, d: {}", next.cost, d);
 
                     // If so, add it to the frontier and continue
                     if next.cost < d {
-			// Relaxation, we have now found a better way
-			dist.insert(next.map_state.clone(), next.cost);
-			frontier.push(next);
+                        // Relaxation, we have now found a better way
+                        dist.insert(next.map_state.clone(), next.cost);
+                        frontier.push(next);
                     }
-		}
-	    }
+                }
+            }
         }
     }
     goal_cost.unwrap()

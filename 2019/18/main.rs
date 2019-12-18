@@ -232,22 +232,22 @@ fn total_cost(paths: &Vec<(usize, Vec<(usize, usize)>)>) -> usize {
 }
 
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
-struct MapState<'a> {
+struct MapState {
     positions: Vec<(usize, usize)>,
-    map: &'a Vec<Vec<char>>,
+    map: Vec<Vec<char>>,
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-struct PathState<'a> {
+struct PathState {
     cost: usize,
-    map_state: MapState<'a>,
+    map_state: MapState,
     paths: Vec<(usize, Vec<(usize, usize)>)>,
 }
 
 // The priority queue depends on `Ord`.
 // Explicitly implement the trait so the queue becomes a min-heap
 // instead of a max-heap.
-impl<'a> Ord for PathState<'a> {
+impl Ord for PathState {
     fn cmp(&self, other: &PathState) -> Ordering {
         // Notice that the we flip the ordering on costs.
         // In case of a tie we compare positions - this step is necessary
@@ -262,7 +262,7 @@ impl<'a> Ord for PathState<'a> {
 }
 
 // `PartialOrd` needs to be implemented as well.
-impl<'a> PartialOrd for PathState<'a> {
+impl PartialOrd for PathState {
     fn partial_cmp(&self, other: &PathState) -> Option<Ordering> {
         Some(self.cmp(other))
     }
@@ -275,7 +275,7 @@ fn solve<'a>(map: &'a Vec<Vec<char>>, curr: &Vec<(usize, usize)>) -> i64 {
         cost: 0,
         map_state: MapState {
             positions: curr.clone(),
-            map: map,
+            map: map.clone(),
         },
         paths: vec![],
     });
@@ -319,42 +319,48 @@ fn solve<'a>(map: &'a Vec<Vec<char>>, curr: &Vec<(usize, usize)>) -> i64 {
 
         // println!("at {:?}, {}, looking for {:?} keys", map_state.position, cost, keys.len());
         for (pos, key) in keys {
-            let mut m = Map::new(&map_state.map);
-            if let Some(p) = m.shortest_path(map_state.position, pos) {
-                // println!("found path from {:?} to {} at {:?}", map_state.position, key, pos);
-                // println!("{:?}", p);
-                let mut new_paths = paths.clone();
-                new_paths.push(p.clone());
+	    let pos_len = map_state.positions.len();
+	    for i in 0..pos_len {
+                let mut m = Map::new(&map_state.map);
+                let rob_pos = map_state.positions[i];
+                if let Some(p) = m.shortest_path(rob_pos, pos) {
+                    // println!("found path from {:?} {}, to {} at {:?}", map_state.positions, i, key, pos);
+                    // println!("{:?}", p);
+                    let mut new_paths = paths.clone();
+                    new_paths.push(p.clone());
 
-                let mut new_map = map_state.map.clone();
-                remove_thing(&mut new_map, key);
-                if key.is_ascii_alphabetic() {
-                    remove_thing(&mut new_map, key.to_ascii_uppercase());
-                }
-                clear_path(&mut new_map, &p.1);
-                new_map[pos.0][pos.1] = '.';
-                let next = PathState {
-                    cost: total_cost(&new_paths),
-                    map_state: MapState {
-                        position: pos,
-                        map: new_map,
-                    },
-                    paths: new_paths,
-                };
+                    let mut new_map = map_state.map.clone();
+                    remove_thing(&mut new_map, key);
+                    if key.is_ascii_alphabetic() {
+			remove_thing(&mut new_map, key.to_ascii_uppercase());
+                    }
+                    clear_path(&mut new_map, &p.1);
+                    new_map[pos.0][pos.1] = '.';
+		    let mut new_pos = map_state.positions.clone();
+                    new_pos[i] = pos;
+		    let next = PathState {
+			cost: total_cost(&new_paths),
+			map_state: MapState {
+                            positions: new_pos,
+                            map: new_map,
+			},
+			paths: new_paths,
+                    };
 
-                let d = *dist
-                    .entry(next.map_state.clone())
-                    .or_insert(std::usize::MAX);
+                    let d = *dist
+			.entry(next.map_state.clone())
+			.or_insert(std::usize::MAX);
 
-                // println!("next: {}, d: {}", next.cost, d);
+                    // println!("next: {}, d: {}", next.cost, d);
 
-                // If so, add it to the frontier and continue
-                if next.cost < d {
-                    // Relaxation, we have now found a better way
-                    dist.insert(next.map_state.clone(), next.cost);
-                    frontier.push(next);
-                }
-            }
+                    // If so, add it to the frontier and continue
+                    if next.cost < d {
+			// Relaxation, we have now found a better way
+			dist.insert(next.map_state.clone(), next.cost);
+			frontier.push(next);
+                    }
+		}
+	    }
         }
     }
     println!("{:?}, {:?}", res, goal_cost);

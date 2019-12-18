@@ -75,29 +75,6 @@ impl<'a> Map<'a> {
     }
 
     fn dijkstra_neighbours(&self, pos: (usize, usize)) -> Vec<(usize, usize)> {
-        self.neighbours(pos, |p| {
-            let ch = self.map[p.0][p.1];
-            if ch == '.' {
-                return true;
-            }
-            if ch == '#' {
-                return false;
-            }
-            if ch.is_ascii_lowercase() {
-                return true;
-            }
-            if ch.is_ascii_uppercase() {
-                return self.key_state.get(ch.to_ascii_lowercase());
-            }
-            return false;
-        })
-    }
-
-    fn neighbours(
-        &self,
-        pos: (usize, usize),
-        filter: impl Fn((usize, usize)) -> bool,
-    ) -> Vec<(usize, usize)> {
         let mut n = vec![];
         let y = pos.0 as i64;
         let x = pos.1 as i64;
@@ -108,10 +85,16 @@ impl<'a> Map<'a> {
                 continue;
             }
             let p = (*ny as usize, *nx as usize);
-            if !filter(p) {
-                continue;
+            let ch = self.map[p.0][p.1];
+            if ch == '#' {
+                // No action
+            } else if ch == '.' {
+                n.push((*ny as usize, *nx as usize));
+            } else if ch.is_ascii_lowercase() {
+                n.push((*ny as usize, *nx as usize));
+            } else if ch.is_ascii_uppercase() && self.key_state.get(ch.to_ascii_lowercase()) {
+                n.push((*ny as usize, *nx as usize));
             }
-            n.push((*ny as usize, *nx as usize));
         }
         n
     }
@@ -168,8 +151,10 @@ impl<'a> Map<'a> {
             }
 
             // Important as we may have already found a better way
-            if cost > *self.dist.entry(position).or_insert(std::usize::MAX) {
-                continue;
+            if let Some(x) = self.dist.get(&position) {
+                if cost > *x {
+                    continue;
+                }
             }
 
             // For each node we can reach, see if we can find a way with
@@ -182,7 +167,11 @@ impl<'a> Map<'a> {
                     position: *neighbour_position,
                 };
 
-                let d = *self.dist.entry(next.position).or_insert(std::usize::MAX);
+                let d = if let Some(x) = self.dist.get(&next.position) {
+                    *x
+                } else {
+                    std::usize::MAX
+                };
 
                 // If so, add it to the frontier and continue
                 if next.cost < d {
@@ -325,10 +314,10 @@ fn solve<'a>(map: &'a Vec<Vec<char>>, curr: &Vec<(usize, usize)>) -> usize {
         }
 
         // Important as we may have already found a better way
-        let existing_cost = *dist.entry(map_state.clone()).or_insert(std::usize::MAX);
-        if cost > existing_cost {
-            // println!("at {:?}, {} > {}", map_state.position, cost, existing_cost);
-            continue;
+        if let Some(x) = dist.get(&map_state) {
+            if cost > *x {
+                continue;
+            }
         }
 
         // println!("at {:?}, {}, looking for {:?} keys", map_state.position, cost, keys.len());
@@ -361,9 +350,11 @@ fn solve<'a>(map: &'a Vec<Vec<char>>, curr: &Vec<(usize, usize)>) -> usize {
                         paths: new_paths,
                     };
 
-                    let d = *dist
-                        .entry(next.map_state.clone())
-                        .or_insert(std::usize::MAX);
+                    let d = if let Some(x) = dist.get(&next.map_state) {
+                        *x
+                    } else {
+                        std::usize::MAX
+                    };
 
                     // println!("next: {}, d: {}", next.cost, d);
 

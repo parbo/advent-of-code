@@ -232,22 +232,22 @@ fn total_cost(paths: &Vec<(usize, Vec<(usize, usize)>)>) -> usize {
 }
 
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
-struct MapState {
-    position: (usize, usize),
-    map: Vec<Vec<char>>,
+struct MapState<'a> {
+    positions: Vec<(usize, usize)>,
+    map: &'a Vec<Vec<char>>,
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-struct PathState {
+struct PathState<'a> {
     cost: usize,
-    map_state: MapState,
+    map_state: MapState<'a>,
     paths: Vec<(usize, Vec<(usize, usize)>)>,
 }
 
 // The priority queue depends on `Ord`.
 // Explicitly implement the trait so the queue becomes a min-heap
 // instead of a max-heap.
-impl Ord for PathState {
+impl<'a> Ord for PathState<'a> {
     fn cmp(&self, other: &PathState) -> Ordering {
         // Notice that the we flip the ordering on costs.
         // In case of a tie we compare positions - this step is necessary
@@ -262,21 +262,20 @@ impl Ord for PathState {
 }
 
 // `PartialOrd` needs to be implemented as well.
-impl PartialOrd for PathState {
+impl<'a> PartialOrd for PathState<'a> {
     fn partial_cmp(&self, other: &PathState) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-fn part1(map: &Vec<Vec<char>>) -> i64 {
-    let curr = find_self(&map).unwrap();
+fn solve<'a>(map: &'a Vec<Vec<char>>, curr: &Vec<(usize, usize)>) -> i64 {
     let mut dist = HashMap::new();
     let mut frontier: BinaryHeap<PathState> = BinaryHeap::new();
     frontier.push(PathState {
         cost: 0,
         map_state: MapState {
-            position: curr,
-            map: map.clone(),
+            positions: curr.clone(),
+            map: map,
         },
         paths: vec![],
     });
@@ -366,8 +365,32 @@ fn part1(map: &Vec<Vec<char>>) -> i64 {
     // total_cost(best)
 }
 
-fn part2(_: &Vec<Vec<char>>) -> i64 {
-    0
+fn part1(map: &Vec<Vec<char>>) -> i64 {
+    let curr = find_self(&map).unwrap();
+    let cv = vec![curr];
+    solve(&map, &cv)
+}
+
+fn part2(map: &Vec<Vec<char>>) -> i64 {
+    let curr = find_self(&map).unwrap();
+    let mut m = map.clone();
+    m[curr.0][curr.1] = '#';
+    m[curr.0][curr.1 + 1] = '#';
+    m[curr.0][curr.1 - 1] = '#';
+    m[curr.0 - 1][curr.1] = '#';
+    m[curr.0 + 1][curr.1] = '#';
+    m[curr.0 + 1][curr.1 + 1] = '.';
+    m[curr.0 - 1][curr.1 + 1] = '.';
+    m[curr.0 + 1][curr.1 - 1] = '.';
+    m[curr.0 - 1][curr.1 - 1] = '.';
+
+    let cv = vec![
+        (curr.0 + 1, curr.1 + 1),
+        (curr.0 - 1, curr.1 + 1),
+        (curr.0 + 1, curr.1 - 1),
+        (curr.0 - 1, curr.1 - 1),
+    ];
+    solve(&m, &cv)
 }
 
 fn parse(lines: &Vec<String>) -> Vec<Vec<char>> {

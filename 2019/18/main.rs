@@ -268,7 +268,7 @@ impl PartialOrd for PathState {
     }
 }
 
-fn solve<'a>(map: &'a Vec<Vec<char>>, curr: &Vec<(usize, usize)>) -> i64 {
+fn solve<'a>(map: &'a Vec<Vec<char>>, curr: &Vec<(usize, usize)>) -> usize {
     let mut dist = HashMap::new();
     let mut frontier: BinaryHeap<PathState> = BinaryHeap::new();
     frontier.push(PathState {
@@ -363,21 +363,16 @@ fn solve<'a>(map: &'a Vec<Vec<char>>, curr: &Vec<(usize, usize)>) -> i64 {
 	    }
         }
     }
-    println!("{:?}, {:?}", res, goal_cost);
-    0
-    // let best = solutions
-    //     .iter()
-    //     .min_by(|a, b| total_cost(&a).cmp(&total_cost(&b)));
-    // total_cost(best)
+    goal_cost.unwrap()
 }
 
-fn part1(map: &Vec<Vec<char>>) -> i64 {
+fn part1(map: &Vec<Vec<char>>) -> usize {
     let curr = find_self(&map).unwrap();
     let cv = vec![curr];
     solve(&map, &cv)
 }
 
-fn part2(map: &Vec<Vec<char>>) -> i64 {
+fn part2(map: &Vec<Vec<char>>) -> usize {
     let curr = find_self(&map).unwrap();
     let mut m = map.clone();
     m[curr.0][curr.1] = '#';

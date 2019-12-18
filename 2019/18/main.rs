@@ -20,6 +20,15 @@ impl KeyState {
         let mask = 1 << bit;
         (self.state & mask) == mask
     }
+
+    // True if other has all the bits of self.
+    fn ok(&self, other: &KeyState) -> bool {
+        self.state & other.state == self.state
+    }
+
+    fn add(&mut self, other: &KeyState) {
+        self.state |= other.state
+    }
 }
 
 #[derive(Clone, Eq, PartialEq)]
@@ -223,10 +232,6 @@ fn find_self(map: &Vec<Vec<char>>) -> Option<(usize, usize)> {
     None
 }
 
-fn total_cost(paths: &Vec<(usize, Vec<(usize, usize)>)>) -> usize {
-    paths.iter().map(|x| x.1.len()).sum()
-}
-
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 struct MapState {
     positions: Vec<(usize, usize)>,
@@ -237,7 +242,6 @@ struct MapState {
 struct PathState {
     cost: usize,
     map_state: MapState,
-    paths: Vec<(usize, Vec<(usize, usize)>)>,
 }
 
 // The priority queue depends on `Ord`.
@@ -272,46 +276,63 @@ fn solve<'a>(map: &'a Vec<Vec<char>>, curr: &Vec<(usize, usize)>) -> usize {
             positions: curr.clone(),
             keys: KeyState { state: 0 },
         },
-        paths: vec![],
     });
-    let mut cached_paths: HashMap<
-        ((usize, usize), (usize, usize), KeyState),
-        Option<(usize, Vec<(usize, usize)>)>,
-    > = HashMap::new();
+    let mut cached_paths: HashMap<((usize, usize), (usize, usize)), (usize, KeyState, KeyState)> =
+        HashMap::new();
+
+    let unlocked = KeyState { state: 0xffffffff };
+    let mut pairs = vec![];
+    for k1 in &all_keys {
+        for k2 in &all_keys {
+            if k1 == k2 {
+                continue;
+            }
+            pairs.push((k1.0, k2.0));
+            for c in curr {
+                pairs.push((c, k2.0));
+            }
+        }
+    }
+    for (k1, k2) in pairs {
+        let mut m = Map::new(&map, unlocked);
+        let mut needed = KeyState { state: 0 };
+        let mut provided = KeyState { state: 0 };
+        if let Some(p) = shortest_path(&mut m, *k1, *k2) {
+            let len = p.1.len();
+            for pos in p.1 {
+                let ch = map[pos.0][pos.1];
+                if ch.is_ascii_lowercase() {
+                    provided.set(ch);
+                }
+                if ch.is_ascii_uppercase() {
+                    needed.set(ch.to_ascii_lowercase());
+                }
+            }
+            cached_paths.insert((*k1, *k2), (len, needed, provided));
+        }
+    }
 
     let mut goal_cost = None;
     let mut res = vec![];
     let mut last_cost = 0;
-    let mut cached = 0;
     let mut total = 0;
-    while let Some(PathState {
-        cost,
-        map_state,
-        paths,
-    }) = frontier.pop()
-    {
+    while let Some(PathState { cost, map_state }) = frontier.pop() {
         let keys: Vec<_> = all_keys
             .iter()
             .filter(|(_, v)| !map_state.keys.get(**v))
             .collect();
         if cost / 100 != last_cost {
-            println!(
-                "keys: {:?}, cost: {}, cache: {}%, total: {}",
-                keys.len(),
-                cost,
-                100 * cached / total,
-                total
-            );
+            println!("keys: {:?}, cost: {}, total: {}", keys.len(), cost, total);
             last_cost = cost / 100;
         }
         if keys.len() == 0 {
             if let Some(gc) = goal_cost {
                 if cost == gc {
-                    res.push((map_state.clone(), paths.clone()));
+                    res.push(map_state.clone());
                 }
             } else {
                 goal_cost = Some(cost);
-                res.push((map_state.clone(), paths.clone()));
+                res.push(map_state.clone());
             }
         }
 
@@ -334,40 +355,21 @@ fn solve<'a>(map: &'a Vec<Vec<char>>, curr: &Vec<(usize, usize)>) -> usize {
             for i in 0..pos_len {
                 let rob_pos = map_state.positions[i];
                 total += 1;
-                let mp = match cached_paths.get(&(rob_pos, *pos, map_state.keys)) {
-                    None => {
-                        let mut m = Map::new(&map, map_state.keys);
-                        let res = shortest_path(&mut m, rob_pos, *pos);
-                        cached_paths.insert((rob_pos, *pos, map_state.keys), res.clone());
-                        res
+                if let Some(p) = cached_paths.get(&(rob_pos, *pos)) {
+                    if !p.1.ok(&map_state.keys) {
+                        continue;
                     }
-                    Some(x) => {
-                        cached += 1;
-                        x.clone()
-                    }
-                };
-                if let Some(p) = mp {
-                    // println!("found path from {:?} {}, to {} at {:?}", map_state.positions, i, key, pos);
-                    // println!("{:?}", p);
-                    let mut new_paths = paths.clone();
-                    new_paths.push(p.clone());
-
                     let mut new_keys = map_state.keys;
                     new_keys.set(*key);
-                    p.1.iter().for_each(|p| {
-                        if let Some(k) = all_keys.get(p) {
-                            new_keys.set(*k);
-                        }
-                    });
+                    new_keys.add(&p.2);
                     let mut new_pos = map_state.positions.clone();
                     new_pos[i] = *pos;
                     let next = PathState {
-                        cost: total_cost(&new_paths),
+                        cost: cost + p.0,
                         map_state: MapState {
                             positions: new_pos,
                             keys: new_keys,
                         },
-                        paths: new_paths,
                     };
 
                     let d = if let Some(x) = dist.get(&next.map_state) {

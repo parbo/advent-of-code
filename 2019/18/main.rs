@@ -68,136 +68,137 @@ impl<'a> Map<'a> {
             heap: BinaryHeap::new(),
             came_from: HashMap::new(),
         };
-        map.dist.reserve(256);
-        map.heap.reserve(256);
-        map.came_from.reserve(256);
+        map.dist.reserve(1024);
+        map.heap.reserve(1024);
+        map.came_from.reserve(1024);
         map
     }
+}
 
-    fn dijkstra_neighbours(&self, pos: (usize, usize)) -> Vec<(usize, usize)> {
-        let mut n = vec![];
-        let y = pos.0 as i64;
-        let x = pos.1 as i64;
-        let w = self.map[0].len() as i64;
-        let h = self.map.len() as i64;
-        for (ny, nx) in &[(y - 1, x), (y, x - 1), (y, x + 1), (y + 1, x)] {
-            if *nx > w || *ny > h || *ny < 0 || *nx < 0 {
-                continue;
-            }
-            let p = (*ny as usize, *nx as usize);
-            let ch = self.map[p.0][p.1];
-            if ch == '#' {
-                // No action
-            } else if ch == '.' {
-                n.push((*ny as usize, *nx as usize));
-            } else if ch.is_ascii_lowercase() {
-                n.push((*ny as usize, *nx as usize));
-            } else if ch.is_ascii_uppercase() && self.key_state.get(ch.to_ascii_lowercase()) {
-                n.push((*ny as usize, *nx as usize));
-            }
+fn dijkstra_neighbours(state: &Map, pos: (usize, usize)) -> Vec<(usize, usize)> {
+    let mut n = vec![];
+    let y = pos.0 as i64;
+    let x = pos.1 as i64;
+    let w = state.map[0].len() as i64;
+    let h = state.map.len() as i64;
+    for (ny, nx) in &[(y - 1, x), (y, x - 1), (y, x + 1), (y + 1, x)] {
+        if *nx > w || *ny > h || *ny < 0 || *nx < 0 {
+            continue;
         }
-        n
+        let p = (*ny as usize, *nx as usize);
+        let ch = state.map[p.0][p.1];
+        if ch == '#' {
+            // No action
+        } else if ch == '.' {
+            n.push((*ny as usize, *nx as usize));
+        } else if ch.is_ascii_lowercase() {
+            n.push((*ny as usize, *nx as usize));
+        } else if ch.is_ascii_uppercase() && state.key_state.get(ch.to_ascii_lowercase()) {
+            n.push((*ny as usize, *nx as usize));
+        }
     }
+    n
+}
 
-    // Dijkstra's shortest path algorithm.
-    fn shortest_path(
-        &mut self,
-        start: (usize, usize),
-        goal: (usize, usize),
-    ) -> Option<(usize, Vec<(usize, usize)>)> {
-        self.dist.clear();
-        self.heap.clear();
-        self.came_from.clear();
+// Dijkstra's shortest path algorithm.
+fn shortest_path(
+    state: &mut Map,
+    start: (usize, usize),
+    goal: (usize, usize),
+) -> Option<(usize, Vec<(usize, usize)>)> {
+    state.dist.clear();
+    state.heap.clear();
+    state.came_from.clear();
 
-        // We're at `start`, with a zero cost
-        self.dist.insert(start, 0);
-        self.heap.push(State {
-            cost: 0,
-            position: start,
-        });
+    // We're at `start`, with a zero cost
+    state.dist.insert(start, 0);
+    state.heap.push(State {
+        cost: 0,
+        position: start,
+    });
 
-        let mut goal_cost = None;
-        let mut res = vec![];
+    let mut goal_cost = None;
+    let mut res = vec![];
 
-        // Examine the frontier with lower cost nodes first (min-heap)
-        while let Some(State { cost, position }) = self.heap.pop() {
-            if position == goal {
-                if let Some(gc) = goal_cost {
-                    if cost == gc {
-                        let mut p: Vec<(usize, usize)> = vec![];
-                        let mut curr = goal;
-                        while curr != start {
-                            curr = *self.came_from.get(&curr).unwrap().last().unwrap();
-                            p.push(curr)
-                        }
-                        res = p;
-                    }
-                } else {
-                    goal_cost = Some(cost);
+    // Examine the frontier with lower cost nodes first (min-heap)
+    while let Some(State { cost, position }) = state.heap.pop() {
+        if position == goal {
+            if let Some(gc) = goal_cost {
+                if cost == gc {
                     let mut p: Vec<(usize, usize)> = vec![];
                     let mut curr = goal;
                     while curr != start {
-                        curr = *self.came_from.get(&curr).unwrap().last().unwrap();
+                        curr = *state.came_from.get(&curr).unwrap().last().unwrap();
                         p.push(curr)
                     }
                     res = p;
                 }
-            }
-
-            if let Some(gc) = goal_cost {
-                if cost > gc {
-                    return Some((gc, res));
+            } else {
+                goal_cost = Some(cost);
+                let mut p: Vec<(usize, usize)> = vec![];
+                let mut curr = goal;
+                while curr != start {
+                    curr = *state.came_from.get(&curr).unwrap().last().unwrap();
+                    p.push(curr)
                 }
-            }
-
-            // Important as we may have already found a better way
-            if let Some(x) = self.dist.get(&position) {
-                if cost > *x {
-                    continue;
-                }
-            }
-
-            // For each node we can reach, see if we can find a way with
-            // a lower cost going through this node
-            let neighbours = self.dijkstra_neighbours(position);
-            //        println!("neigh: {:?} => {:?}", position, neighbours);
-            for neighbour_position in &neighbours {
-                let next = State {
-                    cost: cost + 1,
-                    position: *neighbour_position,
-                };
-
-                let d = if let Some(x) = self.dist.get(&next.position) {
-                    *x
-                } else {
-                    std::usize::MAX
-                };
-
-                // If so, add it to the frontier and continue
-                if next.cost < d {
-                    // Relaxation, we have now found a better way
-                    self.dist.insert(next.position, next.cost);
-                    self.heap.push(next);
-                    // Remember the path
-                    self.came_from.insert(*neighbour_position, vec![position]);
-                } else if next.cost == d {
-                    self.came_from
-                        .entry(*neighbour_position)
-                        .or_insert(vec![])
-                        .push(position);
-                }
+                res = p;
             }
         }
 
         if let Some(gc) = goal_cost {
-            return Some((gc, res));
-        } else {
-            assert_eq!(res.len(), 0);
+            if cost > gc {
+                return Some((gc, res));
+            }
         }
 
-        // Goal not reachable
-        None
+        // Important as we may have already found a better way
+        if let Some(x) = state.dist.get(&position) {
+            if cost > *x {
+                continue;
+            }
+        }
+
+        // For each node we can reach, see if we can find a way with
+        // a lower cost going through this node
+        let neighbours = dijkstra_neighbours(state, position);
+        //        println!("neigh: {:?} => {:?}", position, neighbours);
+        for neighbour_position in &neighbours {
+            let next = State {
+                cost: cost + 1,
+                position: *neighbour_position,
+            };
+
+            let d = if let Some(x) = state.dist.get(&next.position) {
+                *x
+            } else {
+                std::usize::MAX
+            };
+
+            // If so, add it to the frontier and continue
+            if next.cost < d {
+                // Relaxation, we have now found a better way
+                state.dist.insert(next.position, next.cost);
+                state.heap.push(next);
+                // Remember the path
+                state.came_from.insert(*neighbour_position, vec![position]);
+            } else if next.cost == d {
+                state
+                    .came_from
+                    .entry(*neighbour_position)
+                    .or_insert(vec![])
+                    .push(position);
+            }
+        }
     }
+
+    if let Some(gc) = goal_cost {
+        return Some((gc, res));
+    } else {
+        assert_eq!(res.len(), 0);
+    }
+
+    // Goal not reachable
+    None
 }
 
 fn find_keys(map: &Vec<Vec<char>>) -> HashMap<(usize, usize), char> {

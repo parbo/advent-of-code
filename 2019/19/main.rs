@@ -1,116 +1,108 @@
 use aoc;
 use aoc::GridDrawer;
-use std::iter::*;
 use std::collections::HashMap;
+use std::iter::*;
+
+fn make_grid(
+    program: &Vec<i128>,
+    x: i128,
+    y: i128,
+    w: i128,
+    h: i128,
+) -> HashMap<(i128, i128), i128> {
+    let mut grid = HashMap::new();
+    for yy in y..(y + h) {
+        for xx in x..(x + w) {
+            let mut m = intcode::Machine::new(program);
+            m.add_input(xx as i128);
+            m.add_input(yy as i128);
+            if let Some(v) = m.run_to_next_output() {
+                grid.insert((xx, yy), v);
+            }
+        }
+    }
+    grid
+}
 
 fn part1(program: &Vec<i128>) -> i128 {
-    let mut grid = HashMap::new();
-    for y in 0..50 {
-	for x in 0..50 {
-	    let mut m = intcode::Machine::new(program);
-	    m.add_input(x as i128);
-	    m.add_input(y as i128);
-	    if let Some(v) = m.run_to_next_output() {
-		grid.insert((x, y), v);
-	    }
-	}
-    }
+    let grid = make_grid(program, 0, 0, 50, 50);
     grid.iter().filter(|(_, v)| **v == 1).count() as i128
 }
 
-fn to_char(ch: i128) -> char {
-    if ch == 1 {
-	'#'
-    } else {
-	'.'
+fn get_width_at(program: &Vec<i128>, y: i128) -> (i128, i128) {
+    let mut s = 0;
+    let mut x = 0;
+    loop {
+        let mut mach = intcode::Machine::new(program);
+        mach.add_input(x as i128);
+        mach.add_input(y as i128);
+        if let Some(v) = mach.run_to_next_output() {
+            if v == 1 && s == 0 {
+                s = x;
+            }
+            if v == 0 && s > 0 {
+                return (s, x);
+            }
+        }
+        x += 1;
     }
-}
-
-fn get_width_at(program: &Vec<i128>, width: i128, beg: i128, end: i128) -> Option<(i128, i128, i128)> {
-    let mut a = beg;
-    let mut b = end;
-    let res = loop {
-	let m = (a + b) / 2;
-	let mut s = 0;
-	let mut e = 0;
-	let mut x = 0;
-	loop {
-	    let mut mach = intcode::Machine::new(program);
-	    mach.add_input(x as i128);
-	    mach.add_input(m as i128);
-	    if let Some(v) = mach.run_to_next_output() {
-		if v == 1 && s == 0 {
-		    s = x;
-		}
-		if v == 0 && e == 0 {
-		    e = x;
-		    break;
-		}
-	    }
-	    x += 1;
-	}
-	if e - s < width {
-	    a = m + 1;
-	} else if e - s > width {
-	    b = m - 1;
-	} else if e - s == width {
-	    break Some((s, e, m));
-	}
-	if a == b && e - s != width {
-	    break None;
-	}
-    };
-    res
-}
-
-fn get_start_at(program: &Vec<i128>, start: i128, beg: i128, end: i128) -> Option<(i128, i128, i128)> {
-    let mut a = beg;
-    let mut b = end;
-    let res = loop {
-	let m = (a + b) / 2;
-	let mut s = 0;
-	let mut x = 0;
-	loop {
-	    let mut mach = intcode::Machine::new(program);
-	    mach.add_input(x as i128);
-	    mach.add_input(m as i128);
-	    if let Some(v) = mach.run_to_next_output() {
-		if v == 1 && s == 0 {
-		    s = x;
-		    break;
-		}
-	    }
-	    x += 1;
-	}
-	if s < start {
-	    a = m + 1;
-	} else if s > start {
-	    b = m - 1;
-	} else if s == start {
-	    break Some((s, m));
-	}
-	if a == b && s != start {
-	    break None;
-	}
-    };
 }
 
 fn part2(program: &Vec<i128>) -> i128 {
-    let mut y = 1200;
-    // let mut widths = HashMap::new();
+    let mut a = 2000;
+    let mut b = 3000;
+    let sq = 100;
+    let res = loop {
+        let m = (a + b) / 2;
+        let (_s1, e1) = get_width_at(program, m);
+        let (s2, _e2) = get_width_at(program, m + sq - 1);
+        let s = e1 - sq;
+        println!("y: {}, s: {}, s2: {}, {}", m, s, s2, e1 - s2);
+        if s < s2 {
+            a = m + 1;
+        } else if s > s2 {
+            b = m - 1;
+        } else {
+            break m;
+        }
+    };
+    // Loop back to find the smallest
+    let mut y = res;
+    let mut fails = 0;
+    let mut last_good = (0, 0);
     loop {
-	if let Some((s, e, yy)) = get_width_at(program, 150, y, y + 500) {
-	    if let Some((ss, yyy)) = get_start_at(program, e - 100, yy, yy + 500) {
-		println!("Found at {}, {}; {} {} {}", ss, yyy, s, e, yy);
-		break;
-	    } else {
-		println!("not found at {}, {}, {}", s, e, yy);
-	    }
-	}
-	println!("not found at {}", y);
-	y += 1;
+        let (_s1, e1) = get_width_at(program, y);
+        let (s2, _e2) = get_width_at(program, y + sq - 1);
+        let s = e1 - sq;
+        if s2 == s {
+            println!("backing up y: {}, s: {}, s2: {}, {}", y, s, s2, e1 - s2);
+            last_good = (s, y);
+            y -= 1;
+        } else {
+            println!("no can do y: {}, s: {}, s2: {}, {}", y, s, s2, e1 - s2);
+            fails += 1;
+            y -= 1;
+            if fails > 20 {
+                break;
+            }
+        }
     }
-    0
+    let (x, y) = last_good;
+    println!("x: {}, y: {}", x, y);
+    let mut grid = make_grid(program, x - 10, y - 10, 120, 120);
+    for yy in y..(y + 100) {
+        for xx in x..(x + 100) {
+            *grid.entry((xx, yy)).or_insert(0) += 10;
+        }
+    }
+    let mut d = aoc::PrintGridDrawer::new(|ch| match ch {
+        1 => '#',
+        0 => '.',
+        11 => 'o',
+        _ => '!',
+    });
+    d.draw(&grid);
+    x * 10000 + y
 }
 
 fn main() {

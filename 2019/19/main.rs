@@ -76,9 +76,11 @@ fn part2(program: &Vec<i128>) -> i128 {
         println!("y: {}, s: {}, s2: {}, {}", m, s, s2, e1 - s2);
         if s < s2 {
             a = m + 1;
-        } else if s > s2 {
+        }
+        if s > s2 {
             b = m - 1;
-        } else {
+        }
+        if s == s2 {
             break m;
         }
     };

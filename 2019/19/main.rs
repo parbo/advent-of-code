@@ -45,9 +45,9 @@ fn part1(program: &Vec<i128>) -> i128 {
     grid.iter().filter(|(_, v)| **v == 1).count() as i128
 }
 
-fn get_beam_at(program: &Vec<i128>, y: i128) -> (i128, i128) {
+fn get_beam_at(program: &Vec<i128>, start_x: i128, y: i128) -> (i128, i128) {
     let mut s = 0;
-    let mut x = 0;
+    let mut x = start_x;
     loop {
         let mut mach = intcode::Machine::new(program);
         mach.add_input(x as i128);
@@ -68,14 +68,16 @@ fn part2(program: &Vec<i128>) -> i128 {
     let mut a = 0;
     let mut b = 10000;
     let sq = 100;
+    let mut start_x = 0;
     let res = loop {
         let m = (a + b) / 2;
-        let (_s1, e1) = get_beam_at(program, m);
-        let (s2, _e2) = get_beam_at(program, m + sq - 1);
+        let (s1, e1) = get_beam_at(program, start_x, m);
+        let (s2, _e2) = get_beam_at(program, start_x, m + sq - 1);
         let s = e1 - sq;
         println!("y: {}, s: {}, s2: {}, {}", m, s, s2, e1 - s2);
         if s < s2 {
             a = m + 1;
+	    start_x = s1 - 1;
         }
         if s > s2 {
             b = m - 1;
@@ -88,9 +90,10 @@ fn part2(program: &Vec<i128>) -> i128 {
     let mut y = res;
     let mut fails = 0;
     let mut last_good = (0, 0);
+    start_x -= 20;
     loop {
-        let (_s1, e1) = get_beam_at(program, y);
-        let (s2, _e2) = get_beam_at(program, y + sq - 1);
+        let (s1, e1) = get_beam_at(program, start_x, y);
+        let (s2, _e2) = get_beam_at(program, start_x, y + sq - 1);
         let s = e1 - sq;
         if s2 == s {
             println!("backing up y: {}, s: {}, s2: {}, {}", y, s, s2, e1 - s2);

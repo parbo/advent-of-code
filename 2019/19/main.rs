@@ -24,12 +24,28 @@ fn make_grid(
     grid
 }
 
+fn draw(program: &Vec<i128>, x: i128, y: i128, sq: i128, pad: i128) {
+    let mut grid = make_grid(program, x - pad, y - pad, sq + 2 * pad, sq + 2 * pad);
+    for yy in y..(y + sq) {
+        for xx in x..(x + sq) {
+            *grid.entry((xx, yy)).or_insert(0) += 10;
+        }
+    }
+    let mut d = aoc::PrintGridDrawer::new(|ch| match ch {
+        1 => '#',
+        0 => '.',
+        11 => 'o',
+        _ => '!',
+    });
+    d.draw(&grid);
+}
+
 fn part1(program: &Vec<i128>) -> i128 {
     let grid = make_grid(program, 0, 0, 50, 50);
     grid.iter().filter(|(_, v)| **v == 1).count() as i128
 }
 
-fn get_width_at(program: &Vec<i128>, y: i128) -> (i128, i128) {
+fn get_beam_at(program: &Vec<i128>, y: i128) -> (i128, i128) {
     let mut s = 0;
     let mut x = 0;
     loop {
@@ -49,13 +65,13 @@ fn get_width_at(program: &Vec<i128>, y: i128) -> (i128, i128) {
 }
 
 fn part2(program: &Vec<i128>) -> i128 {
-    let mut a = 2000;
-    let mut b = 3000;
+    let mut a = 0;
+    let mut b = 10000;
     let sq = 100;
     let res = loop {
         let m = (a + b) / 2;
-        let (_s1, e1) = get_width_at(program, m);
-        let (s2, _e2) = get_width_at(program, m + sq - 1);
+        let (_s1, e1) = get_beam_at(program, m);
+        let (s2, _e2) = get_beam_at(program, m + sq - 1);
         let s = e1 - sq;
         println!("y: {}, s: {}, s2: {}, {}", m, s, s2, e1 - s2);
         if s < s2 {
@@ -71,8 +87,8 @@ fn part2(program: &Vec<i128>) -> i128 {
     let mut fails = 0;
     let mut last_good = (0, 0);
     loop {
-        let (_s1, e1) = get_width_at(program, y);
-        let (s2, _e2) = get_width_at(program, y + sq - 1);
+        let (_s1, e1) = get_beam_at(program, y);
+        let (s2, _e2) = get_beam_at(program, y + sq - 1);
         let s = e1 - sq;
         if s2 == s {
             println!("backing up y: {}, s: {}, s2: {}, {}", y, s, s2, e1 - s2);
@@ -89,19 +105,7 @@ fn part2(program: &Vec<i128>) -> i128 {
     }
     let (x, y) = last_good;
     println!("x: {}, y: {}", x, y);
-    let mut grid = make_grid(program, x - 10, y - 10, 120, 120);
-    for yy in y..(y + 100) {
-        for xx in x..(x + 100) {
-            *grid.entry((xx, yy)).or_insert(0) += 10;
-        }
-    }
-    let mut d = aoc::PrintGridDrawer::new(|ch| match ch {
-        1 => '#',
-        0 => '.',
-        11 => 'o',
-        _ => '!',
-    });
-    d.draw(&grid);
+    draw(program, x, y, sq, 5);
     x * 10000 + y
 }
 

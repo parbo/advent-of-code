@@ -268,7 +268,7 @@ pub fn read_lines() -> (i32, Vec<String>) {
         buffered
             .lines()
             .filter_map(Result::ok)
-            .map(|x| x.trim().to_string())
+            .map(|x| x.trim_end_matches('\n').to_string())
             .collect(),
     )
 }

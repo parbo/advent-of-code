@@ -83,6 +83,7 @@ fn dijkstra_neighbours(state: &Map, pos: (usize, usize, usize)) -> Vec<(usize, u
     }
     if let Some(((xx, yy), inner)) = state.portals.get(&(pos.0, pos.1)) {
         if state.recurse {
+	    // println!("found portal: {:?}, {} -> {:?}", pos, inner, (xx, yy));
             if *inner {
                 n.push((*xx, *yy, pos.2 + 1));
             } else if pos.2 > 0 {
@@ -239,9 +240,9 @@ fn find_portals(
             }
         }
     }
-    for label in &labels {
-        println!("{:?}", label);
-    }
+    // for label in &labels {
+    //     println!("{:?}", label);
+    // }
     for (label, pos) in labels {
         if label == ('A', 'A') {
             start = pos.iter().next().unwrap().0;
@@ -255,6 +256,21 @@ fn find_portals(
             portals.insert(b.0, (a.0, b.1));
         }
     }
+    // for y in 0..h {
+    //     for x in 0..w {
+    //         if let Some((_, inner)) = portals.get(&(x, y)) {
+    // 		if *inner {
+    //                 print!("i");
+    // 		} else {
+    //                 print!("o");
+    // 		}
+    //         } else {
+    //             let ch_a = map[y][x];
+    //             print!("{}", ch_a);
+    //         }
+    //     }
+    //     println!();
+    // }
     (start, end, portals)
 }
 
@@ -292,19 +308,21 @@ fn part1(map: &Vec<Vec<char>>) -> usize {
 }
 
 fn part2(map: &Vec<Vec<char>>) -> usize {
-    let h = map.len();
-    let w = map[0].len();
-    for y in 0..h {
-        for x in 0..w {
-            let ch_a = map[y][x];
-            print!("{}", ch_a);
-        }
-        println!();
-    }
+    // let h = map.len();
+    // let w = map[0].len();
+    // for y in 0..h {
+    //     for x in 0..w {
+    //         let ch_a = map[y][x];
+    //         print!("{}", ch_a);
+    //     }
+    //     println!();
+    // }
     let (start, end, portals) = find_portals(&map);
-    println!("{:?}, {:?}, {:?}", start, end, portals);
+    println!("{:?}, {:?}, {:?}", start, end, portals.len());
     let mut m = Map::new(map, &portals, true);
     if let Some(res) = shortest_path(&mut m, (start.0, start.1, 0), (end.0, end.1, 0)) {
+	let max_depth = res.1.iter().max_by(|a, b| a.2.cmp(&b.2)).unwrap().2;
+	println!("max depth: {}", max_depth);
         res.0
     } else {
         0
@@ -329,7 +347,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::part1;
+    use super::{part1, part2};
 
     #[test]
     fn test_part1() {
@@ -472,6 +490,6 @@ mod tests {
                 .chars()
                 .collect(),
         ];
-        assert_eq!(part1(&map), 396);
+        assert_eq!(part2(&map), 396);
     }
 }

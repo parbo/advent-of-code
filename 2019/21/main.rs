@@ -48,26 +48,19 @@ fn part1(program: &Vec<i128>) -> i128 {
     0
 }
 
-// >> NOT A J
-// >> NOT B T
-// >> OR T J
-// >> NOT C T
-// >> OR T J
-// >> AND D J
-
 fn read(v: u32, ch: char) -> bool {
-    let bit = (ch as u32) - 97;
+    let bit = (ch as u32) - 65;
     let mask = 1 << bit;
     (v & mask) == mask
 }
 
 fn write(v: u32, ch: char, b: bool) -> u32 {
-    let bit = (ch as u32) - 97;
+    let bit = (ch as u32) - 65;
     let mask = 1 << bit;
     if b {
-	v | mask
+        v | mask
     } else {
-	v & !mask
+        v & !mask
     }
 }
 
@@ -78,98 +71,206 @@ enum Instruction {
     OR,
 }
 
-fn validate (prog: &[(Instruction, char, char)]) -> bool {
-    for v in 0..512 {
-	if v & 1 == 0 {
-	    continue;
-	}
-	let mut pos = 0;
-	while pos < 10 {
-	    let mut s = v;
-	    for (ins, o1, o2) in prog {
-		match ins {
-		    Instruction::NOT => {
-			s = write(s, *o2, !read(s, *o1));
-		    },
-		    Instruction::OR => {
-			s = write(s, *o2, read(s, *o1) || read(s, *o2));
-		    },
-		    Instruction::AND => {
-			s = write(s, *o2, read(s, *o1) && read(s, *o2));
-		    },
+fn poss(curr: &Vec<bool>, res: &mut Vec<Vec<bool>>, len: usize) {
+    if curr.len() < len {
+    	for a in &[false, true] {
+	    if *a {
+		let mut c = curr.clone();
+		c.push(true);
+		poss(&c, res, len);
+	    } else if curr.len() + 4 < len {
+		let mut c = curr.clone();
+		for _ in 0..3 {
+		    c.push(false);
 		}
-	    }
-	    if read(s, 'J') {
-		pos += 4;
-	    } else {
-		pos += 1;
-	    }
-	    if pos < 10 {
-		let mask = 1 << pos;
-		if v & mask != mask {
-		    return false;
-		}
+		c.push(true);
+		poss(&c, res, len);
 	    }
 	}
+    } else if curr.len() == len {
+	res.push(curr.clone());
+    }
+}
+
+fn possible() -> Vec<Vec<bool>> {
+    let mut res = vec![];
+    poss(&vec![true], &mut res, 10);
+    res
+}
+
+fn validate(possible: &Vec<Vec<bool>>, prog: &[(Instruction, char, char)]) -> bool {
+    for v in possible {
+        let mut pos = 0;
+        while pos < 10 {
+            let mut s : u32 = 0;
+	    v.iter().skip(pos).enumerate().for_each(|(i, x)| if *x { s = s | (1 << i) } else { s = s & !(1 << i) });
+	    println!("{:b}", s);
+            for (ins, o1, o2) in prog {
+                match ins {
+                    Instruction::NOT => {
+                        s = write(s, *o2, !read(s, *o1));
+                    }
+                    Instruction::OR => {
+                        s = write(s, *o2, read(s, *o1) || read(s, *o2));
+                    }
+                    Instruction::AND => {
+                        s = write(s, *o2, read(s, *o1) && read(s, *o2));
+                    }
+                }
+		println!("{:?}, {:b}", (ins, o1, o2), s);
+            }
+            if read(s, 'J') {
+		println!("J");
+                pos += 4;
+            } else {
+		println!("W");
+                pos += 1;
+            }
+            if pos < 10 {
+		if !v[pos] {
+		    println!("hole {:?}, {}", v, pos);
+                    return false;
+                }
+            } else {
+		println!("too far {:?}, {}", v, pos);
+		return false;
+	    }
+        }
     }
     true
 }
 
+fn to_ins(p: u8) -> (Instruction, char, char) {
+    let i = p & 3;
+    let ins = match i {
+        0 => Instruction::NOT,
+        1 => Instruction::AND,
+        2 => Instruction::OR,
+        _ => panic!(),
+    };
+    let a = (p & (0xf << 2)) >> 2;
+    let ch_a = match a {
+        0 => 'A',
+        1 => 'B',
+        2 => 'C',
+        3 => 'D',
+        4 => 'E',
+        5 => 'F',
+        6 => 'G',
+        7 => 'H',
+        8 => 'I',
+        9 => 'T',
+        10 => 'J',
+        _ => panic!(),
+    };
+    let b = (p & (0x3 << 6)) >> 6;
+    let ch_b = match b {
+        0 => 'T',
+        1 => 'J',
+        _ => panic!(),
+    };
+    (ins, ch_a, ch_b)
+}
+
+fn from_ins(ins: &(Instruction, char, char)) -> u8 {
+    let mut r = match ins.0 {
+        Instruction::NOT => 0,
+        Instruction::AND => 1,
+        Instruction::OR => 2,
+    };
+    let ch_a = match ins.1 {
+        'A' => 0,
+        'B' => 1,
+        'C' => 2,
+        'D' => 3,
+        'E' => 4,
+        'F' => 5,
+        'G' => 6,
+        'H' => 7,
+        'I' => 8,
+        'T' => 9,
+        'J' => 10,
+        _ => panic!(),
+    };
+    r = r | (ch_a << 2);
+    let ch_b = match ins.2 {
+        'T' => 0,
+        'J' => 1,
+        _ => panic!(),
+    };
+    r = r | (ch_b << 6);
+    r
+}
+
 fn search() {
-    let mut q : VecDeque<Vec<(Instruction, char, char)>> = VecDeque::new();
-    let mut solutions : Vec<Vec<(Instruction, char, char)>> = vec![];
+    let mut q: VecDeque<Vec<u8>> = VecDeque::new();
+    let mut solutions: Vec<Vec<(Instruction, char, char)>> = vec![];
     let mut s = vec![];
     let mut last_len = 0;
+    let poss = possible();
     loop {
-	if s.len() != last_len {
-	    println!("{}, {}", s.len(), q.len());
-	    last_len = s.len();
-	}
-	for instruction in &[Instruction::NOT, Instruction::AND, Instruction::OR] {
-	    for a in &['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'T', 'J']  {
-		if *a != 'T' && *a != 'J' {
-		    if s.iter().map(|(_, i, _)| i).any(|x| x == a) {
-			// println!("already read {}", a);
-			continue;
-		    }
-		}
-		for b in &['T', 'J'] {
-		    if *instruction != Instruction::NOT && a == b {
-			continue;
-		    }
-		    let mut new_s = s.clone();
-		    let next = (*instruction, *a, *b);
-		    // println!("next: {:?}", next);
-		    new_s.push(next);
-		    // println!("new_s: {:?}", new_s);
-		    if validate(&new_s) {
-			solutions.push(new_s);
-		    } else {
-			q.push_back(new_s);
-		    }
-		}
-	    }
-	}
-	if s.len() > 15 {
-	    break;
-	}
-	if solutions.len() > 0 {
-	    break;
-	}
-	s = if let Some(x) = q.pop_front() {
-	    // println!("{:?}", x);
-	    x
-	} else {
-	    break;
-	}
+        if s.len() != last_len {
+            println!("{}, {}", s.len(), q.len());
+            last_len = s.len();
+        }
+        for instruction in &[Instruction::NOT, Instruction::AND, Instruction::OR] {
+            if *instruction == Instruction::NOT {
+                if s.iter().map(|(c, _, _)| c).any(|x| *x == Instruction::NOT) {
+                    // Only one NOT allowed
+                    continue;
+                }
+            }
+            for a in &['A', 'B', 'C', 'D', 'E', 'H', 'T', 'J'] {
+                if *a != 'T' && *a != 'J' {
+                    if s.iter().map(|(_, i, _)| i).any(|x| x == a) {
+                        // println!("already read {}", a);
+                        continue;
+                    }
+                }
+                for b in &['T', 'J'] {
+                    if *instruction != Instruction::NOT && a == b {
+                        continue;
+                    }
+                    let mut new_s = s.clone();
+                    let next = (*instruction, *a, *b);
+                    // println!("next: {:?}", next);
+                    new_s.push(next);
+                    // println!("new_s: {:?}", new_s);
+                    if validate(&poss, &new_s) {
+                        solutions.push(new_s);
+                        break;
+                    } else {
+                        q.push_back(new_s.iter().map(|x| from_ins(x)).collect());
+                    }
+                }
+            }
+        }
+        if s.len() > 15 {
+            break;
+        }
+        if solutions.len() > 0 {
+            break;
+        }
+        s = if let Some(x) = q.pop_front() {
+            // println!("{:?}", x);
+            x.iter().map(|x| to_ins(*x)).collect()
+        } else {
+            break;
+        }
     }
     println!("{:?}", solutions);
 }
 
-// NOT E T
-// NOT T T
-// OR H T
-// AND T J
+// >> NOT A J
+// >> NOT B T
+// >> OR T J
+// >> NOT C T
+// >> OR T J
+// >> AND D J
+// >> NOT E T
+// >> NOT T T
+// >> OR H T
+// >> AND T J
 fn part2(_: &Vec<i128>) -> i128 {
     search();
     0
@@ -188,10 +289,25 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    // use super::part1;
+    use super::{validate, possible, Instruction};
 
-    // #[test]
-    // fn test_part1() {
-    //     assert_eq!(part1(&vec![0]), 0);
-    // }
+    #[test]
+    fn test_valudate() {
+	let p = possible();
+        assert_eq!(
+            validate(&p, &vec![
+                (Instruction::NOT, 'A', 'J'),
+                (Instruction::NOT, 'B', 'T'),
+                (Instruction::OR, 'T', 'J'),
+                (Instruction::NOT, 'C', 'T'),
+                (Instruction::OR, 'T', 'J'),
+                (Instruction::AND, 'D', 'J'),
+                (Instruction::NOT, 'E', 'T'),
+                (Instruction::NOT, 'T', 'T'),
+                (Instruction::OR, 'H', 'T'),
+                (Instruction::AND, 'T', 'J'),
+            ]),
+            true
+        );
+    }
 }

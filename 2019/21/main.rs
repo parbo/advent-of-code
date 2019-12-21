@@ -29,12 +29,13 @@ fn part1(program: &Vec<i128>) -> i128 {
 	    State::Input => {
 		let readline = rl.readline(">> ");
 		match readline {
-                    Ok(x) => {
+                    Ok(s) => {
+                        let x = s.trim();
 			for c in x.chars() {
 			    m.add_input(c as i128);
 			}
 			m.add_input(10);
-			if x == "WALK" {
+			if x == "WALK" || x == "RUN" {
  			    state = m.run_to_next_io();
 			}
 		    }
@@ -47,6 +48,17 @@ fn part1(program: &Vec<i128>) -> i128 {
     0
 }
 
+// >> NOT A J
+// >> NOT B T
+// >> OR T J
+// >> NOT C T
+// >> OR T J
+// >> AND D J
+
+// NOT E T
+// NOT T T
+// OR H T
+// AND T J
 fn part2(_: &Vec<i128>) -> i128 {
     0
 }

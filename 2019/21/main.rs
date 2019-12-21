@@ -1,7 +1,7 @@
 use aoc;
 use intcode::*;
-use std::iter::*;
 use rustyline::Editor;
+use std::iter::*;
 
 // >> NOT A J
 // >> NOT B T
@@ -15,35 +15,35 @@ fn part1(program: &Vec<i128>) -> i128 {
     let mut rl = Editor::<()>::new();
     let mut state = m.run_to_next_io();
     loop {
-	match state {
-	    State::Output => {
-		for o in m.outputs() {
-		    if o >= 0 && o < 256 {
-			print!("{}", std::char::from_u32(o as u32).unwrap());
-		    } else {
-			println!("value: {}", o);
-		    }
-		}
-		state = m.run_to_next_io();
-	    },
-	    State::Input => {
-		let readline = rl.readline(">> ");
-		match readline {
+        match state {
+            State::Output => {
+                for o in m.outputs() {
+                    if o >= 0 && o < 256 {
+                        print!("{}", std::char::from_u32(o as u32).unwrap());
+                    } else {
+                        println!("value: {}", o);
+                    }
+                }
+                state = m.run_to_next_io();
+            }
+            State::Input => {
+                let readline = rl.readline(">> ");
+                match readline {
                     Ok(s) => {
                         let x = s.trim();
-			for c in x.chars() {
-			    m.add_input(c as i128);
-			}
-			m.add_input(10);
-			if x == "WALK" || x == "RUN" {
- 			    state = m.run_to_next_io();
-			}
-		    }
-		    Err(_) => break,
-		}
-	    }
-	    _ => break,
-	}
+                        for c in x.chars() {
+                            m.add_input(c as i128);
+                        }
+                        m.add_input(10);
+                        if x == "WALK" || x == "RUN" {
+                            state = m.run_to_next_io();
+                        }
+                    }
+                    Err(_) => break,
+                }
+            }
+            _ => break,
+        }
     }
     0
 }

@@ -3,6 +3,13 @@ use intcode::*;
 use std::iter::*;
 use rustyline::Editor;
 
+// >> NOT A J
+// >> NOT B T
+// >> OR T J
+// >> NOT C T
+// >> OR T J
+// >> AND D J
+// >> WALK
 fn part1(program: &Vec<i128>) -> i128 {
     let mut m = Machine::new(program);
     let mut rl = Editor::<()>::new();

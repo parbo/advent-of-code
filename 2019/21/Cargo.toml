@@ -1,0 +1,13 @@
+[package]
+name = 'day21'
+version = '0.0.1'
+edition = '2018'
+
+[dependencies]
+aoc = {path = "../aoc"}
+intcode = {path = "../intcode"}
+rustyline = "5.0.4"
+
+[[bin]]
+name = 'day21'
+path = 'main.rs'

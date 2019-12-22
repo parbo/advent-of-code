@@ -92,10 +92,10 @@ fn part2(input: &Vec<Shuffle>) -> i128 {
     );
     let mut i = 0;
     let mut ix = 2020;
-    let mod_ix = mod_inverse(2020, times);
+    let mod_ix = 2020 * times;
     // println!("mod_ix: {}", mod_ix);
-    let new_ix = reverse_shuffle_idx(input, len, 2020);
-    let ans = mod_ix * new_ix;
+    let new_ix = reverse_shuffle_idx(input, len, mod_ix);
+    let ans = new_ix;
     println!("{}, {}", ans, pos_mod(ans, len));
     new_ix
 }

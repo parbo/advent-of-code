@@ -11,8 +11,9 @@ fn pos_mod(x: i128, y: i128) -> i128 {
     x.rem_euclid(y)
 }
 
-fn mod_inverse(x: i128, y: i128) -> i128 {
-    aoc::modinverse(x, y).unwrap()
+fn mod_inverse(a: i128, m: i128) -> i128 {
+    println!("a: {}, m: {}", a, m);
+    aoc::modinverse(a, m).unwrap()
 }
 
 fn shuffle_idx(how: &Vec<Shuffle>, len: i128, idx: i128) -> i128 {
@@ -47,7 +48,9 @@ fn reverse_shuffle_idx(how: &Vec<Shuffle>, len: i128, idx: i128) -> i128 {
                 new_idx = new_idx.clone() + *x as i128;
             }
             Shuffle::DealWithIncrement(x) => {
-                new_idx = mod_inverse(*x as i128, new_idx);
+		let xx = *x as i128;
+		let f = mod_inverse(xx, len);
+                new_idx = f * new_idx;
             }
         }
         // println!("{}, {}", new_idx, pos_mod(new_idx, len));
@@ -89,32 +92,12 @@ fn part2(input: &Vec<Shuffle>) -> i128 {
     );
     let mut i = 0;
     let mut ix = 2020;
-    loop {
-        let new_ix = shuffle_idx(input, len, ix);
-        // if new_ix >= ix {
-        //     println!("> {}, {}, {}", new_ix - ix, new_ix / ix, new_ix % ix);
-        // } else {
-        //     println!(
-        //         "< {}, {}, {}",
-        //         (len + new_ix - ix),
-        //         (len + new_ix) / ix,
-        //         (len + new_ix) % ix
-        //     );
-        // }
-        ix = new_ix;
-        i += 1;
-        // if i == 10 {
-        //     break;
-        // }
-        if i % 1000000 == 0 {
-            println!("{}, {:?}", i, new_ix);
-        }
-        if new_ix == 2020 {
-            break;
-        }
-    }
-    println!("{}", i);
-    0
+    let mod_ix = mod_inverse(2020, times);
+    // println!("mod_ix: {}", mod_ix);
+    let new_ix = reverse_shuffle_idx(input, len, 2020);
+    let ans = mod_ix * new_ix;
+    println!("{}, {}", ans, pos_mod(ans, len));
+    new_ix
 }
 
 fn parse(lines: &Vec<String>) -> Vec<Shuffle> {
@@ -147,7 +130,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse, reverse_shuffle_idx, shuffle};
+    use super::{parse, reverse_shuffle_idx, shuffle, pos_mod};
 
     #[test]
     fn test_shuffle_rev() {
@@ -178,11 +161,11 @@ mod tests {
         let input = vec!["deal with increment 3".to_string()];
         let how = parse(&input);
         assert_eq!(shuffle(&how, 10), vec![0, 7, 4, 1, 8, 5, 2, 9, 6, 3]);
-        assert_eq!(reverse_shuffle_idx(&how, 10, 0), 1);
-        assert_eq!(reverse_shuffle_idx(&how, 10, 1), 1);
-        assert_eq!(reverse_shuffle_idx(&how, 10, 2), 1);
-        assert_eq!(reverse_shuffle_idx(&how, 10, 3), 1);
-        assert_eq!(reverse_shuffle_idx(&how, 10, 4), 1);
+        assert_eq!(pos_mod(reverse_shuffle_idx(&how, 10, 0), 10), 0);
+        assert_eq!(pos_mod(reverse_shuffle_idx(&how, 10, 1), 10), 7);
+        assert_eq!(pos_mod(reverse_shuffle_idx(&how, 10, 2), 10), 4);
+        assert_eq!(pos_mod(reverse_shuffle_idx(&how, 10, 3), 10), 1);
+        assert_eq!(pos_mod(reverse_shuffle_idx(&how, 10, 4), 10), 8);
     }
 
     #[test]
@@ -218,6 +201,9 @@ mod tests {
         ];
         let how = parse(&input);
         assert_eq!(shuffle(&how, 10), vec![0, 3, 6, 9, 2, 5, 8, 1, 4, 7]);
+        assert_eq!(pos_mod(reverse_shuffle_idx(&how, 10, 0), 10), 0);
+        assert_eq!(pos_mod(reverse_shuffle_idx(&how, 10, 1), 10), 3);
+        assert_eq!(pos_mod(reverse_shuffle_idx(&how, 10, 2), 10), 6);
     }
 
     #[test]

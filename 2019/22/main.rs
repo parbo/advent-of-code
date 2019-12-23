@@ -84,11 +84,12 @@ fn part2(input: &Vec<Shuffle>) -> i128 {
     let y = reverse_shuffle_idx(input, len, x);
     let z = reverse_shuffle_idx(input, len, y);
     println!("x: {}, y: {}, z: {}", x, y, z);
-    let a = (y - z) * mod_inverse(x - y, len);
+    let a = pos_mod((y - z) * mod_inverse(x - y, len), len);
     let b = pos_mod(y - a * x, len);
     println!("a: {}, b: {}", a, b);
-    let ans = aoc::mod_exp(a, times, len) * x
-        + b * (1 - aoc::mod_exp(a, times, len)) * mod_inverse(1 - a, len);
+    let xx = pos_mod(b * mod_inverse(1 - a, len), len);
+    let yy = xx - xx * aoc::mod_exp(a, times, len);
+    let ans = aoc::mod_exp(a, times, len) * x + yy;
     println!("ans: {}, ans % len: {}", ans, pos_mod(ans, len));
     pos_mod(ans, len)
 }

@@ -9,6 +9,7 @@ use std::io::BufReader;
 use std::iter::*;
 use std::path::Path;
 
+pub use mod_exp::mod_exp;
 pub use modinverse::modinverse;
 pub use num::integer::*;
 pub use serde_scan::from_str;

@@ -12,7 +12,6 @@ fn pos_mod(x: i128, y: i128) -> i128 {
 }
 
 fn mod_inverse(a: i128, m: i128) -> i128 {
-    println!("a: {}, m: {}", a, m);
     aoc::modinverse(a, m).unwrap()
 }
 
@@ -48,8 +47,8 @@ fn reverse_shuffle_idx(how: &Vec<Shuffle>, len: i128, idx: i128) -> i128 {
                 new_idx = new_idx.clone() + *x as i128;
             }
             Shuffle::DealWithIncrement(x) => {
-		let xx = *x as i128;
-		let f = mod_inverse(xx, len);
+                let xx = *x as i128;
+                let f = mod_inverse(xx, len);
                 new_idx = f * new_idx;
             }
         }
@@ -90,13 +89,30 @@ fn part2(input: &Vec<Shuffle>) -> i128 {
         aoc::gcd(len, times),
         aoc::lcm(len, times)
     );
-    let mut i = 0;
-    let mut ix = 2020;
-    let mod_ix = 2020 * times;
-    // println!("mod_ix: {}", mod_ix);
-    let new_ix = reverse_shuffle_idx(input, len, mod_ix);
-    let ans = new_ix;
-    println!("{}, {}", ans, pos_mod(ans, len));
+    // a*(a*(a*x + b) + b) + b = z
+    let x = 2020;
+    let y = pos_mod(reverse_shuffle_idx(input, len, x), len);
+    let z = pos_mod(reverse_shuffle_idx(input, len, y), len);
+    let a = pos_mod((y - z) * mod_inverse(x - y + len, len), len);
+    let b = pos_mod((y - a * x), len);
+    println!("a: {}, b: {}", a, b);
+    let ans = pos_mod(
+        (aoc::mod_exp(a, times, len) * x
+            + (aoc::mod_exp(a, times, len) - 1) * mod_inverse(a - 1, len) * b),
+        len,
+    );
+    ans
+}
+
+fn rev(input: &Vec<Shuffle>, len: i128, times: i128, ix: i128) -> i128 {
+    let mut new_ix = ix;
+    for i in 0..times {
+        new_ix = shuffle_idx(input, len, new_ix);
+    }
+    new_ix = pos_mod(new_ix, len);
+    new_ix = reverse_shuffle_idx(input, len, new_ix);
+    new_ix = aoc::mod_exp(new_ix, times, len);
+    println!("{}, {}, {}", ix, new_ix, pos_mod(new_ix, len));
     new_ix
 }
 
@@ -130,7 +146,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse, reverse_shuffle_idx, shuffle, pos_mod};
+    use super::{parse, pos_mod, rev, reverse_shuffle_idx, shuffle};
 
     #[test]
     fn test_shuffle_rev() {
@@ -166,6 +182,7 @@ mod tests {
         assert_eq!(pos_mod(reverse_shuffle_idx(&how, 10, 2), 10), 4);
         assert_eq!(pos_mod(reverse_shuffle_idx(&how, 10, 3), 10), 1);
         assert_eq!(pos_mod(reverse_shuffle_idx(&how, 10, 4), 10), 8);
+        let _ = rev(&how, 10, 5, 2);
     }
 
     #[test]

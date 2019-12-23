@@ -247,6 +247,10 @@ impl Machine {
         self.inputs.extend(inputs);
     }
 
+    pub fn input_len(&self) -> usize {
+	self.inputs.len() - self.curr_input
+    }
+
     pub fn step(&mut self) -> State {
         match self.get_disassembly(self.ip) {
             Disassembly::Instruction(x) => {

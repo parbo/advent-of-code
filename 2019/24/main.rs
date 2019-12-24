@@ -77,28 +77,28 @@ fn solve(grid: &Vec<Vec<char>>, it: i64) -> i64 {
                 if *nx == 0 && *ny  == 0 {
                     if *y > 0 && *x == 0 {
                         for x in -2..=2 {
-                            let v = new_g.entry((level - 1, x, -2)).or_insert('.');
+                            let v = new_g.entry((level + 1, x, 2)).or_insert('.');
                             if *v == '#' {
                                 c += 1;
                             }
                         }
                     } else if *y < 0 && *x == 0 {
                         for x in -2..=2 {
-                           let v = new_g.entry((level - 1, x, 2)).or_insert('.');
+                           let v = new_g.entry((level + 1, x, -2)).or_insert('.');
                             if *v == '#' {
                                 c += 1;
                             }
                         }
                     } else if *y == 0 && *x < 0 {
                         for y in -2..=2 {
-                            let v = new_g.entry((level - 1, -2, y)).or_insert('.');
+                            let v = new_g.entry((level + 1, -2, y)).or_insert('.');
                             if *v == '#' {
                                 c += 1;
                             }
                         }
                     } else if *y == 0 && *x > 0 {
                         for y in -2..=2 {
-                             let v = new_g.entry((level - 1, 2, y)).or_insert('.');
+                             let v = new_g.entry((level + 1, 2, y)).or_insert('.');
                             if *v == '#' {
                                 c += 1;
                             }
@@ -107,9 +107,32 @@ fn solve(grid: &Vec<Vec<char>>, it: i64) -> i64 {
                         panic!();
                     }
                 } else {
-                    let nblevel : i64 = std::cmp::max::<i64>((nx / 3i64).abs(), (ny /3i64).abs());
-                    if let Some(x) = g.get(&(level + nblevel, nx % 3, ny % 3)) {
-                        if *x == '#' {
+                    if *ny > 2 {
+                         let v = new_g.entry((*level-1, 0, 1)).or_insert('.');
+                        if *v == '#' {
+                            c += 1;
+                        }
+                    } else if *ny < -2 {
+                           let v = new_g.entry((*level-1, 0, -1)).or_insert('.');
+                        if *v == '#' {
+                            c += 1;
+                        }
+                      
+                    } else if *nx > 2 {
+                           let v = new_g.entry((*level-1, 1, 0)).or_insert('.');
+                        if *v == '#' {
+                            c += 1;
+                        }
+                      
+                    } else if *nx < -2 {
+                           let v = new_g.entry((*level-1, -1, 0)).or_insert('.');
+                        if *v == '#' {
+                            c += 1;
+                        }
+                      
+                    } else {
+                        let v = new_g.entry((*level, *nx, *ny)).or_insert('.');
+                        if *v == '#' {
                             c += 1;
                         }
                     }

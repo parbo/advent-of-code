@@ -77,34 +77,30 @@ fn solve(grid: &Vec<Vec<char>>, it: i64) -> i64 {
                 if *nx == 0 && *ny  == 0 {
                     if *y > 0 && *x == 0 {
                         for x in -2..=2 {
-                            if let Some(x) = g.get(&(level - 1, x, -2)) {
-                                if *x == '#' {
-                                    c += 1;
-                                }
+                            let v = new_g.entry((level - 1, x, -2)).or_insert('.');
+                            if *v == '#' {
+                                c += 1;
                             }
                         }
                     } else if *y < 0 && *x == 0 {
                         for x in -2..=2 {
-                            if let Some(x) = g.get(&(level - 1, x, 2)) {
-                                if *x == '#' {
-                                    c += 1;
-                                }
+                           let v = new_g.entry((level - 1, x, 2)).or_insert('.');
+                            if *v == '#' {
+                                c += 1;
                             }
                         }
                     } else if *y == 0 && *x < 0 {
                         for y in -2..=2 {
-                            if let Some(x) = g.get(&(level - 1, -2, y)) {
-                                if *x == '#' {
-                                    c += 1;
-                                }
+                            let v = new_g.entry((level - 1, -2, y)).or_insert('.');
+                            if *v == '#' {
+                                c += 1;
                             }
                         }
                     } else if *y == 0 && *x > 0 {
                         for y in -2..=2 {
-                            if let Some(x) = g.get(&(level - 1, 2, y)) {
-                                if *x == '#' {
-                                    c += 1;
-                                }
+                             let v = new_g.entry((level - 1, 2, y)).or_insert('.');
+                            if *v == '#' {
+                                c += 1;
                             }
                         }
                     } else {

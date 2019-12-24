@@ -77,6 +77,8 @@ fn part2(grid: &Vec<Vec<char>>) -> i64 {
             yy += 1;
         }
         mins += 1;
+        g = new_g;
+        println!("{:?}", g);
         if mins == 200 {
             return all_bugs;
         }

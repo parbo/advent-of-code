@@ -23,6 +23,34 @@ fn bd(grid: &Vec<Vec<char>>) -> i64 {
     res
 }
 
+fn draw(g: &HashMap<(i64, i64, i64), char>) {
+    let mut level = 0;
+    let mut tot = 0;
+    loop {
+        let mut bugs = 0;
+  //      println!("-- level {} --", level);
+        for y in -2..=2 {
+            for x in -2..=2{
+                if let Some(x) = g.get(&(level, x, y)) {
+    //                print!("{}", x);
+                    if *x == '#' {
+                        bugs += 1;
+                    }
+                } else {
+   //                 print!(".");
+                }
+            }
+ //           println!();
+        }
+        if bugs == 0 {
+            break;
+        }
+        tot += bugs;
+        level += 1;
+    }
+    println!("total bugs: {}", tot);
+}
+
 fn part2(grid: &Vec<Vec<char>>) -> i64 {
     let mut g = HashMap::new();
     let mut yy = -2;
@@ -51,9 +79,52 @@ fn part2(grid: &Vec<Vec<char>>) -> i64 {
                     let mut c = 0;
   		    for (nx, ny) in &[(*x + 1, *y), (*x - 1, *y), (*x, *y + 1), (*x, *y - 1)] {
                         let nblevel : i64 = std::cmp::max((nx / 3).abs(), (ny /3).abs());
-                        if let Some(x) = g.get(&(nblevel, nx % 3, ny % 3)) {
-                            if *x == '#' {
-                                c += 1;
+                        if *nx % 3 == 0 && *ny % 3  == 0 && level != 0 {
+                            if *y > 0 && *x == 0 {
+                                for x in -2..=2 {
+                                    if let Some(x) = g.get(&(level - 1, x, -2)) {
+                                        if *x == '#' {
+                                            c += 1;
+                                        }
+                                    }
+                                }
+                                
+                            } else if *y < 0 && *x == 0 {
+                                                                for x in -2..=2 {
+                                    if let Some(x) = g.get(&(level - 1, x, 2)) {
+                                        if *x == '#' {
+                                            c += 1;
+                                        }
+                                    }
+                                }
+
+                            } else if *y == 0 && *x < 0 {
+                                                                for y in -2..=2 {
+                                    if let Some(x) = g.get(&(level - 1, -2, y)) {
+                                        if *x == '#' {
+                                            c += 1;
+                                        }
+                                    }
+                                }
+
+                            } else if *y == 0 && *x > 0 {
+                                                                for y in -2..=2 {
+                                    if let Some(x) = g.get(&(level - 1, 2, y)) {
+                                        if *x == '#' {
+                                            c += 1;
+                                        }
+                                    }
+                                }
+
+                            } else {
+                                panic!();
+                            }
+                            
+                        } else {
+                            if let Some(x) = g.get(&(nblevel, nx % 3, ny % 3)) {
+                                if *x == '#' {
+                                    c += 1;
+                                }
                             }
                         }
                     }
@@ -78,8 +149,9 @@ fn part2(grid: &Vec<Vec<char>>) -> i64 {
         }
         mins += 1;
         g = new_g;
-        println!("{:?}", g);
-        if mins == 200 {
+        println!("mins: {}", mins);
+        draw(&g);
+        if mins == 201 {
             return all_bugs;
         }
     }

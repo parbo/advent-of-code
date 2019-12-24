@@ -32,7 +32,7 @@ impl Op {
         }
     }
 
-    pub fn definition(&self) -> (&str, usize, usize) {
+    pub fn definition(&self) -> (&'static str, usize, usize) {
         match self {
             Op::ADD => ("ADD", 2, 1),
             Op::MUL => ("MUL", 2, 1),
@@ -56,11 +56,11 @@ enum Mode {
 }
 
 fn mode(value: i128, pos: usize) -> Mode {
-    let mut v = value / 100;
+    let mut div = 100;
     for _ in 1..pos {
-        v = v / 10;
+        div = div * 10;
     }
-    let m = v % 10;
+    let m = (value / div) % 10;
     match m {
         0 => Mode::Position,
         1 => Mode::Immediate,
@@ -81,6 +81,7 @@ impl fmt::Display for MemoryValue {
     }
 }
 
+#[derive(Copy, Clone)]
 pub enum Arg {
     Immediate { value: i128 },
     Position { address: usize },
@@ -90,11 +91,40 @@ pub enum Arg {
 pub struct Instruction {
     pub address: usize,
     pub op: Op,
-    pub read: Vec<Arg>,
-    pub write: Vec<Arg>,
+    args: [Arg;4],
+    read: usize,
+    write: usize,
 }
 
 impl Instruction {
+    pub fn new(address: usize, op: Op) -> Instruction {
+	Instruction {
+	    address,
+	    op,
+	    args: [Arg::Immediate { value: 0 };4],
+	    read: 0,
+	    write: 0,
+	}
+    }
+
+    pub fn add_read(&mut self, arg: Arg) {
+	self.args[self.read] = arg;
+	self.read += 1;
+    }
+
+    pub fn add_write(&mut self, arg: Arg) {
+	self.args[self.read + self.write] = arg;
+	self.write += 1;
+    }
+
+    pub fn read<'a>(&'a self) -> &'a [Arg] {
+	&self.args[0..self.read]
+    }
+
+    pub fn write<'a>(&'a self) -> &'a [Arg] {
+	&self.args[self.read..(self.read+self.write)]
+    }
+
     pub fn name(&self) -> &str {
         self.op.definition().0
     }
@@ -108,7 +138,7 @@ impl Instruction {
 impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:>04} {} ", self.address, self.name())?;
-        for r in &self.read {
+        for r in self.read() {
             match r {
                 Arg::Immediate { value } => write!(f, "{}, ", value)?,
                 Arg::Position { address } => write!(f, "[{}], ", address)?,
@@ -120,10 +150,10 @@ impl fmt::Display for Instruction {
                 )?,
             }
         }
-        if self.write.len() > 0 {
+        if self.write().len() > 0 {
             write!(f, "-> ")?;
         }
-        for w in &self.write {
+        for w in self.write() {
             match w {
                 Arg::Immediate { value } => write!(f, "{}, ", value)?,
                 Arg::Position { address } => write!(f, "[{}], ", address)?,
@@ -164,6 +194,7 @@ pub struct Machine {
     reads: HashMap<usize, usize>,
     writes: HashMap<usize, usize>,
     relative_base: i128,
+    stats: bool,
 }
 
 impl Machine {
@@ -178,7 +209,12 @@ impl Machine {
             reads: HashMap::new(),
             writes: HashMap::new(),
             relative_base: 0,
+	    stats: false,
         }
+    }
+
+    pub fn set_stats(&mut self, s: bool) {
+	self.stats = s;
     }
 
     pub fn new(memory: &[i128]) -> Machine {
@@ -258,8 +294,8 @@ impl Machine {
                 let mut next_pos = self.ip + x.increment();
                 let mut state = State::Running;
                 let v = match x.op {
-                    Op::ADD => Some(self.read_arg(&x.read[0]) + self.read_arg(&x.read[1])),
-                    Op::MUL => Some(self.read_arg(&x.read[0]) * self.read_arg(&x.read[1])),
+                    Op::ADD => Some(self.read_arg(&x.read()[0]) + self.read_arg(&x.read()[1])),
+                    Op::MUL => Some(self.read_arg(&x.read()[0]) * self.read_arg(&x.read()[1])),
                     Op::INP => {
                         if let Some(x) = self.input() {
                             Some(x)
@@ -269,34 +305,34 @@ impl Machine {
                     }
                     Op::OUT => {
                         state = State::Output;
-                        self.outputs.push(self.read_arg(&x.read[0]));
+                        self.outputs.push(self.read_arg(&x.read()[0]));
                         // println!("OUT: {}", self.read_arg(x.read[0]));
                         None
                     }
                     Op::JIT => {
-                        if self.read_arg(&x.read[0]) != 0 {
-                            next_pos = self.read_arg(&x.read[1]) as usize;
+                        if self.read_arg(&x.read()[0]) != 0 {
+                            next_pos = self.read_arg(&x.read()[1]) as usize;
                         }
                         None
                     }
                     Op::JIF => {
-                        if self.read_arg(&x.read[0]) == 0 {
-                            next_pos = self.read_arg(&x.read[1]) as usize;
+                        if self.read_arg(&x.read()[0]) == 0 {
+                            next_pos = self.read_arg(&x.read()[1]) as usize;
                         }
                         None
                     }
-                    Op::LTN => Some(if self.read_arg(&x.read[0]) < self.read_arg(&x.read[1]) {
+                    Op::LTN => Some(if self.read_arg(&x.read()[0]) < self.read_arg(&x.read()[1]) {
                         1
                     } else {
                         0
                     }),
-                    Op::EQL => Some(if self.read_arg(&x.read[0]) == self.read_arg(&x.read[1]) {
+                    Op::EQL => Some(if self.read_arg(&x.read()[0]) == self.read_arg(&x.read()[1]) {
                         1
                     } else {
                         0
                     }),
                     Op::SP => {
-                        self.relative_base = self.relative_base + self.read_arg(&x.read[0]);
+                        self.relative_base = self.relative_base + self.read_arg(&x.read()[0]);
                         None
                     }
                     Op::HLT => {
@@ -306,7 +342,7 @@ impl Machine {
                 };
                 if let Some(out) = v {
                     assert!(x.op.definition().2 == 1);
-                    self.write_arg(&x.write[0], out);
+                    self.write_arg(&x.write()[0], out);
                 } else {
                     if x.op.definition().2 != 0 {
                         println!("{:?}", x.op.definition());
@@ -314,7 +350,7 @@ impl Machine {
                     }
                 }
                 // Update stats
-                for r in &x.read {
+                for r in x.read() {
                     match r {
                         Arg::Position { address } => {
                             *self.reads.entry(*address).or_insert(0) += 1;
@@ -325,7 +361,7 @@ impl Machine {
                         _ => {}
                     }
                 }
-                for w in &x.write {
+                for w in x.write() {
                     match w {
                         Arg::Position { address } => {
                             *self.writes.entry(*address).or_insert(0) += 1;
@@ -351,39 +387,38 @@ impl Machine {
         let val = *self.memory.get(address).unwrap_or(&0);
         if let Some(op) = Op::from_i128(val) {
             let def = op.definition();
-            let mut read = vec![];
+	    let mut ins = Instruction::new(address, op);
             for r in 0..def.1 {
                 let m = mode(val, 1 + r);
                 let v = self.memory.get(address + 1 + r).unwrap_or(&0);
                 match &m {
                     Mode::Immediate => {
-                        read.push(Arg::Immediate { value: *v });
+			ins.add_read(Arg::Immediate { value: *v });
                     }
                     Mode::Position => {
-                        read.push(Arg::Position {
+                        ins.add_read(Arg::Position {
                             address: *v as usize,
                         });
                     }
                     Mode::Relative => {
-                        read.push(Arg::Relative {
+                        ins.add_read(Arg::Relative {
                             base: self.relative_base,
                             offset: *v,
                         });
                     }
                 }
             }
-            let mut write = vec![];
             for w in 0..def.2 {
                 let m = mode(val, 1 + def.1 + w);
                 let v = self.memory.get(address + 1 + def.1 + w).unwrap_or(&0);
                 match &m {
                     Mode::Position => {
-                        write.push(Arg::Position {
+                        ins.add_write(Arg::Position {
                             address: *v as usize,
                         });
                     }
                     Mode::Relative => {
-                        write.push(Arg::Relative {
+                        ins.add_write(Arg::Relative {
                             base: self.relative_base,
                             offset: *v,
                         });
@@ -391,12 +426,7 @@ impl Machine {
                     _ => panic!("OH NOES"),
                 }
             }
-            Disassembly::Instruction(Instruction {
-                address,
-                op,
-                read,
-                write,
-            })
+            Disassembly::Instruction(ins)
         } else {
             Disassembly::MemoryValue(MemoryValue {
                 address: address,

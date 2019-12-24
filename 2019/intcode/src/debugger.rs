@@ -37,7 +37,7 @@ impl Debugger<'_> {
                 Disassembly::Instruction(x) => {
                     match x.op {
                         // Find function
-                        Op::SP => match &x.read[0] {
+                        Op::SP => match &x.read()[0] {
                             Arg::Immediate { value } => {
                                 if value.is_positive() {
                                     sp = *value;
@@ -50,8 +50,8 @@ impl Debugger<'_> {
                             }
                             _ => {}
                         },
-                        Op::JIT => match &x.read[0] {
-                            Arg::Immediate { value: 1 } => match &x.read[1] {
+                        Op::JIT => match &x.read()[0] {
+                            Arg::Immediate { value: 1 } => match &x.read()[1] {
                                 Arg::Relative { base: _, offset: 0 } => {
                                     println!("found function {} -> {}", sp_addr, a);
                                 }
@@ -88,13 +88,13 @@ impl Debugger<'_> {
                 );
                 print!("{}", x);
                 print!(" ; ");
-                for r in &x.read {
+                for r in x.read() {
                     print!("{}, ", self.machine.read_arg(r));
                 }
-                if x.write.len() > 0 {
+                if x.write().len() > 0 {
                     print!("-> ");
                 }
-                for w in &x.write {
+                for w in x.write() {
                     print!("{}, ", self.machine.read_arg(w));
                 }
                 println!();

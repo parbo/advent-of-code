@@ -24,35 +24,46 @@ fn bd(grid: &Vec<Vec<char>>) -> i64 {
 }
 
 fn draw(g: &HashMap<(i64, i64, i64), char>) {
-    let mut level = g.iter().map(|(k, v)| k.0).min().unwrap();
+    let mut lev_min = g.iter().map(|(k, v)| k.0).min().unwrap();
+    let mut lev_max= g.iter().map(|(k, v)| k.0).max().unwrap();
+    println!("{} {}", lev_min, lev_max);
     let mut tot = 0;
-    loop {
+    for level in lev_min..=lev_max {
         let mut bugs = 0;
-  //      println!("-- level {} --", level);
+        println!("-- level {} --", level);
         for y in -2..=2 {
             for x in -2..=2{
                 if let Some(x) = g.get(&(level, x, y)) {
-    //                print!("{}", x);
+                   print!("{}", x);
                     if *x == '#' {
                         bugs += 1;
                     }
                 } else {
-   //                 print!(".");
+                  print!(".");
                 }
             }
- //           println!();
-        }
-        if bugs == 0 {
-            break;
+          println!();
         }
         tot += bugs;
-        level += 1;
-    }
+     }
     println!("total bugs: {}", tot);
 }
 
 fn part2(grid: &Vec<Vec<char>>) -> i64 {
     solve(grid, 200)
+}
+
+fn add_level(g: &mut HashMap<(i64, i64, i64), char>, level: i64) {
+    let mut yy = -2;
+    for y in 0..5 {
+        let mut xx = -2;
+        for x in 0..5 {
+            g.entry((level, xx, yy)).or_insert('.');
+            xx += 1;
+        }
+        yy += 1;
+    }
+    
 }
 
 fn solve(grid: &Vec<Vec<char>>, it: i64) -> i64 {
@@ -67,13 +78,18 @@ fn solve(grid: &Vec<Vec<char>>, it: i64) -> i64 {
         yy += 1;
     }
     let mut mins = 0;
+    draw(&g);
     loop {
         let mut new_g = g.clone();
         let mut any_bug = true;
         let mut tot_c = 0;
         for ((level, x, y), v) in &g {
+            add_level(&mut new_g, *level+1);
+           add_level(&mut new_g, *level-1);
+           add_level(&mut new_g, *level);
             let mut c = 0;
   	    for (nx, ny) in &[(*x + 1, *y), (*x - 1, *y), (*x, *y + 1), (*x, *y - 1)] {
+                println!("level {}, x {}, y {}, nx {}, ny {}", level, x, y, nx, ny);
                 if *nx == 0 && *ny  == 0 {
                     if *y > 0 && *x == 0 {
                         for x in -2..=2 {
@@ -138,7 +154,7 @@ fn solve(grid: &Vec<Vec<char>>, it: i64) -> i64 {
                     }
                 }
             }
-            let a = new_g.entry((*level, x % 3, y % 3)).or_insert('.');
+            let a = new_g.entry((*level, *x, *y)).or_insert('.');
             if *a == '.' {
                 if c == 1 || c == 2 {
                     *a = '#';
@@ -149,6 +165,7 @@ fn solve(grid: &Vec<Vec<char>>, it: i64) -> i64 {
                 }
             }
             tot_c += c;
+            println!("c {}, a {}", c, *a);
         }
         any_bug = tot_c > 0;
         mins += 1;
@@ -227,10 +244,18 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    // use super::part1;
+    use super::{parse, solve};
 
-    // #[test]
-    // fn test_part1() {
-    //     assert_eq!(part1(&vec![0]), 0);
-    // }
+     #[test]
+    fn test_part1() {
+        let a = vec![
+            "....#".to_string(),
+            "#..#.".to_string(),
+            "#..##".to_string(),
+            "..#..".to_string(),
+            "#....".to_string(),
+        ];
+        let p = parse(&a);
+         assert_eq!(solve(&p, 10), 0);
+     }
 }

@@ -70,93 +70,74 @@ fn solve(grid: &Vec<Vec<char>>, it: i64) -> i64 {
     loop {
         let mut new_g = g.clone();
         let mut any_bug = true;
-
-        let mut yy :i64 = 0;
-        let mut all_bugs = 0;
-        while any_bug {
-            let mut xx:i64 = 0;
-            while any_bug {
-
-                let mut tot_c = 0;
-                for (x, y) in &[(xx, yy), (xx,-yy), (-xx,yy),(-xx,-yy)] {
-                    let level : i64 = std::cmp::max((x / 3).abs(), (y /3).abs());
-                    let mut c = 0;
-  		    for (nx, ny) in &[(*x + 1, *y), (*x - 1, *y), (*x, *y + 1), (*x, *y - 1)] {
-                        let nblevel : i64 = std::cmp::max((nx / 3).abs(), (ny /3).abs());
-                        if *nx % 3 == 0 && *ny % 3  == 0 {
-                            if *y > 0 && *x == 0 {
-                                for x in -2..=2 {
-                                    if let Some(x) = g.get(&(level - 1, x, -2)) {
-                                        if *x == '#' {
-                                            c += 1;
-                                        }
-                                    }
-                                }
-                                
-                            } else if *y < 0 && *x == 0 {
-                                                                for x in -2..=2 {
-                                    if let Some(x) = g.get(&(level - 1, x, 2)) {
-                                        if *x == '#' {
-                                            c += 1;
-                                        }
-                                    }
-                                }
-
-                            } else if *y == 0 && *x < 0 {
-                                                                for y in -2..=2 {
-                                    if let Some(x) = g.get(&(level - 1, -2, y)) {
-                                        if *x == '#' {
-                                            c += 1;
-                                        }
-                                    }
-                                }
-
-                            } else if *y == 0 && *x > 0 {
-                                                                for y in -2..=2 {
-                                    if let Some(x) = g.get(&(level - 1, 2, y)) {
-                                        if *x == '#' {
-                                            c += 1;
-                                        }
-                                    }
-                                }
-
-                            } else {
-                                panic!();
-                            }
-                            
-                        } else {
-                            if let Some(x) = g.get(&(nblevel, nx % 3, ny % 3)) {
+        let mut tot_c = 0;
+        for ((level, x, y), v) in &g {
+            let mut c = 0;
+  	    for (nx, ny) in &[(*x + 1, *y), (*x - 1, *y), (*x, *y + 1), (*x, *y - 1)] {
+                if *nx == 0 && *ny  == 0 {
+                    if *y > 0 && *x == 0 {
+                        for x in -2..=2 {
+                            if let Some(x) = g.get(&(level - 1, x, -2)) {
                                 if *x == '#' {
                                     c += 1;
                                 }
                             }
                         }
-                    }
-                    let a = new_g.entry((level, x % 3, y % 3)).or_insert('.');
-                    if *a == '.' {
-                        if c == 1 || c == 2 {
-                            *a = '#';
+                    } else if *y < 0 && *x == 0 {
+                        for x in -2..=2 {
+                            if let Some(x) = g.get(&(level - 1, x, 2)) {
+                                if *x == '#' {
+                                    c += 1;
+                                }
+                            }
+                        }
+                    } else if *y == 0 && *x < 0 {
+                        for y in -2..=2 {
+                            if let Some(x) = g.get(&(level - 1, -2, y)) {
+                                if *x == '#' {
+                                    c += 1;
+                                }
+                            }
+                        }
+                    } else if *y == 0 && *x > 0 {
+                        for y in -2..=2 {
+                            if let Some(x) = g.get(&(level - 1, 2, y)) {
+                                if *x == '#' {
+                                    c += 1;
+                                }
+                            }
                         }
                     } else {
-                        if c == 1 {
-                            *a = '#';
+                        panic!();
+                    }
+                } else {
+                    let nblevel : i64 = std::cmp::max::<i64>((nx / 3i64).abs(), (ny /3i64).abs());
+                    if let Some(x) = g.get(&(level + nblevel, nx % 3, ny % 3)) {
+                        if *x == '#' {
+                            c += 1;
                         }
                     }
-                    tot_c += c;
                 }
-                any_bug = tot_c > 0;
-                all_bugs += tot_c;
-                xx += 1;
-              
             }
-            yy += 1;
+            let a = new_g.entry((*level, x % 3, y % 3)).or_insert('.');
+            if *a == '.' {
+                if c == 1 || c == 2 {
+                    *a = '#';
+                }
+            } else {
+                if c == 1 {
+                    *a = '#';
+                }
+            }
+            tot_c += c;
         }
+        any_bug = tot_c > 0;
         mins += 1;
         g = new_g;
         println!("mins: {}", mins);
         draw(&g);
         if mins == it {
-            return all_bugs;
+            return 0;
         }
     }
 }

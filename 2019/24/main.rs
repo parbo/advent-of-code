@@ -24,7 +24,7 @@ fn bd(grid: &Vec<Vec<char>>) -> i64 {
 }
 
 fn draw(g: &HashMap<(i64, i64, i64), char>) {
-    let mut level = 0;
+    let mut level = g.iter().map(|(k, v)| k.0).min().unwrap();
     let mut tot = 0;
     loop {
         let mut bugs = 0;
@@ -52,6 +52,10 @@ fn draw(g: &HashMap<(i64, i64, i64), char>) {
 }
 
 fn part2(grid: &Vec<Vec<char>>) -> i64 {
+    solve(grid, 200)
+}
+
+fn solve(grid: &Vec<Vec<char>>, it: i64) -> i64 {
     let mut g = HashMap::new();
     let mut yy = -2;
     for y in 0..5 {
@@ -79,7 +83,7 @@ fn part2(grid: &Vec<Vec<char>>) -> i64 {
                     let mut c = 0;
   		    for (nx, ny) in &[(*x + 1, *y), (*x - 1, *y), (*x, *y + 1), (*x, *y - 1)] {
                         let nblevel : i64 = std::cmp::max((nx / 3).abs(), (ny /3).abs());
-                        if *nx % 3 == 0 && *ny % 3  == 0 && level != 0 {
+                        if *nx % 3 == 0 && *ny % 3  == 0 {
                             if *y > 0 && *x == 0 {
                                 for x in -2..=2 {
                                     if let Some(x) = g.get(&(level - 1, x, -2)) {
@@ -151,7 +155,7 @@ fn part2(grid: &Vec<Vec<char>>) -> i64 {
         g = new_g;
         println!("mins: {}", mins);
         draw(&g);
-        if mins == 201 {
+        if mins == it {
             return all_bugs;
         }
     }

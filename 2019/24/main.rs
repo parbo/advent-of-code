@@ -26,9 +26,12 @@ fn bd(grid: &Vec<Vec<char>>) -> i64 {
 fn draw(g: &HashMap<(i64, i64, i64), char>) {
     let mut lev_min = g.iter().map(|(k, v)| k.0).min().unwrap();
     let mut lev_max = g.iter().map(|(k, v)| k.0).max().unwrap();
-    println!("{} {}", lev_min, lev_max);
     let mut tot = 0;
     for level in lev_min..=lev_max {
+        let mut buggs = g.iter().filter(|(k, v)| k.0 == level && **v == '#').count();
+        if buggs == 0 {
+            continue;
+        }
         let mut bugs = 0;
         println!("-- level {} --", level);
         for y in -2..=2 {
@@ -58,7 +61,11 @@ fn add_level(g: &mut HashMap<(i64, i64, i64), char>, level: i64) {
     for y in 0..5 {
         let mut xx = -2;
         for x in 0..5 {
-            g.entry((level, xx, yy)).or_insert('.');
+            if xx == 0 && yy == 0 {
+                g.entry((level, xx, yy)).or_insert('?');
+            } else {
+                g.entry((level, xx, yy)).or_insert('.');
+            }
             xx += 1;
         }
         yy += 1;
@@ -71,24 +78,34 @@ fn solve(grid: &Vec<Vec<char>>, it: i64) -> i64 {
     for y in 0..5 {
         let mut xx = -2;
         for x in 0..5 {
-            g.insert((0, xx, yy), grid[y][x]);
+            if xx == 0 && yy == 0 {
+                g.insert((0, xx, yy), '?');
+            } else {
+                g.insert((0, xx, yy), grid[y][x]);
+            }
             xx += 1;
         }
         yy += 1;
     }
     let mut mins = 0;
+    add_level(&mut g, 1);
+    add_level(&mut g, -1);
     draw(&g);
     loop {
         let mut new_g = g.clone();
         let mut any_bug = true;
         let mut tot_c = 0;
+        let lev_min = g.iter().map(|(k, v)| k.0).min().unwrap();
+        let lev_max = g.iter().map(|(k, v)| k.0).max().unwrap();
+        add_level(&mut new_g, lev_max + 1);
+        add_level(&mut new_g, lev_min - 1);
+        let mut changes = vec![];
         for ((level, x, y), v) in &g {
-            add_level(&mut new_g, *level + 1);
-            add_level(&mut new_g, *level - 1);
-            add_level(&mut new_g, *level);
+            if *x == 0 && *y == 0 {
+                continue;
+            }
             let mut c = 0;
             for (nx, ny) in &[(*x + 1, *y), (*x - 1, *y), (*x, *y + 1), (*x, *y - 1)] {
-                println!("level {}, x {}, y {}, nx {}, ny {}", level, x, y, nx, ny);
                 if *nx == 0 && *ny == 0 {
                     if *y > 0 && *x == 0 {
                         for x in -2..=2 {
@@ -150,18 +167,19 @@ fn solve(grid: &Vec<Vec<char>>, it: i64) -> i64 {
                     }
                 }
             }
-            let a = new_g.entry((*level, *x, *y)).or_insert('.');
-            if *a == '.' {
+            if *v == '.' {
                 if c == 1 || c == 2 {
-                    *a = '#';
+                    changes.push(((*level, *x, *y), '#'));
                 }
             } else {
                 if c == 1 {
-                    *a = '#';
+                    changes.push(((*level, *x, *y), '.'));
                 }
             }
             tot_c += c;
-            println!("c {}, a {}", c, *a);
+        }
+        for (k, v) in changes {
+            new_g.insert(k, v);
         }
         any_bug = tot_c > 0;
         mins += 1;

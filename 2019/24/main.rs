@@ -24,11 +24,11 @@ fn bd(grid: &Vec<Vec<char>>) -> i64 {
 }
 
 fn draw(g: &HashMap<(i64, i64, i64), char>) {
-    let mut lev_min = g.iter().map(|(k, v)| k.0).min().unwrap();
-    let mut lev_max = g.iter().map(|(k, v)| k.0).max().unwrap();
+    let lev_min = g.iter().map(|(k, _)| k.0).min().unwrap();
+    let lev_max = g.iter().map(|(k, _)| k.0).max().unwrap();
     let mut tot = 0;
     for level in lev_min..=lev_max {
-        let mut buggs = g.iter().filter(|(k, v)| k.0 == level && **v == '#').count();
+        let buggs = g.iter().filter(|(k, v)| k.0 == level && **v == '#').count();
         if buggs == 0 {
             continue;
         }
@@ -57,18 +57,14 @@ fn part2(grid: &Vec<Vec<char>>) -> i64 {
 }
 
 fn add_level(g: &mut HashMap<(i64, i64, i64), char>, level: i64) {
-    let mut yy = -2;
-    for y in 0..5 {
-        let mut xx = -2;
-        for x in 0..5 {
+    for yy in -2..=2 {
+        for xx in -2..=2 {
             if xx == 0 && yy == 0 {
                 g.entry((level, xx, yy)).or_insert('?');
             } else {
                 g.entry((level, xx, yy)).or_insert('.');
             }
-            xx += 1;
         }
-        yy += 1;
     }
 }
 
@@ -93,10 +89,8 @@ fn solve(grid: &Vec<Vec<char>>, it: i64) -> i64 {
     draw(&g);
     loop {
         let mut new_g = g.clone();
-        let mut any_bug = true;
-        let mut tot_c = 0;
-        let lev_min = g.iter().map(|(k, v)| k.0).min().unwrap();
-        let lev_max = g.iter().map(|(k, v)| k.0).max().unwrap();
+        let lev_min = g.iter().map(|(k, _)| k.0).min().unwrap();
+        let lev_max = g.iter().map(|(k, _)| k.0).max().unwrap();
         add_level(&mut new_g, lev_max + 1);
         add_level(&mut new_g, lev_min - 1);
         let mut changes = vec![];
@@ -172,21 +166,19 @@ fn solve(grid: &Vec<Vec<char>>, it: i64) -> i64 {
                     changes.push(((*level, *x, *y), '#'));
                 }
             } else {
-                if c == 1 {
+                if c != 1 {
                     changes.push(((*level, *x, *y), '.'));
                 }
             }
-            tot_c += c;
         }
         for (k, v) in changes {
             new_g.insert(k, v);
         }
-        any_bug = tot_c > 0;
         mins += 1;
         g = new_g;
-        println!("mins: {}", mins);
-        draw(&g);
         if mins == it {
+            println!("mins: {}", mins);
+            draw(&g);
             return 0;
         }
     }

@@ -465,3 +465,28 @@ fn test_parser() {
         ))
     );
 }
+
+#[test]
+#[should_panic]
+fn test_syntax_error_1() {
+    parse(&tokenize("main() {\n  return 2;\n}\n")).expect("error");
+}
+
+#[test]
+#[should_panic]
+fn test_syntax_error_2() {
+    parse(&tokenize("int main) {\n  return 2;\n}\n")).expect("error");
+}
+
+#[test]
+#[should_panic]
+fn test_syntax_error_3() {
+    parse(&tokenize("int main() {\n  return;\n}\n")).expect("error");
+}
+
+#[test]
+#[should_panic]
+fn test_syntax_error_4() {
+    parse(&tokenize("int main() {\n  return 2;\n")).expect("error");
+}
+

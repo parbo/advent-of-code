@@ -384,6 +384,48 @@ pub fn parse(a: &[Token]) -> Result<Program, ParseError> {
     }
 }
 
+// fn generate_expression(e: &Expression) -> Vec<String> {
+//     let mut r = vec![];
+//     match e {
+// 	Expression::Constant(c) => {
+// 	    let s = format!("ADD 0 {} blah", c);
+// 	    r.push(s);
+// 	}
+//     }
+//     r
+// }
+
+fn generate_statement(s: &Statement) -> Vec<String> {
+    let mut r = vec![];
+    match s {
+	Statement::Return(exp) => {
+	    match exp {
+		Expression::Constant(x) => {
+		    r.push(format!("ADD 0 {} [SP+1]", x));
+		}
+	    }
+	    r.push("JIT 1 [SP+0]".to_string());
+	}
+    }
+    r
+}
+
+fn generate_program(p: &Program) -> Vec<String> {
+    let mut r = vec![];
+    match p {
+	Program::Program(Function::Function(_name, statement)) => {
+	    r.push("ADD 1 [SP+0] [SP+0]".to_string());
+	    let v = generate_statement(&statement);
+	    r.extend(v);
+	}
+    }
+    r
+}
+
+pub fn generate(p: &Program) -> Vec<String> {
+    generate_program(p)
+}
+
 #[test]
 fn test_comment_tokenizer_comment() {
     let result = comment_tokenizer("// blah");
@@ -490,3 +532,13 @@ fn test_syntax_error_4() {
     parse(&tokenize("int main() {\n  return 2;\n")).expect("error");
 }
 
+#[test]
+fn test_generate() {
+    let tokens = tokenize("int main() {\n  return 2;\n}\n");
+    let program = parse(&tokens).expect("error");
+    let asm = generate(&program);
+    for a in asm {
+	println!("{}", a);
+    }
+    assert_eq!(5, 4);
+}

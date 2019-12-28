@@ -1,3 +1,6 @@
+use std::error::Error as StdError;
+use std::fmt;
+
 #[derive(PartialEq, Debug, Clone)]
 pub enum Keyword {
     Int,
@@ -22,9 +25,9 @@ pub enum Token {
     Str(String),
 }
 
-struct Result(Token, usize, bool);
+struct TokenizeResult(Token, usize, bool);
 
-fn whitespace_tokenizer(a: &str) -> Option<Result> {
+fn whitespace_tokenizer(a: &str) -> Option<TokenizeResult> {
     let mut consumed = 0;
     for (offset, char) in a.char_indices() {
         if char.is_whitespace() {
@@ -35,29 +38,29 @@ fn whitespace_tokenizer(a: &str) -> Option<Result> {
     }
     match consumed {
         0 => None,
-        _ => Some(Result(Token::Whitespace, consumed, false)),
+        _ => Some(TokenizeResult(Token::Whitespace, consumed, false)),
     }
 }
 
-fn comment_tokenizer(a: &str) -> Option<Result> {
+fn comment_tokenizer(a: &str) -> Option<TokenizeResult> {
     let mut consumed = 0;
     if a.starts_with("//") {
         consumed += 2;
-	for (offset, char) in a[2..].char_indices() {
+        for (offset, char) in a[2..].char_indices() {
             if char == '\n' {
-		break;
+                break;
             } else {
-		consumed = offset + 3;
+                consumed = offset + 3;
             }
-	}
+        }
     }
     match consumed {
         0 => None,
-        _ => Some(Result(Token::Comment, consumed, false)),
+        _ => Some(TokenizeResult(Token::Comment, consumed, false)),
     }
 }
 
-fn block_comment_tokenizer(a: &str) -> Option<Result> {
+fn block_comment_tokenizer(a: &str) -> Option<TokenizeResult> {
     let mut consumed = 0;
     if a.starts_with("/*") {
         consumed += 2;
@@ -68,45 +71,45 @@ fn block_comment_tokenizer(a: &str) -> Option<Result> {
     }
     match consumed {
         0 => None,
-        _ => Some(Result(Token::BlockComment, consumed, false)),
+        _ => Some(TokenizeResult(Token::BlockComment, consumed, false)),
     }
 }
 
-fn open_paren_tokenizer(a: &str) -> Option<Result> {
+fn open_paren_tokenizer(a: &str) -> Option<TokenizeResult> {
     if a.chars().next()? == '(' {
-        Some(Result(Token::OpenParen, 1, true))
+        Some(TokenizeResult(Token::OpenParen, 1, true))
     } else {
         None
     }
 }
 
-fn close_paren_tokenizer(a: &str) -> Option<Result> {
+fn close_paren_tokenizer(a: &str) -> Option<TokenizeResult> {
     if a.chars().next()? == ')' {
-        Some(Result(Token::CloseParen, 1, true))
+        Some(TokenizeResult(Token::CloseParen, 1, true))
     } else {
         None
     }
 }
 
-fn open_brace_tokenizer(a: &str) -> Option<Result> {
+fn open_brace_tokenizer(a: &str) -> Option<TokenizeResult> {
     if a.chars().next()? == '{' {
-        Some(Result(Token::OpenBrace, 1, true))
+        Some(TokenizeResult(Token::OpenBrace, 1, true))
     } else {
         None
     }
 }
 
-fn close_brace_tokenizer(a: &str) -> Option<Result> {
+fn close_brace_tokenizer(a: &str) -> Option<TokenizeResult> {
     if a.chars().next()? == '}' {
-        Some(Result(Token::CloseBrace, 1, true))
+        Some(TokenizeResult(Token::CloseBrace, 1, true))
     } else {
         None
     }
 }
 
-fn semi_colon_tokenizer(a: &str) -> Option<Result> {
+fn semi_colon_tokenizer(a: &str) -> Option<TokenizeResult> {
     if a.chars().next()? == ';' {
-        Some(Result(Token::SemiColon, 1, true))
+        Some(TokenizeResult(Token::SemiColon, 1, true))
     } else {
         None
     }
@@ -173,37 +176,34 @@ fn match_identifier(a: &str) -> Option<&str> {
     }
 }
 
-fn identifier_tokenizer(a: &str) -> Option<Result> {
+fn identifier_tokenizer(a: &str) -> Option<TokenizeResult> {
     match match_identifier(a) {
-        Some(id) if !is_keyword(id) => {
-            Some(Result(Token::Identifier(id.to_string()), id.len(), true))
-        }
+        Some(id) if !is_keyword(id) => Some(TokenizeResult(
+            Token::Identifier(id.to_string()),
+            id.len(),
+            true,
+        )),
         _ => None,
     }
 }
 
-fn keyword_tokenizer(a: &str) -> Option<Result> {
+fn keyword_tokenizer(a: &str) -> Option<TokenizeResult> {
     // Same as identifier, but with a reversed check for keyword-ness
     match match_identifier(a) {
         Some(id) => match match_keyword(id) {
-            Some(op) => Some(Result(Token::Keyword(op), id.len(), true)),
+            Some(op) => Some(TokenizeResult(Token::Keyword(op), id.len(), true)),
             _ => None,
         },
         _ => None,
     }
 }
 
-fn integer_tokenizer(a: &str) -> Option<Result> {
+fn integer_tokenizer(a: &str) -> Option<TokenizeResult> {
     if a.is_empty() {
         return None;
     }
-    let mut pos = 0;
-    // Skip minus sign if any
-    if a.chars().next()? == '-' {
-        pos += 1;
-    }
     let mut consumed = 0;
-    for (offset, char) in a[pos..].char_indices() {
+    for (offset, char) in a.char_indices() {
         if is_decimal_number(char) {
             consumed = offset + 1;
         } else {
@@ -212,19 +212,15 @@ fn integer_tokenizer(a: &str) -> Option<Result> {
     }
     match consumed {
         0 => None,
-        _ => Some(Result(
-            Token::Integer(
-                a[0..(pos + consumed)]
-                    .parse()
-                    .expect("error parsing integer"),
-            ),
-            pos + consumed,
+        _ => Some(TokenizeResult(
+            Token::Integer(a[0..consumed].parse().expect("error parsing integer")),
+            consumed,
             true,
         )),
     }
 }
 
-fn string_tokenizer(a: &str) -> Option<Result> {
+fn string_tokenizer(a: &str) -> Option<TokenizeResult> {
     if a.len() <= 1 {
         return None;
     }
@@ -239,7 +235,7 @@ fn string_tokenizer(a: &str) -> Option<Result> {
         }
         match consumed {
             0 => None,
-            _ => Some(Result(
+            _ => Some(TokenizeResult(
                 Token::Str(String::from(&a[1..=consumed])),
                 consumed + 2,
                 true,
@@ -251,7 +247,7 @@ fn string_tokenizer(a: &str) -> Option<Result> {
 }
 
 pub fn tokenize(text: &str) -> Vec<Token> {
-    let tokenizers: [fn(&str) -> Option<Result>; 12] = [
+    let tokenizers: [fn(&str) -> Option<TokenizeResult>; 12] = [
         whitespace_tokenizer,
         block_comment_tokenizer,
         comment_tokenizer,
@@ -271,7 +267,7 @@ pub fn tokenize(text: &str) -> Vec<Token> {
     loop {
         let last_pos = pos;
         for &tokenizer in tokenizers.iter() {
-            if let Some(Result(token, consumed, emit)) = tokenizer(&text[pos..]) {
+            if let Some(TokenizeResult(token, consumed, emit)) = tokenizer(&text[pos..]) {
                 if emit {
                     tokenlist.push(token)
                 }
@@ -287,12 +283,113 @@ pub fn tokenize(text: &str) -> Vec<Token> {
     tokenlist
 }
 
+#[derive(PartialEq, Debug, Clone)]
+pub enum Expression {
+    Constant(i128),
+}
+
+#[derive(PartialEq, Debug, Clone)]
+pub enum Statement {
+    Return(Expression),
+}
+
+#[derive(PartialEq, Debug, Clone)]
+pub enum Function {
+    Function(String, Statement),
+}
+
+#[derive(PartialEq, Debug, Clone)]
+pub enum Program {
+    Program(Function),
+}
+
+#[derive(Debug)]
+pub enum ParseError {
+    SyntaxError,
+}
+
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(self.description())
+    }
+}
+
+impl StdError for ParseError {
+    fn description(&self) -> &str {
+        match *self {
+            ParseError::SyntaxError => "SyntaxError",
+        }
+    }
+}
+
+fn expression_parser(tokens: &[Token]) -> Option<(Expression, usize)> {
+    let mut it = tokens.iter();
+    if let Token::Integer(x) = it.next()? {
+        Some((Expression::Constant(*x), 1))
+    } else {
+        None
+    }
+}
+
+fn statement_parser(tokens: &[Token]) -> Option<(Statement, usize)> {
+    let mut it = tokens.iter();
+    if let Token::Keyword(Keyword::Return) = it.next()? {
+        if let Some((exp, offset)) = expression_parser(&tokens[1..]) {
+            if let Token::SemiColon = tokens[(1 + offset)..].iter().next()? {
+                return Some((Statement::Return(exp), 1 + offset + 1));
+            }
+        }
+    }
+    None
+}
+
+fn function_parser(tokens: &[Token]) -> Option<(Function, usize)> {
+    let mut it = tokens.iter();
+    if let Token::Keyword(Keyword::Int) = it.next()? {
+        if let Token::Identifier(name) = it.next()? {
+            if let Token::OpenParen = it.next()? {
+                if let Token::CloseParen = it.next()? {
+                    if let Token::OpenBrace = it.next()? {
+                        if let Some((statement, offset)) = statement_parser(&tokens[5..]) {
+                            if let Token::CloseBrace = tokens[(5 + offset)..].iter().next()? {
+                                return Some((
+                                    Function::Function(name.clone(), statement),
+                                    5 + offset + 1,
+                                ));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
+fn program_parser(tokens: &[Token]) -> Option<(Program, usize)> {
+    if let Some((function, offset)) = function_parser(tokens) {
+        return Some((Program::Program(function), offset));
+    }
+    None
+}
+
+pub fn parse(a: &[Token]) -> Result<Program, ParseError> {
+    if let Some((program, i)) = program_parser(a) {
+        if i != a.len() {
+            return Err(ParseError::SyntaxError);
+        }
+        Ok(program)
+    } else {
+        Err(ParseError::SyntaxError)
+    }
+}
+
 #[test]
 fn test_comment_tokenizer_comment() {
     let result = comment_tokenizer("// blah");
     match result {
         None => assert!(false),
-        Some(Result(token, consumed, emit)) => {
+        Some(TokenizeResult(token, consumed, emit)) => {
             assert_eq!(token, Token::Comment);
             assert_eq!(consumed, 7);
             assert_eq!(emit, false);
@@ -318,21 +415,15 @@ fn test_tokenizer() {
     );
     assert_eq!(tokenize("1"), [Token::Integer(1)]);
     assert_eq!(tokenize("123"), [Token::Integer(123)]);
-    assert_eq!(tokenize("-1"), [Token::Integer(-1)]);
-    assert_eq!(tokenize("-123"), [Token::Integer(-123)]);
     assert_eq!(tokenize("1 2"), [Token::Integer(1), Token::Integer(2)]);
     assert_eq!(
         tokenize("123 321"),
         [Token::Integer(123), Token::Integer(321)]
     );
-    assert_eq!(tokenize("-1-1"), [Token::Integer(-1), Token::Integer(-1)]);
     assert_eq!(tokenize("\"test\""), [Token::Str(String::from("test"))]);
     assert_eq!(tokenize("x"), [Token::Identifier(String::from("x"))]);
     assert_eq!(tokenize("_x"), [Token::Identifier(String::from("_x"))]);
-    assert_eq!(
-        tokenize("y_2"),
-        [Token::Identifier(String::from("y_2"))]
-    );
+    assert_eq!(tokenize("y_2"), [Token::Identifier(String::from("y_2"))]);
     assert_eq!(tokenize("int"), [Token::Keyword(Keyword::Int)]);
     assert_eq!(
         tokenize("intblaj"),
@@ -351,14 +442,26 @@ fn test_tokenizer() {
         tokenize("int main() {\n  return 2;\n}\n"),
         [
             Token::Keyword(Keyword::Int),
-	    Token::Identifier("main".to_string()),
-	    Token::OpenParen,
-	    Token::CloseParen,
-	    Token::OpenBrace,
-	    Token::Keyword(Keyword::Return),
+            Token::Identifier("main".to_string()),
+            Token::OpenParen,
+            Token::CloseParen,
+            Token::OpenBrace,
+            Token::Keyword(Keyword::Return),
             Token::Integer(2),
             Token::SemiColon,
             Token::CloseBrace
         ]
+    );
+}
+
+#[test]
+fn test_parser() {
+    let tokens = tokenize("int main() {\n  return 2;\n}\n");
+    assert_eq!(
+        parse(&tokens).expect("error"),
+        Program::Program(Function::Function(
+            "main".to_string(),
+            Statement::Return(Expression::Constant(2))
+        ))
     );
 }

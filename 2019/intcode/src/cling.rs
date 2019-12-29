@@ -18,6 +18,12 @@ pub enum Token {
     OpenBrace,
     CloseBrace,
     SemiColon,
+    Negation,
+    LogicalNegation,
+    Addition,
+    Multiplication,
+    Division,
+    Modulo,
     IntegerType,
     Identifier(String),
     Keyword(Keyword),
@@ -110,6 +116,54 @@ fn close_brace_tokenizer(a: &str) -> Option<TokenizeResult> {
 fn semi_colon_tokenizer(a: &str) -> Option<TokenizeResult> {
     if a.chars().next()? == ';' {
         Some(TokenizeResult(Token::SemiColon, 1, true))
+    } else {
+        None
+    }
+}
+
+fn negation_tokenizer(a: &str) -> Option<TokenizeResult> {
+    if a.chars().next()? == '-' {
+        Some(TokenizeResult(Token::Negation, 1, true))
+    } else {
+        None
+    }
+}
+
+fn logical_negation_tokenizer(a: &str) -> Option<TokenizeResult> {
+    if a.chars().next()? == '!' {
+        Some(TokenizeResult(Token::LogicalNegation, 1, true))
+    } else {
+        None
+    }
+}
+
+fn addition_tokenizer(a: &str) -> Option<TokenizeResult> {
+    if a.chars().next()? == '+' {
+        Some(TokenizeResult(Token::Addition, 1, true))
+    } else {
+        None
+    }
+}
+
+fn multiplication_tokenizer(a: &str) -> Option<TokenizeResult> {
+    if a.chars().next()? == '*' {
+        Some(TokenizeResult(Token::Multiplication, 1, true))
+    } else {
+        None
+    }
+}
+
+fn division_tokenizer(a: &str) -> Option<TokenizeResult> {
+    if a.chars().next()? == '/' {
+        Some(TokenizeResult(Token::Division, 1, true))
+    } else {
+        None
+    }
+}
+
+fn modulo_tokenizer(a: &str) -> Option<TokenizeResult> {
+    if a.chars().next()? == '%' {
+        Some(TokenizeResult(Token::Modulo, 1, true))
     } else {
         None
     }
@@ -247,7 +301,7 @@ fn string_tokenizer(a: &str) -> Option<TokenizeResult> {
 }
 
 pub fn tokenize(text: &str) -> Vec<Token> {
-    let tokenizers: [fn(&str) -> Option<TokenizeResult>; 12] = [
+    let tokenizers: [fn(&str) -> Option<TokenizeResult>; 18] = [
         whitespace_tokenizer,
         block_comment_tokenizer,
         comment_tokenizer,
@@ -256,6 +310,12 @@ pub fn tokenize(text: &str) -> Vec<Token> {
         open_brace_tokenizer,
         close_brace_tokenizer,
         semi_colon_tokenizer,
+        negation_tokenizer,
+        logical_negation_tokenizer,
+        addition_tokenizer,
+        multiplication_tokenizer,
+        division_tokenizer,
+        modulo_tokenizer,
         identifier_tokenizer,
         keyword_tokenizer,
         integer_tokenizer,
@@ -284,8 +344,24 @@ pub fn tokenize(text: &str) -> Vec<Token> {
 }
 
 #[derive(PartialEq, Debug, Clone)]
+pub enum UnaryOperator {
+    Negation,
+    LogicalNegation,
+}
+
+#[derive(PartialEq, Debug, Clone)]
+pub enum BinaryOperator {
+    Addition,
+    Multiplication,
+    Division,
+    Modulo,
+}
+
+#[derive(PartialEq, Debug, Clone)]
 pub enum Expression {
     Constant(i128),
+    UnaryOperator(UnaryOperator, Box<Expression>),
+    BinaryOperator(BinaryOperator, Box<Expression>, Box<Expression>),
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -322,19 +398,44 @@ impl StdError for ParseError {
     }
 }
 
-fn expression_parser(tokens: &[Token]) -> Option<(Expression, usize)> {
+fn parse_expression(tokens: &[Token]) -> Option<(Expression, usize)> {
     let mut it = tokens.iter();
-    if let Token::Integer(x) = it.next()? {
-        Some((Expression::Constant(*x), 1))
-    } else {
-        None
+    match it.next()? {
+        Token::Integer(x) => Some((Expression::Constant(*x), 1)),
+        Token::Negation => {
+            let (exp, offset) = parse_expression(&tokens[1..])?;
+            Some((
+                Expression::UnaryOperator(UnaryOperator::Negation, Box::new(exp)),
+                1 + offset,
+            ))
+        }
+        Token::LogicalNegation => {
+            let (exp, offset) = parse_expression(&tokens[1..])?;
+            Some((
+                Expression::UnaryOperator(UnaryOperator::LogicalNegation, Box::new(exp)),
+                1 + offset,
+            ))
+        }
+        Token::Addition => {
+            let (exp1, offset1) = parse_expression(&tokens[1..])?;
+            let (exp2, offset2) = parse_expression(&tokens[offset1..])?;
+            Some((
+                Expression::BinaryOperator(
+                    BinaryOperator::Addition,
+                    Box::new(exp1),
+                    Box::new(exp2),
+                ),
+                1 + offset1 + offset2,
+            ))
+        }
+        _ => None,
     }
 }
 
-fn statement_parser(tokens: &[Token]) -> Option<(Statement, usize)> {
+fn parse_statement(tokens: &[Token]) -> Option<(Statement, usize)> {
     let mut it = tokens.iter();
     if let Token::Keyword(Keyword::Return) = it.next()? {
-        if let Some((exp, offset)) = expression_parser(&tokens[1..]) {
+        if let Some((exp, offset)) = parse_expression(&tokens[1..]) {
             if let Token::SemiColon = tokens[(1 + offset)..].iter().next()? {
                 return Some((Statement::Return(exp), 1 + offset + 1));
             }
@@ -343,14 +444,14 @@ fn statement_parser(tokens: &[Token]) -> Option<(Statement, usize)> {
     None
 }
 
-fn function_parser(tokens: &[Token]) -> Option<(Function, usize)> {
+fn parse_function(tokens: &[Token]) -> Option<(Function, usize)> {
     let mut it = tokens.iter();
     if let Token::Keyword(Keyword::Int) = it.next()? {
         if let Token::Identifier(name) = it.next()? {
             if let Token::OpenParen = it.next()? {
                 if let Token::CloseParen = it.next()? {
                     if let Token::OpenBrace = it.next()? {
-                        if let Some((statement, offset)) = statement_parser(&tokens[5..]) {
+                        if let Some((statement, offset)) = parse_statement(&tokens[5..]) {
                             if let Token::CloseBrace = tokens[(5 + offset)..].iter().next()? {
                                 return Some((
                                     Function::Function(name.clone(), statement),
@@ -366,15 +467,15 @@ fn function_parser(tokens: &[Token]) -> Option<(Function, usize)> {
     None
 }
 
-fn program_parser(tokens: &[Token]) -> Option<(Program, usize)> {
-    if let Some((function, offset)) = function_parser(tokens) {
+fn parse_program(tokens: &[Token]) -> Option<(Program, usize)> {
+    if let Some((function, offset)) = parse_function(tokens) {
         return Some((Program::Program(function), offset));
     }
     None
 }
 
 pub fn parse(a: &[Token]) -> Result<Program, ParseError> {
-    if let Some((program, i)) = program_parser(a) {
+    if let Some((program, i)) = parse_program(a) {
         if i != a.len() {
             return Err(ParseError::SyntaxError);
         }
@@ -382,48 +483,6 @@ pub fn parse(a: &[Token]) -> Result<Program, ParseError> {
     } else {
         Err(ParseError::SyntaxError)
     }
-}
-
-// fn generate_expression(e: &Expression) -> Vec<String> {
-//     let mut r = vec![];
-//     match e {
-// 	Expression::Constant(c) => {
-// 	    let s = format!("ADD 0 {} blah", c);
-// 	    r.push(s);
-// 	}
-//     }
-//     r
-// }
-
-fn generate_statement(s: &Statement) -> Vec<String> {
-    let mut r = vec![];
-    match s {
-	Statement::Return(exp) => {
-	    match exp {
-		Expression::Constant(x) => {
-		    r.push(format!("ADD 0 {} [SP+1]", x));
-		}
-	    }
-	    r.push("JIT 1 [SP+0]".to_string());
-	}
-    }
-    r
-}
-
-fn generate_program(p: &Program) -> Vec<String> {
-    let mut r = vec![];
-    match p {
-	Program::Program(Function::Function(_name, statement)) => {
-	    r.push("ADD 1 [SP+0] [SP+0]".to_string());
-	    let v = generate_statement(&statement);
-	    r.extend(v);
-	}
-    }
-    r
-}
-
-pub fn generate(p: &Program) -> Vec<String> {
-    generate_program(p)
 }
 
 #[test]
@@ -456,6 +515,28 @@ fn test_tokenizer() {
         [Token::Integer(1), Token::Integer(2)]
     );
     assert_eq!(tokenize("1"), [Token::Integer(1)]);
+    assert_eq!(tokenize("-1"), [Token::Negation, Token::Integer(1)]);
+    assert_eq!(tokenize("!1"), [Token::LogicalNegation, Token::Integer(1)]);
+    assert_eq!(
+        tokenize("1+2"),
+        [Token::Integer(1), Token::Addition, Token::Integer(2)]
+    );
+    assert_eq!(
+        tokenize("1*2"),
+        [Token::Integer(1), Token::Multiplication, Token::Integer(2)]
+    );
+    assert_eq!(
+        tokenize("1/2"),
+        [Token::Integer(1), Token::Division, Token::Integer(2)]
+    );
+    assert_eq!(
+        tokenize("1%2"),
+        [Token::Integer(1), Token::Modulo, Token::Integer(2)]
+    );
+    assert_eq!(
+        tokenize("3-1"),
+        [Token::Integer(3), Token::Negation, Token::Integer(1)]
+    );
     assert_eq!(tokenize("123"), [Token::Integer(123)]);
     assert_eq!(tokenize("1 2"), [Token::Integer(1), Token::Integer(2)]);
     assert_eq!(
@@ -467,6 +548,14 @@ fn test_tokenizer() {
     assert_eq!(tokenize("_x"), [Token::Identifier(String::from("_x"))]);
     assert_eq!(tokenize("y_2"), [Token::Identifier(String::from("y_2"))]);
     assert_eq!(tokenize("int"), [Token::Keyword(Keyword::Int)]);
+    assert_eq!(
+        tokenize("-x"),
+        [Token::Negation, Token::Identifier(String::from("x"))]
+    );
+    assert_eq!(
+        tokenize("!x"),
+        [Token::LogicalNegation, Token::Identifier(String::from("x"))]
+    );
     assert_eq!(
         tokenize("intblaj"),
         [Token::Identifier(String::from("intblaj"))]
@@ -509,6 +598,27 @@ fn test_parser() {
 }
 
 #[test]
+fn test_parse_unary_operator() {
+    assert_eq!(
+        parse_expression(&tokenize("-7")).expect("error"),
+        (
+            Expression::UnaryOperator(UnaryOperator::Negation, Box::new(Expression::Constant(7))),
+            2
+        )
+    );
+    assert_eq!(
+        parse_expression(&tokenize("!1")).expect("error"),
+        (
+            Expression::UnaryOperator(
+                UnaryOperator::LogicalNegation,
+                Box::new(Expression::Constant(1))
+            ),
+            2
+        )
+    );
+}
+
+#[test]
 #[should_panic]
 fn test_syntax_error_1() {
     parse(&tokenize("main() {\n  return 2;\n}\n")).expect("error");
@@ -530,15 +640,4 @@ fn test_syntax_error_3() {
 #[should_panic]
 fn test_syntax_error_4() {
     parse(&tokenize("int main() {\n  return 2;\n")).expect("error");
-}
-
-#[test]
-fn test_generate() {
-    let tokens = tokenize("int main() {\n  return 2;\n}\n");
-    let program = parse(&tokens).expect("error");
-    let asm = generate(&program);
-    for a in asm {
-	println!("{}", a);
-    }
-    assert_eq!(5, 4);
 }

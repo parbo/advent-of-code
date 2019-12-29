@@ -33,12 +33,27 @@ pub enum Token {
     GreaterThan,
     GreaterThanOrEqual,
     Assign,
-    IntegerType,
     Identifier(String),
     Keyword(Keyword),
     Integer(i128),
     Str(String),
 }
+
+#[derive(PartialEq, Debug, Clone)]
+pub struct Position {
+    line: usize,
+    column: usize,
+}
+
+#[derive(PartialEq, Debug, Clone)]
+pub struct Location {
+    file: String,
+    start: Position,
+    end: Position,
+}
+
+#[derive(PartialEq, Debug, Clone)]
+pub struct TokenWithLocation(Token, Location);
 
 struct TokenizeResult(Token, usize, bool);
 
@@ -381,7 +396,7 @@ fn string_tokenizer(a: &str) -> Option<TokenizeResult> {
     }
 }
 
-pub fn tokenize(text: &str) -> Vec<Token> {
+pub fn tokenize(text: &str) -> Vec<TokenWithLocation> {
     let tokenizers: [fn(&str) -> Option<TokenizeResult>; 27] = [
         whitespace_tokenizer,
         block_comment_tokenizer,
@@ -412,14 +427,42 @@ pub fn tokenize(text: &str) -> Vec<Token> {
         string_tokenizer,
     ];
 
-    let mut tokenlist = Vec::<Token>::new();
+    let mut tokenlist = Vec::<TokenWithLocation>::new();
     let mut pos: usize = 0;
+    let mut row: usize = 0;
+    let mut col: usize = 0;
     loop {
         let last_pos = pos;
+        let last_row = row;
+        let last_col = col;
         for &tokenizer in tokenizers.iter() {
             if let Some(TokenizeResult(token, consumed, emit)) = tokenizer(&text[pos..]) {
+                let mut last_c = ' ';
+                for c in text[pos..(pos + consumed)].chars() {
+                    match c {
+                        '\r' | '\n' => {
+                            if last_c != '\r' && last_c != '\n' {
+                                row += 1;
+                                col = 0;
+                            }
+                        }
+                        _ => col += 1,
+                    }
+                    last_c = c;
+                }
                 if emit {
-                    tokenlist.push(token)
+                    let location = Location {
+                        file: "<none>".to_string(),
+                        start: Position {
+                            line: last_row,
+                            column: last_col,
+                        },
+                        end: Position {
+                            line: row,
+                            column: col,
+                        },
+                    };
+                    tokenlist.push(TokenWithLocation(token, location));
                 }
                 pos += consumed;
                 break;
@@ -501,45 +544,49 @@ impl StdError for ParseError {
     }
 }
 
-fn parse_factor(tokens: &[Token]) -> Option<(Expression, usize)> {
+fn parse_factor(tokens: &[TokenWithLocation]) -> Option<(Expression, usize)> {
     let mut it = tokens.iter();
     match it.next()? {
-        Token::OpenParen => {
+        TokenWithLocation(Token::OpenParen, _) => {
             let (exp, offset) = parse_expression(&tokens[1..])?;
-            if Token::CloseParen == *tokens[(1 + offset)..].iter().next()? {
+            if let Some(TokenWithLocation(Token::CloseParen, _)) =
+                tokens[(1 + offset)..].iter().next()
+            {
                 Some((exp, 1 + offset + 1))
             } else {
                 None
             }
         }
-        Token::Minus => {
+        TokenWithLocation(Token::Minus, _) => {
             let (exp, offset) = parse_factor(&tokens[1..])?;
             Some((
                 Expression::UnaryOperator(UnaryOperator::Negation, Box::new(exp)),
                 1 + offset,
             ))
         }
-        Token::Bang => {
+        TokenWithLocation(Token::Bang, _) => {
             let (exp, offset) = parse_factor(&tokens[1..])?;
             Some((
                 Expression::UnaryOperator(UnaryOperator::LogicalNegation, Box::new(exp)),
                 1 + offset,
             ))
         }
-        Token::Integer(x) => Some((Expression::Constant(*x), 1)),
-        Token::Identifier(name) => Some((Expression::VariableReference(name.clone()), 1)),
+        TokenWithLocation(Token::Integer(x), _) => Some((Expression::Constant(*x), 1)),
+        TokenWithLocation(Token::Identifier(name), _) => {
+            Some((Expression::VariableReference(name.clone()), 1))
+        }
         _ => None,
     }
 }
 
-fn parse_term(tokens: &[Token]) -> Option<(Expression, usize)> {
+fn parse_term(tokens: &[TokenWithLocation]) -> Option<(Expression, usize)> {
     let (f, o) = parse_factor(tokens)?;
     let mut factor = f;
     let mut offset = o;
     loop {
         let mut it = tokens[offset..].iter();
         match it.next() {
-            Some(Token::Asterisk) => {
+            Some(TokenWithLocation(Token::Asterisk, _)) => {
                 let (next_factor, next_offset) = parse_factor(&tokens[(1 + offset)..])?;
                 factor = Expression::BinaryOperator(
                     BinaryOperator::Multiplication,
@@ -548,7 +595,7 @@ fn parse_term(tokens: &[Token]) -> Option<(Expression, usize)> {
                 );
                 offset = offset + 1 + next_offset;
             }
-            Some(Token::Slash) => {
+            Some(TokenWithLocation(Token::Slash, _)) => {
                 let (next_factor, next_offset) = parse_factor(&tokens[(1 + offset)..])?;
                 factor = Expression::BinaryOperator(
                     BinaryOperator::Division,
@@ -557,7 +604,7 @@ fn parse_term(tokens: &[Token]) -> Option<(Expression, usize)> {
                 );
                 offset = offset + 1 + next_offset;
             }
-            Some(Token::Percent) => {
+            Some(TokenWithLocation(Token::Percent, _)) => {
                 let (next_factor, next_offset) = parse_factor(&tokens[(1 + offset)..])?;
                 factor = Expression::BinaryOperator(
                     BinaryOperator::Modulo,
@@ -572,14 +619,14 @@ fn parse_term(tokens: &[Token]) -> Option<(Expression, usize)> {
     Some((factor, offset))
 }
 
-fn parse_additive_expression(tokens: &[Token]) -> Option<(Expression, usize)> {
+fn parse_additive_expression(tokens: &[TokenWithLocation]) -> Option<(Expression, usize)> {
     let (t, o) = parse_term(tokens)?;
     let mut term = t;
     let mut offset = o;
     loop {
         let mut it = tokens[offset..].iter();
         match it.next() {
-            Some(Token::Plus) => {
+            Some(TokenWithLocation(Token::Plus, _)) => {
                 let (next_term, next_offset) = parse_term(&tokens[(1 + offset)..])?;
                 term = Expression::BinaryOperator(
                     BinaryOperator::Addition,
@@ -588,7 +635,7 @@ fn parse_additive_expression(tokens: &[Token]) -> Option<(Expression, usize)> {
                 );
                 offset = offset + 1 + next_offset;
             }
-            Some(Token::Minus) => {
+            Some(TokenWithLocation(Token::Minus, _)) => {
                 let (next_term, next_offset) = parse_term(&tokens[(1 + offset)..])?;
                 term = Expression::BinaryOperator(
                     BinaryOperator::Subtraction,
@@ -603,14 +650,14 @@ fn parse_additive_expression(tokens: &[Token]) -> Option<(Expression, usize)> {
     Some((term, offset))
 }
 
-fn parse_relational_expression(tokens: &[Token]) -> Option<(Expression, usize)> {
+fn parse_relational_expression(tokens: &[TokenWithLocation]) -> Option<(Expression, usize)> {
     let (ae, o) = parse_additive_expression(tokens)?;
     let mut additive_expression = ae;
     let mut offset = o;
     loop {
         let mut it = tokens[offset..].iter();
         match it.next() {
-            Some(Token::LessThan) => {
+            Some(TokenWithLocation(Token::LessThan, _)) => {
                 let (next_additive_expression, next_offset) =
                     parse_additive_expression(&tokens[(1 + offset)..])?;
                 additive_expression = Expression::BinaryOperator(
@@ -620,7 +667,7 @@ fn parse_relational_expression(tokens: &[Token]) -> Option<(Expression, usize)> 
                 );
                 offset = offset + 1 + next_offset;
             }
-            Some(Token::LessThanOrEqual) => {
+            Some(TokenWithLocation(Token::LessThanOrEqual, _)) => {
                 let (next_additive_expression, next_offset) =
                     parse_additive_expression(&tokens[(1 + offset)..])?;
                 additive_expression = Expression::BinaryOperator(
@@ -630,7 +677,7 @@ fn parse_relational_expression(tokens: &[Token]) -> Option<(Expression, usize)> 
                 );
                 offset = offset + 1 + next_offset;
             }
-            Some(Token::GreaterThan) => {
+            Some(TokenWithLocation(Token::GreaterThan, _)) => {
                 let (next_additive_expression, next_offset) =
                     parse_additive_expression(&tokens[(1 + offset)..])?;
                 additive_expression = Expression::BinaryOperator(
@@ -640,7 +687,7 @@ fn parse_relational_expression(tokens: &[Token]) -> Option<(Expression, usize)> 
                 );
                 offset = offset + 1 + next_offset;
             }
-            Some(Token::GreaterThanOrEqual) => {
+            Some(TokenWithLocation(Token::GreaterThanOrEqual, _)) => {
                 let (next_additive_expression, next_offset) =
                     parse_additive_expression(&tokens[(1 + offset)..])?;
                 additive_expression = Expression::BinaryOperator(
@@ -656,14 +703,14 @@ fn parse_relational_expression(tokens: &[Token]) -> Option<(Expression, usize)> 
     Some((additive_expression, offset))
 }
 
-fn parse_equality_expression(tokens: &[Token]) -> Option<(Expression, usize)> {
+fn parse_equality_expression(tokens: &[TokenWithLocation]) -> Option<(Expression, usize)> {
     let (re, o) = parse_relational_expression(tokens)?;
     let mut relational_expression = re;
     let mut offset = o;
     loop {
         let mut it = tokens[offset..].iter();
         match it.next() {
-            Some(Token::Equal) => {
+            Some(TokenWithLocation(Token::Equal, _)) => {
                 let (next_relational_expression, next_offset) =
                     parse_relational_expression(&tokens[(1 + offset)..])?;
                 relational_expression = Expression::BinaryOperator(
@@ -673,7 +720,7 @@ fn parse_equality_expression(tokens: &[Token]) -> Option<(Expression, usize)> {
                 );
                 offset = offset + 1 + next_offset;
             }
-            Some(Token::NotEqual) => {
+            Some(TokenWithLocation(Token::NotEqual, _)) => {
                 let (next_relational_expression, next_offset) =
                     parse_relational_expression(&tokens[(1 + offset)..])?;
                 relational_expression = Expression::BinaryOperator(
@@ -689,14 +736,14 @@ fn parse_equality_expression(tokens: &[Token]) -> Option<(Expression, usize)> {
     Some((relational_expression, offset))
 }
 
-fn parse_logical_and_expression(tokens: &[Token]) -> Option<(Expression, usize)> {
+fn parse_logical_and_expression(tokens: &[TokenWithLocation]) -> Option<(Expression, usize)> {
     let (ee, o) = parse_equality_expression(tokens)?;
     let mut equality_expression = ee;
     let mut offset = o;
     loop {
         let mut it = tokens[offset..].iter();
         match it.next() {
-            Some(Token::And) => {
+            Some(TokenWithLocation(Token::And, _)) => {
                 let (next_equality_expression, next_offset) =
                     parse_equality_expression(&tokens[(1 + offset)..])?;
                 equality_expression = Expression::BinaryOperator(
@@ -712,14 +759,14 @@ fn parse_logical_and_expression(tokens: &[Token]) -> Option<(Expression, usize)>
     Some((equality_expression, offset))
 }
 
-fn parse_logical_or_expression(tokens: &[Token]) -> Option<(Expression, usize)> {
+fn parse_logical_or_expression(tokens: &[TokenWithLocation]) -> Option<(Expression, usize)> {
     let (lae, o) = parse_logical_and_expression(tokens)?;
     let mut logical_and_expression = lae;
     let mut offset = o;
     loop {
         let mut it = tokens[offset..].iter();
         match it.next() {
-            Some(Token::Or) => {
+            Some(TokenWithLocation(Token::Or, _)) => {
                 let (next_logical_and_expression, next_offset) =
                     parse_logical_and_expression(&tokens[(1 + offset)..])?;
                 logical_and_expression = Expression::BinaryOperator(
@@ -735,11 +782,11 @@ fn parse_logical_or_expression(tokens: &[Token]) -> Option<(Expression, usize)> 
     Some((logical_and_expression, offset))
 }
 
-fn parse_expression(tokens: &[Token]) -> Option<(Expression, usize)> {
+fn parse_expression(tokens: &[TokenWithLocation]) -> Option<(Expression, usize)> {
     let mut offset = 0;
-    if let Some(Token::Identifier(name)) = tokens[offset..].iter().next() {
+    if let Some(TokenWithLocation(Token::Identifier(name), _)) = tokens[offset..].iter().next() {
         offset = offset + 1;
-        if let Some(Token::Assign) = tokens[offset..].iter().next() {
+        if let Some(TokenWithLocation(Token::Assign, _)) = tokens[offset..].iter().next() {
             offset = offset + 1;
             if let Some((exp, new_offset)) = parse_expression(&tokens[offset..]) {
                 return Some((
@@ -752,22 +799,24 @@ fn parse_expression(tokens: &[Token]) -> Option<(Expression, usize)> {
     parse_logical_or_expression(tokens)
 }
 
-fn parse_statement(tokens: &[Token]) -> Option<(Statement, usize)> {
+fn parse_statement(tokens: &[TokenWithLocation]) -> Option<(Statement, usize)> {
     let mut it = tokens.iter();
     match it.next() {
-        Some(Token::Keyword(Keyword::Return)) => {
+        Some(TokenWithLocation(Token::Keyword(Keyword::Return), _)) => {
             if let Some((exp, offset)) = parse_expression(&tokens[1..]) {
-                if let Token::SemiColon = tokens[(1 + offset)..].iter().next()? {
+                if let TokenWithLocation(Token::SemiColon, _) =
+                    tokens[(1 + offset)..].iter().next()?
+                {
                     return Some((Statement::Return(exp), 1 + offset + 1));
                 }
             }
         }
-        Some(Token::Keyword(Keyword::Int)) => {
+        Some(TokenWithLocation(Token::Keyword(Keyword::Int), _)) => {
             let mut offset = 1;
             let mut opt_assign = None;
-            if let Token::Identifier(name) = tokens[offset..].iter().next()? {
+            if let TokenWithLocation(Token::Identifier(name), _) = tokens[offset..].iter().next()? {
                 offset = offset + 1;
-                if let Some(Token::Assign) = tokens[offset..].iter().next() {
+                if let Some(TokenWithLocation(Token::Assign, _)) = tokens[offset..].iter().next() {
                     offset = offset + 1;
                     if let Some((exp, new_offset)) = parse_expression(&tokens[offset..]) {
                         offset = offset + new_offset;
@@ -776,14 +825,16 @@ fn parse_statement(tokens: &[Token]) -> Option<(Statement, usize)> {
                         return None;
                     }
                 }
-                if let Token::SemiColon = tokens[offset..].iter().next()? {
+                if let TokenWithLocation(Token::SemiColon, _) = tokens[offset..].iter().next()? {
                     return Some((Statement::Declaration(name.clone(), opt_assign), offset + 1));
                 }
             }
         }
         _ => {
             if let Some((exp, new_offset)) = parse_expression(&tokens) {
-                if let Token::SemiColon = tokens[new_offset..].iter().next()? {
+                if let TokenWithLocation(Token::SemiColon, _) =
+                    tokens[new_offset..].iter().next()?
+                {
                     return Some((Statement::Expression(exp), new_offset + 1));
                 }
             }
@@ -792,13 +843,13 @@ fn parse_statement(tokens: &[Token]) -> Option<(Statement, usize)> {
     None
 }
 
-fn parse_function(tokens: &[Token]) -> Option<(Function, usize)> {
+fn parse_function(tokens: &[TokenWithLocation]) -> Option<(Function, usize)> {
     let mut it = tokens.iter();
-    if let Token::Keyword(Keyword::Int) = it.next()? {
-        if let Token::Identifier(name) = it.next()? {
-            if let Token::OpenParen = it.next()? {
-                if let Token::CloseParen = it.next()? {
-                    if let Token::OpenBrace = it.next()? {
+    if let TokenWithLocation(Token::Keyword(Keyword::Int), _) = it.next()? {
+        if let TokenWithLocation(Token::Identifier(name), _) = it.next()? {
+            if let TokenWithLocation(Token::OpenParen, _) = it.next()? {
+                if let TokenWithLocation(Token::CloseParen, _) = it.next()? {
+                    if let TokenWithLocation(Token::OpenBrace, _) = it.next()? {
                         let mut statements = vec![];
                         let mut offset = 5;
                         loop {
@@ -811,7 +862,9 @@ fn parse_function(tokens: &[Token]) -> Option<(Function, usize)> {
                                 break;
                             }
                         }
-                        if let Token::CloseBrace = tokens[offset..].iter().next()? {
+                        if let TokenWithLocation(Token::CloseBrace, _) =
+                            tokens[offset..].iter().next()?
+                        {
                             return Some((
                                 Function::Function(name.clone(), statements),
                                 offset + 1,
@@ -825,14 +878,14 @@ fn parse_function(tokens: &[Token]) -> Option<(Function, usize)> {
     None
 }
 
-fn parse_program(tokens: &[Token]) -> Option<(Program, usize)> {
+fn parse_program(tokens: &[TokenWithLocation]) -> Option<(Program, usize)> {
     if let Some((function, offset)) = parse_function(tokens) {
         return Some((Program::Program(function), offset));
     }
     None
 }
 
-pub fn parse(a: &[Token]) -> Result<Program, ParseError> {
+pub fn parse(a: &[TokenWithLocation]) -> Result<Program, ParseError> {
     if let Some((program, i)) = parse_program(a) {
         if i != a.len() {
             return Err(ParseError::SyntaxError);
@@ -865,54 +918,60 @@ fn test_comment_tokenizer_non_comment() {
     }
 }
 
+#[cfg(test)]
+fn to_tokens(text: &str) -> Vec<Token> {
+    let tokens_with_location = tokenize(text);
+    tokens_with_location.iter().map(|x| x.0.clone()).collect()
+}
+
 #[test]
 fn test_tokenizer() {
-    assert_eq!(tokenize("1 // apa"), [Token::Integer(1)]);
+    assert_eq!(to_tokens("1 // apa"), [Token::Integer(1)]);
     assert_eq!(
-        tokenize("1 // apa\n2"),
+        to_tokens("1 // apa\n2"),
         [Token::Integer(1), Token::Integer(2)]
     );
-    assert_eq!(tokenize("1"), [Token::Integer(1)]);
-    assert_eq!(tokenize("-1"), [Token::Minus, Token::Integer(1)]);
-    assert_eq!(tokenize("!1"), [Token::Bang, Token::Integer(1)]);
+    assert_eq!(to_tokens("1"), [Token::Integer(1)]);
+    assert_eq!(to_tokens("-1"), [Token::Minus, Token::Integer(1)]);
+    assert_eq!(to_tokens("!1"), [Token::Bang, Token::Integer(1)]);
     assert_eq!(
-        tokenize("1+2"),
+        to_tokens("1+2"),
         [Token::Integer(1), Token::Plus, Token::Integer(2)]
     );
     assert_eq!(
-        tokenize("1*2"),
+        to_tokens("1*2"),
         [Token::Integer(1), Token::Asterisk, Token::Integer(2)]
     );
     assert_eq!(
-        tokenize("1/2"),
+        to_tokens("1/2"),
         [Token::Integer(1), Token::Slash, Token::Integer(2)]
     );
     assert_eq!(
-        tokenize("1%2"),
+        to_tokens("1%2"),
         [Token::Integer(1), Token::Percent, Token::Integer(2)]
     );
     assert_eq!(
-        tokenize("1==2"),
+        to_tokens("1==2"),
         [Token::Integer(1), Token::Equal, Token::Integer(2)]
     );
     assert_eq!(
-        tokenize("1!=2"),
+        to_tokens("1!=2"),
         [Token::Integer(1), Token::NotEqual, Token::Integer(2)]
     );
     assert_eq!(
-        tokenize("1<2"),
+        to_tokens("1<2"),
         [Token::Integer(1), Token::LessThan, Token::Integer(2)]
     );
     assert_eq!(
-        tokenize("1<=2"),
+        to_tokens("1<=2"),
         [Token::Integer(1), Token::LessThanOrEqual, Token::Integer(2)]
     );
     assert_eq!(
-        tokenize("1>2"),
+        to_tokens("1>2"),
         [Token::Integer(1), Token::GreaterThan, Token::Integer(2)]
     );
     assert_eq!(
-        tokenize("1>=2"),
+        to_tokens("1>=2"),
         [
             Token::Integer(1),
             Token::GreaterThanOrEqual,
@@ -920,46 +979,46 @@ fn test_tokenizer() {
         ]
     );
     assert_eq!(
-        tokenize("1&&2"),
+        to_tokens("1&&2"),
         [Token::Integer(1), Token::And, Token::Integer(2)]
     );
     assert_eq!(
-        tokenize("1||2"),
+        to_tokens("1||2"),
         [Token::Integer(1), Token::Or, Token::Integer(2)]
     );
     assert_eq!(
-        tokenize("1=2"),
+        to_tokens("1=2"),
         [Token::Integer(1), Token::Assign, Token::Integer(2)]
     );
     assert_eq!(
-        tokenize("3-1"),
+        to_tokens("3-1"),
         [Token::Integer(3), Token::Minus, Token::Integer(1)]
     );
-    assert_eq!(tokenize("123"), [Token::Integer(123)]);
-    assert_eq!(tokenize("1 2"), [Token::Integer(1), Token::Integer(2)]);
+    assert_eq!(to_tokens("123"), [Token::Integer(123)]);
+    assert_eq!(to_tokens("1 2"), [Token::Integer(1), Token::Integer(2)]);
     assert_eq!(
-        tokenize("123 321"),
+        to_tokens("123 321"),
         [Token::Integer(123), Token::Integer(321)]
     );
-    assert_eq!(tokenize("\"test\""), [Token::Str(String::from("test"))]);
-    assert_eq!(tokenize("x"), [Token::Identifier(String::from("x"))]);
-    assert_eq!(tokenize("_x"), [Token::Identifier(String::from("_x"))]);
-    assert_eq!(tokenize("y_2"), [Token::Identifier(String::from("y_2"))]);
-    assert_eq!(tokenize("int"), [Token::Keyword(Keyword::Int)]);
+    assert_eq!(to_tokens("\"test\""), [Token::Str(String::from("test"))]);
+    assert_eq!(to_tokens("x"), [Token::Identifier(String::from("x"))]);
+    assert_eq!(to_tokens("_x"), [Token::Identifier(String::from("_x"))]);
+    assert_eq!(to_tokens("y_2"), [Token::Identifier(String::from("y_2"))]);
+    assert_eq!(to_tokens("int"), [Token::Keyword(Keyword::Int)]);
     assert_eq!(
-        tokenize("-x"),
+        to_tokens("-x"),
         [Token::Minus, Token::Identifier(String::from("x"))]
     );
     assert_eq!(
-        tokenize("!x"),
+        to_tokens("!x"),
         [Token::Bang, Token::Identifier(String::from("x"))]
     );
     assert_eq!(
-        tokenize("intblaj"),
+        to_tokens("intblaj"),
         [Token::Identifier(String::from("intblaj"))]
     );
     assert_eq!(
-        tokenize("(1 2)"),
+        to_tokens("(1 2)"),
         [
             Token::OpenParen,
             Token::Integer(1),
@@ -968,7 +1027,7 @@ fn test_tokenizer() {
         ]
     );
     assert_eq!(
-        tokenize("int main() {\n  return 2;\n}\n"),
+        to_tokens("int main() {\n  return 2;\n}\n"),
         [
             Token::Keyword(Keyword::Int),
             Token::Identifier("main".to_string()),
@@ -979,6 +1038,106 @@ fn test_tokenizer() {
             Token::Integer(2),
             Token::SemiColon,
             Token::CloseBrace
+        ]
+    );
+}
+
+#[test]
+fn test_tokenizer_location() {
+    let tokens = tokenize("int main() {\n  return 2;\n}\n");
+    assert_eq!(
+        tokens,
+        [
+            TokenWithLocation(
+                Token::Keyword(Keyword::Int),
+                Location {
+                    file: "<none>".to_string(),
+                    start: Position { line: 0, column: 0 },
+                    end: Position { line: 0, column: 3 }
+                }
+            ),
+            TokenWithLocation(
+                Token::Identifier("main".to_string()),
+                Location {
+                    file: "<none>".to_string(),
+                    start: Position { line: 0, column: 4 },
+                    end: Position { line: 0, column: 8 }
+                }
+            ),
+            TokenWithLocation(
+                Token::OpenParen,
+                Location {
+                    file: "<none>".to_string(),
+                    start: Position { line: 0, column: 8 },
+                    end: Position { line: 0, column: 9 }
+                }
+            ),
+            TokenWithLocation(
+                Token::CloseParen,
+                Location {
+                    file: "<none>".to_string(),
+                    start: Position { line: 0, column: 9 },
+                    end: Position {
+                        line: 0,
+                        column: 10
+                    }
+                }
+            ),
+            TokenWithLocation(
+                Token::OpenBrace,
+                Location {
+                    file: "<none>".to_string(),
+                    start: Position {
+                        line: 0,
+                        column: 11
+                    },
+                    end: Position {
+                        line: 0,
+                        column: 12
+                    }
+                }
+            ),
+            TokenWithLocation(
+                Token::Keyword(Keyword::Return),
+                Location {
+                    file: "<none>".to_string(),
+                    start: Position { line: 1, column: 2 },
+                    end: Position { line: 1, column: 8 }
+                }
+            ),
+            TokenWithLocation(
+                Token::Integer(2),
+                Location {
+                    file: "<none>".to_string(),
+                    start: Position { line: 1, column: 9 },
+                    end: Position {
+                        line: 1,
+                        column: 10
+                    }
+                }
+            ),
+            TokenWithLocation(
+                Token::SemiColon,
+                Location {
+                    file: "<none>".to_string(),
+                    start: Position {
+                        line: 1,
+                        column: 10
+                    },
+                    end: Position {
+                        line: 1,
+                        column: 11
+                    }
+                }
+            ),
+            TokenWithLocation(
+                Token::CloseBrace,
+                Location {
+                    file: "<none>".to_string(),
+                    start: Position { line: 2, column: 0 },
+                    end: Position { line: 2, column: 1 }
+                }
+            )
         ]
     );
 }

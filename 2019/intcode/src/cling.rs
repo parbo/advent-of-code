@@ -1,4 +1,3 @@
-use std::error::Error as StdError;
 use std::fmt;
 
 #[derive(PartialEq, Debug, Clone)]
@@ -41,15 +40,15 @@ pub enum Token {
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct Position {
-    line: usize,
-    column: usize,
+    pub line: usize,
+    pub column: usize,
 }
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct Location {
-    file: String,
-    start: Position,
-    end: Position,
+    pub file: String,
+    pub start: Position,
+    pub end: Position,
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -527,271 +526,427 @@ pub enum Program {
 
 #[derive(Debug)]
 pub enum ParseError {
-    SyntaxError,
+    UnexpectedEOF,
+    SyntaxError(String, Location),
 }
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(self.description())
-    }
-}
-
-impl StdError for ParseError {
-    fn description(&self) -> &str {
-        match *self {
-            ParseError::SyntaxError => "SyntaxError",
+        match self {
+            ParseError::UnexpectedEOF => write!(f, "Unexpected EOF"),
+            ParseError::SyntaxError(s, location) => write!(
+                f,
+                "SyntaxError: {} --> {}:{}:{}",
+                s, location.file, location.start.line, location.start.column
+            ),
         }
     }
 }
 
-fn parse_factor(tokens: &[TokenWithLocation]) -> Option<(Expression, usize)> {
+fn parse_factor(tokens: &[TokenWithLocation]) -> Result<Option<(Expression, usize)>, ParseError> {
     let mut it = tokens.iter();
-    match it.next()? {
-        TokenWithLocation(Token::OpenParen, _) => {
-            let (exp, offset) = parse_expression(&tokens[1..])?;
-            if let Some(TokenWithLocation(Token::CloseParen, _)) =
-                tokens[(1 + offset)..].iter().next()
-            {
-                Some((exp, 1 + offset + 1))
+    match it.next() {
+        Some(TokenWithLocation(Token::OpenParen, loc)) => {
+            if let Some((exp, offset)) = parse_expression(&tokens[1..])? {
+                if let Some(TokenWithLocation(Token::CloseParen, _)) =
+                    tokens[(1 + offset)..].iter().next()
+                {
+                    Ok(Some((exp, 1 + offset + 1)))
+                } else {
+                    Err(ParseError::SyntaxError(
+                        "Expected )".into(),
+                        tokens[1 + offset].1.clone(),
+                    ))
+                }
             } else {
-                None
+                Err(ParseError::SyntaxError(
+                    "Expected expression after (".into(),
+                    loc.clone(),
+                ))
             }
         }
-        TokenWithLocation(Token::Minus, _) => {
-            let (exp, offset) = parse_factor(&tokens[1..])?;
-            Some((
-                Expression::UnaryOperator(UnaryOperator::Negation, Box::new(exp)),
-                1 + offset,
-            ))
+        Some(TokenWithLocation(Token::Minus, loc)) => {
+            if let Some((exp, offset)) = parse_factor(&tokens[1..])? {
+                Ok(Some((
+                    Expression::UnaryOperator(UnaryOperator::Negation, Box::new(exp)),
+                    1 + offset,
+                )))
+            } else {
+                Err(ParseError::SyntaxError(
+                    "Expected expression after -".into(),
+                    loc.clone(),
+                ))
+            }
         }
-        TokenWithLocation(Token::Bang, _) => {
-            let (exp, offset) = parse_factor(&tokens[1..])?;
-            Some((
-                Expression::UnaryOperator(UnaryOperator::LogicalNegation, Box::new(exp)),
-                1 + offset,
-            ))
+        Some(TokenWithLocation(Token::Bang, loc)) => {
+            if let Some((exp, offset)) = parse_factor(&tokens[1..])? {
+                Ok(Some((
+                    Expression::UnaryOperator(UnaryOperator::LogicalNegation, Box::new(exp)),
+                    1 + offset,
+                )))
+            } else {
+                Err(ParseError::SyntaxError(
+                    "Expected expression after !".into(),
+                    loc.clone(),
+                ))
+            }
         }
-        TokenWithLocation(Token::Integer(x), _) => Some((Expression::Constant(*x), 1)),
-        TokenWithLocation(Token::Identifier(name), _) => {
-            Some((Expression::VariableReference(name.clone()), 1))
+        Some(TokenWithLocation(Token::Integer(x), _)) => Ok(Some((Expression::Constant(*x), 1))),
+        Some(TokenWithLocation(Token::Identifier(name), _)) => {
+            Ok(Some((Expression::VariableReference(name.clone()), 1)))
         }
-        _ => None,
+        _ => Ok(None),
     }
 }
 
-fn parse_term(tokens: &[TokenWithLocation]) -> Option<(Expression, usize)> {
-    let (f, o) = parse_factor(tokens)?;
-    let mut factor = f;
-    let mut offset = o;
-    loop {
-        let mut it = tokens[offset..].iter();
-        match it.next() {
-            Some(TokenWithLocation(Token::Asterisk, _)) => {
-                let (next_factor, next_offset) = parse_factor(&tokens[(1 + offset)..])?;
-                factor = Expression::BinaryOperator(
-                    BinaryOperator::Multiplication,
-                    Box::new(factor),
-                    Box::new(next_factor),
-                );
-                offset = offset + 1 + next_offset;
+fn parse_term(tokens: &[TokenWithLocation]) -> Result<Option<(Expression, usize)>, ParseError> {
+    match parse_factor(tokens)? {
+        None => Ok(None),
+        Some((f, o)) => {
+            let mut factor = f;
+            let mut offset = o;
+            loop {
+                let mut it = tokens[offset..].iter();
+                match it.next() {
+                    Some(TokenWithLocation(Token::Asterisk, _)) => {
+                        if let Some((next_factor, next_offset)) =
+                            parse_factor(&tokens[(1 + offset)..])?
+                        {
+                            factor = Expression::BinaryOperator(
+                                BinaryOperator::Multiplication,
+                                Box::new(factor),
+                                Box::new(next_factor),
+                            );
+                            offset = offset + 1 + next_offset;
+                        } else {
+                            return Err(ParseError::SyntaxError(
+                                "Expected factor after *".into(),
+                                tokens[1 + offset].1.clone(),
+                            ));
+                        }
+                    }
+                    Some(TokenWithLocation(Token::Slash, _)) => {
+                        if let Some((next_factor, next_offset)) =
+                            parse_factor(&tokens[(1 + offset)..])?
+                        {
+                            factor = Expression::BinaryOperator(
+                                BinaryOperator::Division,
+                                Box::new(factor),
+                                Box::new(next_factor),
+                            );
+                            offset = offset + 1 + next_offset;
+                        } else {
+                            return Err(ParseError::SyntaxError(
+                                "Expected factor after /".into(),
+                                tokens[1 + offset].1.clone(),
+                            ));
+                        }
+                    }
+                    Some(TokenWithLocation(Token::Percent, _)) => {
+                        if let Some((next_factor, next_offset)) =
+                            parse_factor(&tokens[(1 + offset)..])?
+                        {
+                            factor = Expression::BinaryOperator(
+                                BinaryOperator::Modulo,
+                                Box::new(factor),
+                                Box::new(next_factor),
+                            );
+                            offset = offset + 1 + next_offset;
+                        } else {
+                            return Err(ParseError::SyntaxError(
+                                "Expected factor after %".into(),
+                                tokens[1 + offset].1.clone(),
+                            ));
+                        }
+                    }
+                    _ => break,
+                }
             }
-            Some(TokenWithLocation(Token::Slash, _)) => {
-                let (next_factor, next_offset) = parse_factor(&tokens[(1 + offset)..])?;
-                factor = Expression::BinaryOperator(
-                    BinaryOperator::Division,
-                    Box::new(factor),
-                    Box::new(next_factor),
-                );
-                offset = offset + 1 + next_offset;
-            }
-            Some(TokenWithLocation(Token::Percent, _)) => {
-                let (next_factor, next_offset) = parse_factor(&tokens[(1 + offset)..])?;
-                factor = Expression::BinaryOperator(
-                    BinaryOperator::Modulo,
-                    Box::new(factor),
-                    Box::new(next_factor),
-                );
-                offset = offset + 1 + next_offset;
-            }
-            _ => break,
+            Ok(Some((factor, offset)))
         }
     }
-    Some((factor, offset))
 }
 
-fn parse_additive_expression(tokens: &[TokenWithLocation]) -> Option<(Expression, usize)> {
-    let (t, o) = parse_term(tokens)?;
-    let mut term = t;
-    let mut offset = o;
-    loop {
-        let mut it = tokens[offset..].iter();
-        match it.next() {
-            Some(TokenWithLocation(Token::Plus, _)) => {
-                let (next_term, next_offset) = parse_term(&tokens[(1 + offset)..])?;
-                term = Expression::BinaryOperator(
-                    BinaryOperator::Addition,
-                    Box::new(term),
-                    Box::new(next_term),
-                );
-                offset = offset + 1 + next_offset;
+fn parse_additive_expression(
+    tokens: &[TokenWithLocation],
+) -> Result<Option<(Expression, usize)>, ParseError> {
+    match parse_term(tokens)? {
+        None => Ok(None),
+        Some((t, o)) => {
+            let mut term = t;
+            let mut offset = o;
+            loop {
+                let mut it = tokens[offset..].iter();
+                match it.next() {
+                    Some(TokenWithLocation(Token::Plus, loc)) => {
+                        if let Some((next_term, next_offset)) = parse_term(&tokens[(1 + offset)..])?
+                        {
+                            term = Expression::BinaryOperator(
+                                BinaryOperator::Addition,
+                                Box::new(term),
+                                Box::new(next_term),
+                            );
+                            offset = offset + 1 + next_offset;
+                        } else {
+                            return Err(ParseError::SyntaxError(
+                                "Expected term".into(),
+                                loc.clone(),
+                            ));
+                        }
+                    }
+                    Some(TokenWithLocation(Token::Minus, loc)) => {
+                        if let Some((next_term, next_offset)) = parse_term(&tokens[(1 + offset)..])?
+                        {
+                            term = Expression::BinaryOperator(
+                                BinaryOperator::Subtraction,
+                                Box::new(term),
+                                Box::new(next_term),
+                            );
+                            offset = offset + 1 + next_offset;
+                        } else {
+                            return Err(ParseError::SyntaxError(
+                                "Expected term".into(),
+                                loc.clone(),
+                            ));
+                        }
+                    }
+                    _ => break,
+                }
             }
-            Some(TokenWithLocation(Token::Minus, _)) => {
-                let (next_term, next_offset) = parse_term(&tokens[(1 + offset)..])?;
-                term = Expression::BinaryOperator(
-                    BinaryOperator::Subtraction,
-                    Box::new(term),
-                    Box::new(next_term),
-                );
-                offset = offset + 1 + next_offset;
-            }
-            _ => break,
+            Ok(Some((term, offset)))
         }
     }
-    Some((term, offset))
 }
 
-fn parse_relational_expression(tokens: &[TokenWithLocation]) -> Option<(Expression, usize)> {
-    let (ae, o) = parse_additive_expression(tokens)?;
-    let mut additive_expression = ae;
-    let mut offset = o;
-    loop {
-        let mut it = tokens[offset..].iter();
-        match it.next() {
-            Some(TokenWithLocation(Token::LessThan, _)) => {
-                let (next_additive_expression, next_offset) =
-                    parse_additive_expression(&tokens[(1 + offset)..])?;
-                additive_expression = Expression::BinaryOperator(
-                    BinaryOperator::LessThan,
-                    Box::new(additive_expression),
-                    Box::new(next_additive_expression),
-                );
-                offset = offset + 1 + next_offset;
+fn parse_relational_expression(
+    tokens: &[TokenWithLocation],
+) -> Result<Option<(Expression, usize)>, ParseError> {
+    match parse_additive_expression(tokens)? {
+        None => Ok(None),
+        Some((ae, o)) => {
+            let mut additive_expression = ae;
+            let mut offset = o;
+            loop {
+                let mut it = tokens[offset..].iter();
+                match it.next() {
+                    Some(TokenWithLocation(Token::LessThan, loc)) => {
+                        if let Some((next_additive_expression, next_offset)) =
+                            parse_additive_expression(&tokens[(1 + offset)..])?
+                        {
+                            additive_expression = Expression::BinaryOperator(
+                                BinaryOperator::LessThan,
+                                Box::new(additive_expression),
+                                Box::new(next_additive_expression),
+                            );
+                            offset = offset + 1 + next_offset;
+                        } else {
+                            return Err(ParseError::SyntaxError(
+                                "Expected expression after <".into(),
+                                loc.clone(),
+                            ));
+                        }
+                    }
+                    Some(TokenWithLocation(Token::LessThanOrEqual, loc)) => {
+                        if let Some((next_additive_expression, next_offset)) =
+                            parse_additive_expression(&tokens[(1 + offset)..])?
+                        {
+                            additive_expression = Expression::BinaryOperator(
+                                BinaryOperator::LessThanOrEqual,
+                                Box::new(additive_expression),
+                                Box::new(next_additive_expression),
+                            );
+                            offset = offset + 1 + next_offset;
+                        } else {
+                            return Err(ParseError::SyntaxError(
+                                "Expected expression after <=".into(),
+                                loc.clone(),
+                            ));
+                        }
+                    }
+                    Some(TokenWithLocation(Token::GreaterThan, loc)) => {
+                        if let Some((next_additive_expression, next_offset)) =
+                            parse_additive_expression(&tokens[(1 + offset)..])?
+                        {
+                            additive_expression = Expression::BinaryOperator(
+                                BinaryOperator::GreaterThan,
+                                Box::new(additive_expression),
+                                Box::new(next_additive_expression),
+                            );
+                            offset = offset + 1 + next_offset;
+                        } else {
+                            return Err(ParseError::SyntaxError(
+                                "Expected expression after >".into(),
+                                loc.clone(),
+                            ));
+                        }
+                    }
+                    Some(TokenWithLocation(Token::GreaterThanOrEqual, loc)) => {
+                        if let Some((next_additive_expression, next_offset)) =
+                            parse_additive_expression(&tokens[(1 + offset)..])?
+                        {
+                            additive_expression = Expression::BinaryOperator(
+                                BinaryOperator::GreaterThanOrEqual,
+                                Box::new(additive_expression),
+                                Box::new(next_additive_expression),
+                            );
+                            offset = offset + 1 + next_offset;
+                        } else {
+                            return Err(ParseError::SyntaxError(
+                                "Expected expression after >=".into(),
+                                loc.clone(),
+                            ));
+                        }
+                    }
+                    _ => break,
+                }
             }
-            Some(TokenWithLocation(Token::LessThanOrEqual, _)) => {
-                let (next_additive_expression, next_offset) =
-                    parse_additive_expression(&tokens[(1 + offset)..])?;
-                additive_expression = Expression::BinaryOperator(
-                    BinaryOperator::LessThanOrEqual,
-                    Box::new(additive_expression),
-                    Box::new(next_additive_expression),
-                );
-                offset = offset + 1 + next_offset;
-            }
-            Some(TokenWithLocation(Token::GreaterThan, _)) => {
-                let (next_additive_expression, next_offset) =
-                    parse_additive_expression(&tokens[(1 + offset)..])?;
-                additive_expression = Expression::BinaryOperator(
-                    BinaryOperator::GreaterThan,
-                    Box::new(additive_expression),
-                    Box::new(next_additive_expression),
-                );
-                offset = offset + 1 + next_offset;
-            }
-            Some(TokenWithLocation(Token::GreaterThanOrEqual, _)) => {
-                let (next_additive_expression, next_offset) =
-                    parse_additive_expression(&tokens[(1 + offset)..])?;
-                additive_expression = Expression::BinaryOperator(
-                    BinaryOperator::GreaterThanOrEqual,
-                    Box::new(additive_expression),
-                    Box::new(next_additive_expression),
-                );
-                offset = offset + 1 + next_offset;
-            }
-            _ => break,
+            Ok(Some((additive_expression, offset)))
         }
     }
-    Some((additive_expression, offset))
 }
 
-fn parse_equality_expression(tokens: &[TokenWithLocation]) -> Option<(Expression, usize)> {
-    let (re, o) = parse_relational_expression(tokens)?;
-    let mut relational_expression = re;
-    let mut offset = o;
-    loop {
-        let mut it = tokens[offset..].iter();
-        match it.next() {
-            Some(TokenWithLocation(Token::Equal, _)) => {
-                let (next_relational_expression, next_offset) =
-                    parse_relational_expression(&tokens[(1 + offset)..])?;
-                relational_expression = Expression::BinaryOperator(
-                    BinaryOperator::Equal,
-                    Box::new(relational_expression),
-                    Box::new(next_relational_expression),
-                );
-                offset = offset + 1 + next_offset;
+fn parse_equality_expression(
+    tokens: &[TokenWithLocation],
+) -> Result<Option<(Expression, usize)>, ParseError> {
+    match parse_relational_expression(tokens)? {
+        None => Ok(None),
+        Some((re, o)) => {
+            let mut relational_expression = re;
+            let mut offset = o;
+            loop {
+                let mut it = tokens[offset..].iter();
+                match it.next() {
+                    Some(TokenWithLocation(Token::Equal, loc)) => {
+                        if let Some((next_relational_expression, next_offset)) =
+                            parse_relational_expression(&tokens[(1 + offset)..])?
+                        {
+                            relational_expression = Expression::BinaryOperator(
+                                BinaryOperator::Equal,
+                                Box::new(relational_expression),
+                                Box::new(next_relational_expression),
+                            );
+                            offset = offset + 1 + next_offset;
+                        } else {
+                            return Err(ParseError::SyntaxError(
+                                "Expected expression after ==".into(),
+                                loc.clone(),
+                            ));
+                        }
+                    }
+                    Some(TokenWithLocation(Token::NotEqual, loc)) => {
+                        if let Some((next_relational_expression, next_offset)) =
+                            parse_relational_expression(&tokens[(1 + offset)..])?
+                        {
+                            relational_expression = Expression::BinaryOperator(
+                                BinaryOperator::NotEqual,
+                                Box::new(relational_expression),
+                                Box::new(next_relational_expression),
+                            );
+                            offset = offset + 1 + next_offset;
+                        } else {
+                            return Err(ParseError::SyntaxError(
+                                "Expected expression after !=".into(),
+                                loc.clone(),
+                            ));
+                        }
+                    }
+                    _ => break,
+                }
             }
-            Some(TokenWithLocation(Token::NotEqual, _)) => {
-                let (next_relational_expression, next_offset) =
-                    parse_relational_expression(&tokens[(1 + offset)..])?;
-                relational_expression = Expression::BinaryOperator(
-                    BinaryOperator::NotEqual,
-                    Box::new(relational_expression),
-                    Box::new(next_relational_expression),
-                );
-                offset = offset + 1 + next_offset;
-            }
-            _ => break,
+            Ok(Some((relational_expression, offset)))
         }
     }
-    Some((relational_expression, offset))
 }
 
-fn parse_logical_and_expression(tokens: &[TokenWithLocation]) -> Option<(Expression, usize)> {
-    let (ee, o) = parse_equality_expression(tokens)?;
-    let mut equality_expression = ee;
-    let mut offset = o;
-    loop {
-        let mut it = tokens[offset..].iter();
-        match it.next() {
-            Some(TokenWithLocation(Token::And, _)) => {
-                let (next_equality_expression, next_offset) =
-                    parse_equality_expression(&tokens[(1 + offset)..])?;
-                equality_expression = Expression::BinaryOperator(
-                    BinaryOperator::And,
-                    Box::new(equality_expression),
-                    Box::new(next_equality_expression),
-                );
-                offset = offset + 1 + next_offset;
+fn parse_logical_and_expression(
+    tokens: &[TokenWithLocation],
+) -> Result<Option<(Expression, usize)>, ParseError> {
+    match parse_equality_expression(tokens)? {
+        None => Ok(None),
+        Some((ee, o)) => {
+            let mut equality_expression = ee;
+            let mut offset = o;
+            loop {
+                let mut it = tokens[offset..].iter();
+                match it.next() {
+                    Some(TokenWithLocation(Token::And, loc)) => {
+                        if let Some((next_equality_expression, next_offset)) =
+                            parse_equality_expression(&tokens[(1 + offset)..])?
+                        {
+                            equality_expression = Expression::BinaryOperator(
+                                BinaryOperator::And,
+                                Box::new(equality_expression),
+                                Box::new(next_equality_expression),
+                            );
+                            offset = offset + 1 + next_offset;
+                        } else {
+                            return Err(ParseError::SyntaxError(
+                                "Expected expression after &&".into(),
+                                loc.clone(),
+                            ));
+                        }
+                    }
+                    _ => break,
+                }
             }
-            _ => break,
+            Ok(Some((equality_expression, offset)))
         }
     }
-    Some((equality_expression, offset))
 }
 
-fn parse_logical_or_expression(tokens: &[TokenWithLocation]) -> Option<(Expression, usize)> {
-    let (lae, o) = parse_logical_and_expression(tokens)?;
-    let mut logical_and_expression = lae;
-    let mut offset = o;
-    loop {
-        let mut it = tokens[offset..].iter();
-        match it.next() {
-            Some(TokenWithLocation(Token::Or, _)) => {
-                let (next_logical_and_expression, next_offset) =
-                    parse_logical_and_expression(&tokens[(1 + offset)..])?;
-                logical_and_expression = Expression::BinaryOperator(
-                    BinaryOperator::Or,
-                    Box::new(logical_and_expression),
-                    Box::new(next_logical_and_expression),
-                );
-                offset = offset + 1 + next_offset;
+fn parse_logical_or_expression(
+    tokens: &[TokenWithLocation],
+) -> Result<Option<(Expression, usize)>, ParseError> {
+    match parse_logical_and_expression(tokens)? {
+        None => Ok(None),
+        Some((lae, o)) => {
+            let mut logical_and_expression = lae;
+            let mut offset = o;
+            loop {
+                let mut it = tokens[offset..].iter();
+                match it.next() {
+                    Some(TokenWithLocation(Token::Or, loc)) => {
+                        if let Some((next_logical_and_expression, next_offset)) =
+                            parse_logical_and_expression(&tokens[(1 + offset)..])?
+                        {
+                            logical_and_expression = Expression::BinaryOperator(
+                                BinaryOperator::Or,
+                                Box::new(logical_and_expression),
+                                Box::new(next_logical_and_expression),
+                            );
+                            offset = offset + 1 + next_offset;
+                        } else {
+                            return Err(ParseError::SyntaxError(
+                                "Expected expression after ||".into(),
+                                loc.clone(),
+                            ));
+                        }
+                    }
+                    _ => break,
+                }
             }
-            _ => break,
+            Ok(Some((logical_and_expression, offset)))
         }
     }
-    Some((logical_and_expression, offset))
 }
 
-fn parse_expression(tokens: &[TokenWithLocation]) -> Option<(Expression, usize)> {
+fn parse_expression(
+    tokens: &[TokenWithLocation],
+) -> Result<Option<(Expression, usize)>, ParseError> {
     let mut offset = 0;
     if let Some(TokenWithLocation(Token::Identifier(name), _)) = tokens[offset..].iter().next() {
         offset = offset + 1;
-        if let Some(TokenWithLocation(Token::Assign, _)) = tokens[offset..].iter().next() {
+        if let Some(TokenWithLocation(Token::Assign, loc)) = tokens[offset..].iter().next() {
             offset = offset + 1;
-            if let Some((exp, new_offset)) = parse_expression(&tokens[offset..]) {
-                return Some((
+            if let Some((exp, new_offset)) = parse_expression(&tokens[offset..])? {
+                return Ok(Some((
                     Expression::Assignment(name.clone(), Box::new(exp)),
                     offset + new_offset,
+                )));
+            } else {
+                return Err(ParseError::SyntaxError(
+                    "Expected expression after =".into(),
+                    loc.clone(),
                 ));
             }
         }
@@ -799,62 +954,113 @@ fn parse_expression(tokens: &[TokenWithLocation]) -> Option<(Expression, usize)>
     parse_logical_or_expression(tokens)
 }
 
-fn parse_statement(tokens: &[TokenWithLocation]) -> Option<(Statement, usize)> {
+fn parse_statement(tokens: &[TokenWithLocation]) -> Result<Option<(Statement, usize)>, ParseError> {
     let mut it = tokens.iter();
     match it.next() {
-        Some(TokenWithLocation(Token::Keyword(Keyword::Return), _)) => {
-            if let Some((exp, offset)) = parse_expression(&tokens[1..]) {
-                if let TokenWithLocation(Token::SemiColon, _) =
-                    tokens[(1 + offset)..].iter().next()?
+        Some(TokenWithLocation(Token::Keyword(Keyword::Return), loc)) => {
+            if let Some((exp, offset)) = parse_expression(&tokens[1..])? {
+                if let TokenWithLocation(Token::SemiColon, _) = tokens[(1 + offset)..]
+                    .iter()
+                    .next()
+                    .ok_or_else(|| ParseError::UnexpectedEOF)?
                 {
-                    return Some((Statement::Return(exp), 1 + offset + 1));
+                    return Ok(Some((Statement::Return(exp), 1 + offset + 1)));
+                } else {
+                    return Err(ParseError::SyntaxError(
+                        "Expected ; at end of return statement".into(),
+                        tokens[offset].1.clone(),
+                    ));
                 }
+            } else {
+                return Err(ParseError::SyntaxError(
+                    "Expected expression after return".into(),
+                    loc.clone(),
+                ));
             }
         }
         Some(TokenWithLocation(Token::Keyword(Keyword::Int), _)) => {
             let mut offset = 1;
             let mut opt_assign = None;
-            if let TokenWithLocation(Token::Identifier(name), _) = tokens[offset..].iter().next()? {
+            if let TokenWithLocation(Token::Identifier(name), _) = tokens[offset..]
+                .iter()
+                .next()
+                .ok_or_else(|| ParseError::UnexpectedEOF)?
+            {
                 offset = offset + 1;
-                if let Some(TokenWithLocation(Token::Assign, _)) = tokens[offset..].iter().next() {
+                if let Some(TokenWithLocation(Token::Assign, loc)) = tokens[offset..].iter().next()
+                {
                     offset = offset + 1;
-                    if let Some((exp, new_offset)) = parse_expression(&tokens[offset..]) {
+                    if let Some((exp, new_offset)) = parse_expression(&tokens[offset..])? {
                         offset = offset + new_offset;
                         opt_assign = Some(exp);
                     } else {
-                        return None;
+                        return Err(ParseError::SyntaxError(
+                            "Expected expression after =".into(),
+                            loc.clone(),
+                        ));
                     }
+                } else {
+                    // assignment is optional.
                 }
-                if let TokenWithLocation(Token::SemiColon, _) = tokens[offset..].iter().next()? {
-                    return Some((Statement::Declaration(name.clone(), opt_assign), offset + 1));
+                if let TokenWithLocation(Token::SemiColon, _) = tokens[offset..]
+                    .iter()
+                    .next()
+                    .ok_or_else(|| ParseError::UnexpectedEOF)?
+                {
+                    return Ok(Some((
+                        Statement::Declaration(name.clone(), opt_assign),
+                        offset + 1,
+                    )));
+                } else {
+                    return Err(ParseError::SyntaxError("Expected ; after declaration".into(), tokens[offset-1].1.clone()));
                 }
             }
         }
         _ => {
-            if let Some((exp, new_offset)) = parse_expression(&tokens) {
+            if let Some((exp, new_offset)) = parse_expression(&tokens)? {
                 if let TokenWithLocation(Token::SemiColon, _) =
-                    tokens[new_offset..].iter().next()?
+                    tokens[new_offset..]
+                        .iter()
+                        .next()
+                        .ok_or_else(|| ParseError::UnexpectedEOF)?
                 {
-                    return Some((Statement::Expression(exp), new_offset + 1));
+                    return Ok(Some((Statement::Expression(exp), new_offset + 1)));
+                } else {
+                    return Err(ParseError::SyntaxError(
+                        "Expected ; at end of expression statement".into(),
+                        tokens[new_offset].1.clone(),
+                    ));
                 }
+            } else {
+                return Ok(None);
             }
         }
     }
-    None
+    Ok(None)
 }
 
-fn parse_function(tokens: &[TokenWithLocation]) -> Option<(Function, usize)> {
+fn parse_function(tokens: &[TokenWithLocation]) -> Result<Option<(Function, usize)>, ParseError> {
     let mut it = tokens.iter();
-    if let TokenWithLocation(Token::Keyword(Keyword::Int), _) = it.next()? {
-        if let TokenWithLocation(Token::Identifier(name), _) = it.next()? {
-            if let TokenWithLocation(Token::OpenParen, _) = it.next()? {
-                if let TokenWithLocation(Token::CloseParen, _) = it.next()? {
-                    if let TokenWithLocation(Token::OpenBrace, _) = it.next()? {
+    if let TokenWithLocation(Token::Keyword(Keyword::Int), _) =
+        it.next().ok_or_else(|| ParseError::UnexpectedEOF)?
+    {
+        if let TokenWithLocation(Token::Identifier(name), _) =
+            it.next().ok_or_else(|| ParseError::UnexpectedEOF)?
+        {
+            if let TokenWithLocation(Token::OpenParen, loc) =
+                it.next().ok_or_else(|| ParseError::UnexpectedEOF)?
+            {
+                if let TokenWithLocation(Token::CloseParen, loc) =
+                    it.next().ok_or_else(|| ParseError::UnexpectedEOF)?
+                {
+                    if let TokenWithLocation(Token::OpenBrace, loc) =
+                        it.next().ok_or_else(|| ParseError::UnexpectedEOF)?
+                    {
                         let mut statements = vec![];
                         let mut offset = 5;
                         loop {
                             if let Some((statement, new_offset)) =
-                                parse_statement(&tokens[offset..])
+                                parse_statement(&tokens[offset..])?
                             {
                                 statements.push(statement);
                                 offset = offset + new_offset;
@@ -862,37 +1068,48 @@ fn parse_function(tokens: &[TokenWithLocation]) -> Option<(Function, usize)> {
                                 break;
                             }
                         }
-                        if let TokenWithLocation(Token::CloseBrace, _) =
-                            tokens[offset..].iter().next()?
+                        if let TokenWithLocation(Token::CloseBrace, _) = tokens[offset..]
+                            .iter()
+                            .next()
+                            .ok_or_else(|| ParseError::UnexpectedEOF)?
                         {
-                            return Some((
+                            return Ok(Some((
                                 Function::Function(name.clone(), statements),
                                 offset + 1,
-                            ));
+                            )));
+                        } else {
+                            return Err(ParseError::SyntaxError("Expected }".into(), loc.clone()));
                         }
+                    } else {
+                        return Err(ParseError::SyntaxError("Expected {".into(), loc.clone()));
                     }
+                } else {
+                    return Err(ParseError::SyntaxError("Expected )".into(), loc.clone()));
                 }
             }
         }
     }
-    None
+    Ok(None)
 }
 
-fn parse_program(tokens: &[TokenWithLocation]) -> Option<(Program, usize)> {
-    if let Some((function, offset)) = parse_function(tokens) {
-        return Some((Program::Program(function), offset));
+fn parse_program(tokens: &[TokenWithLocation]) -> Result<Option<(Program, usize)>, ParseError> {
+    match parse_function(tokens) {
+        Ok(Some((function, offset))) => Ok(Some((Program::Program(function), offset))),
+        Ok(None) => Ok(None),
+        Err(e) => Err(e),
     }
-    None
 }
 
 pub fn parse(a: &[TokenWithLocation]) -> Result<Program, ParseError> {
-    if let Some((program, i)) = parse_program(a) {
-        if i != a.len() {
-            return Err(ParseError::SyntaxError);
+    match parse_program(a) {
+        Ok(Some((program, i))) => {
+            if i != a.len() {
+                return Err(ParseError::SyntaxError("Error".to_string(), a[i].1.clone()));
+            }
+            Ok(program)
         }
-        Ok(program)
-    } else {
-        Err(ParseError::SyntaxError)
+        Ok(None) => Err(ParseError::UnexpectedEOF),
+        Err(e) => Err(e),
     }
 }
 
@@ -1158,20 +1375,20 @@ fn test_parser() {
 fn test_parse_unary_operator() {
     assert_eq!(
         parse_expression(&tokenize("-7")).expect("error"),
-        (
+        Some((
             Expression::UnaryOperator(UnaryOperator::Negation, Box::new(Expression::Constant(7))),
             2
-        )
+        ))
     );
     assert_eq!(
         parse_expression(&tokenize("!1")).expect("error"),
-        (
+        Some((
             Expression::UnaryOperator(
                 UnaryOperator::LogicalNegation,
                 Box::new(Expression::Constant(1))
             ),
             2
-        )
+        ))
     );
 }
 
@@ -1361,6 +1578,32 @@ fn test_parse_exp_return_val() {
             ]
         ))
     );
+}
+
+#[test]
+fn test_parse_syntax_error() {
+    let text = "int main() {\n  int a;\n  inte b;  a = b = 4;\n  return a - b;\n}\n";
+    let tokens = tokenize(text);
+    let res = parse(&tokens);
+    if let Err(e) = res {
+        let s = format!("{}", e);
+        assert_eq!(s, "SyntaxError: Expected ; --> <none>:2:7");
+    } else {
+        panic!();
+    }
+}
+
+#[test]
+fn test_parse_syntax_error_2() {
+    let text = "int main() {\n  int a;\n  a *= 4;\n  return a - b;\n}\n";
+    let tokens = tokenize(text);
+    let res = parse(&tokens);
+    if let Err(e) = res {
+        let s = format!("{}", e);
+        assert_eq!(s, "SyntaxError: Expected factor after * --> <none>:2:5");
+    } else {
+        panic!();
+    }
 }
 
 #[test]

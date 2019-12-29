@@ -13,3 +13,7 @@ aoc = {path = "../aoc"}
 [[example]]
 name = "debug"
 path = "examples/debug.rs"
+
+[[example]]
+name = "compiler"
+path = "examples/compiler.rs"

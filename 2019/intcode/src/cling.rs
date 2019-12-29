@@ -18,12 +18,20 @@ pub enum Token {
     OpenBrace,
     CloseBrace,
     SemiColon,
-    Negation,
-    LogicalNegation,
-    Addition,
-    Multiplication,
-    Division,
-    Modulo,
+    Minus,
+    Bang,
+    Plus,
+    Asterisk,
+    Slash,
+    Percent,
+    And,
+    Or,
+    Equal,
+    NotEqual,
+    LessThan,
+    LessThanOrEqual,
+    GreaterThan,
+    GreaterThanOrEqual,
     IntegerType,
     Identifier(String),
     Keyword(Keyword),
@@ -121,49 +129,113 @@ fn semi_colon_tokenizer(a: &str) -> Option<TokenizeResult> {
     }
 }
 
-fn negation_tokenizer(a: &str) -> Option<TokenizeResult> {
+fn minus_tokenizer(a: &str) -> Option<TokenizeResult> {
     if a.chars().next()? == '-' {
-        Some(TokenizeResult(Token::Negation, 1, true))
+        Some(TokenizeResult(Token::Minus, 1, true))
     } else {
         None
     }
 }
 
-fn logical_negation_tokenizer(a: &str) -> Option<TokenizeResult> {
+fn bang_tokenizer(a: &str) -> Option<TokenizeResult> {
     if a.chars().next()? == '!' {
-        Some(TokenizeResult(Token::LogicalNegation, 1, true))
+        Some(TokenizeResult(Token::Bang, 1, true))
     } else {
         None
     }
 }
 
-fn addition_tokenizer(a: &str) -> Option<TokenizeResult> {
+fn plus_tokenizer(a: &str) -> Option<TokenizeResult> {
     if a.chars().next()? == '+' {
-        Some(TokenizeResult(Token::Addition, 1, true))
+        Some(TokenizeResult(Token::Plus, 1, true))
     } else {
         None
     }
 }
 
-fn multiplication_tokenizer(a: &str) -> Option<TokenizeResult> {
+fn asterisk_tokenizer(a: &str) -> Option<TokenizeResult> {
     if a.chars().next()? == '*' {
-        Some(TokenizeResult(Token::Multiplication, 1, true))
+        Some(TokenizeResult(Token::Asterisk, 1, true))
     } else {
         None
     }
 }
 
-fn division_tokenizer(a: &str) -> Option<TokenizeResult> {
+fn slash_tokenizer(a: &str) -> Option<TokenizeResult> {
     if a.chars().next()? == '/' {
-        Some(TokenizeResult(Token::Division, 1, true))
+        Some(TokenizeResult(Token::Slash, 1, true))
     } else {
         None
     }
 }
 
-fn modulo_tokenizer(a: &str) -> Option<TokenizeResult> {
+fn percent_tokenizer(a: &str) -> Option<TokenizeResult> {
     if a.chars().next()? == '%' {
-        Some(TokenizeResult(Token::Modulo, 1, true))
+        Some(TokenizeResult(Token::Percent, 1, true))
+    } else {
+        None
+    }
+}
+
+fn and_tokenizer(a: &str) -> Option<TokenizeResult> {
+    if a.starts_with("&&") {
+        Some(TokenizeResult(Token::And, 2, true))
+    } else {
+        None
+    }
+}
+
+fn or_tokenizer(a: &str) -> Option<TokenizeResult> {
+    if a.starts_with("||") {
+        Some(TokenizeResult(Token::Or, 2, true))
+    } else {
+        None
+    }
+}
+
+fn equal_tokenizer(a: &str) -> Option<TokenizeResult> {
+    if a.starts_with("==") {
+        Some(TokenizeResult(Token::Equal, 2, true))
+    } else {
+        None
+    }
+}
+
+fn not_equal_tokenizer(a: &str) -> Option<TokenizeResult> {
+    if a.starts_with("!=") {
+        Some(TokenizeResult(Token::NotEqual, 2, true))
+    } else {
+        None
+    }
+}
+
+fn less_than_tokenizer(a: &str) -> Option<TokenizeResult> {
+    if a.starts_with("<") {
+        Some(TokenizeResult(Token::LessThan, 1, true))
+    } else {
+        None
+    }
+}
+
+fn less_than_or_equal_tokenizer(a: &str) -> Option<TokenizeResult> {
+    if a.starts_with("<=") {
+        Some(TokenizeResult(Token::LessThanOrEqual, 2, true))
+    } else {
+        None
+    }
+}
+
+fn greater_than_tokenizer(a: &str) -> Option<TokenizeResult> {
+    if a.starts_with(">") {
+        Some(TokenizeResult(Token::GreaterThan, 1, true))
+    } else {
+        None
+    }
+}
+
+fn greater_than_or_equal_tokenizer(a: &str) -> Option<TokenizeResult> {
+    if a.starts_with(">=") {
+        Some(TokenizeResult(Token::GreaterThanOrEqual, 2, true))
     } else {
         None
     }
@@ -301,7 +373,7 @@ fn string_tokenizer(a: &str) -> Option<TokenizeResult> {
 }
 
 pub fn tokenize(text: &str) -> Vec<Token> {
-    let tokenizers: [fn(&str) -> Option<TokenizeResult>; 18] = [
+    let tokenizers: [fn(&str) -> Option<TokenizeResult>; 26] = [
         whitespace_tokenizer,
         block_comment_tokenizer,
         comment_tokenizer,
@@ -310,12 +382,20 @@ pub fn tokenize(text: &str) -> Vec<Token> {
         open_brace_tokenizer,
         close_brace_tokenizer,
         semi_colon_tokenizer,
-        negation_tokenizer,
-        logical_negation_tokenizer,
-        addition_tokenizer,
-        multiplication_tokenizer,
-        division_tokenizer,
-        modulo_tokenizer,
+        and_tokenizer,
+        or_tokenizer,
+        equal_tokenizer,
+        not_equal_tokenizer,
+        less_than_or_equal_tokenizer,
+        less_than_tokenizer,
+        greater_than_or_equal_tokenizer,
+        greater_than_tokenizer,
+        minus_tokenizer,
+        bang_tokenizer,
+        plus_tokenizer,
+        asterisk_tokenizer,
+        slash_tokenizer,
+        percent_tokenizer,
         identifier_tokenizer,
         keyword_tokenizer,
         integer_tokenizer,
@@ -352,9 +432,18 @@ pub enum UnaryOperator {
 #[derive(PartialEq, Debug, Clone)]
 pub enum BinaryOperator {
     Addition,
+    Subtraction,
     Multiplication,
     Division,
     Modulo,
+    Equal,
+    NotEqual,
+    LessThan,
+    LessThanOrEqual,
+    GreaterThan,
+    GreaterThanOrEqual,
+    And,
+    Or,
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -398,38 +487,237 @@ impl StdError for ParseError {
     }
 }
 
-fn parse_expression(tokens: &[Token]) -> Option<(Expression, usize)> {
+fn parse_factor(tokens: &[Token]) -> Option<(Expression, usize)> {
     let mut it = tokens.iter();
     match it.next()? {
-        Token::Integer(x) => Some((Expression::Constant(*x), 1)),
-        Token::Negation => {
+        Token::OpenParen => {
             let (exp, offset) = parse_expression(&tokens[1..])?;
+            if Token::CloseParen == *tokens[(1 + offset)..].iter().next()? {
+                Some((exp, 1 + offset + 1))
+            } else {
+                None
+            }
+        }
+        Token::Minus => {
+            let (exp, offset) = parse_factor(&tokens[1..])?;
             Some((
                 Expression::UnaryOperator(UnaryOperator::Negation, Box::new(exp)),
                 1 + offset,
             ))
         }
-        Token::LogicalNegation => {
-            let (exp, offset) = parse_expression(&tokens[1..])?;
+        Token::Bang => {
+            let (exp, offset) = parse_factor(&tokens[1..])?;
             Some((
                 Expression::UnaryOperator(UnaryOperator::LogicalNegation, Box::new(exp)),
                 1 + offset,
             ))
         }
-        Token::Addition => {
-            let (exp1, offset1) = parse_expression(&tokens[1..])?;
-            let (exp2, offset2) = parse_expression(&tokens[offset1..])?;
-            Some((
-                Expression::BinaryOperator(
-                    BinaryOperator::Addition,
-                    Box::new(exp1),
-                    Box::new(exp2),
-                ),
-                1 + offset1 + offset2,
-            ))
-        }
+        Token::Integer(x) => Some((Expression::Constant(*x), 1)),
         _ => None,
     }
+}
+
+fn parse_term(tokens: &[Token]) -> Option<(Expression, usize)> {
+    let (f, o) = parse_factor(tokens)?;
+    let mut factor = f;
+    let mut offset = o;
+    loop {
+        let mut it = tokens[offset..].iter();
+        match it.next() {
+            Some(Token::Asterisk) => {
+                let (next_factor, next_offset) = parse_factor(&tokens[(1 + offset)..])?;
+                factor = Expression::BinaryOperator(
+                    BinaryOperator::Multiplication,
+                    Box::new(factor),
+                    Box::new(next_factor),
+                );
+                offset = offset + 1 + next_offset;
+            }
+            Some(Token::Slash) => {
+                let (next_factor, next_offset) = parse_factor(&tokens[(1 + offset)..])?;
+                factor = Expression::BinaryOperator(
+                    BinaryOperator::Division,
+                    Box::new(factor),
+                    Box::new(next_factor),
+                );
+                offset = offset + 1 + next_offset;
+            }
+            Some(Token::Percent) => {
+                let (next_factor, next_offset) = parse_factor(&tokens[(1 + offset)..])?;
+                factor = Expression::BinaryOperator(
+                    BinaryOperator::Modulo,
+                    Box::new(factor),
+                    Box::new(next_factor),
+                );
+                offset = offset + 1 + next_offset;
+            }
+            _ => break,
+        }
+    }
+    Some((factor, offset))
+}
+
+fn parse_additive_expression(tokens: &[Token]) -> Option<(Expression, usize)> {
+    let (t, o) = parse_term(tokens)?;
+    let mut term = t;
+    let mut offset = o;
+    loop {
+        let mut it = tokens[offset..].iter();
+        match it.next() {
+            Some(Token::Plus) => {
+                let (next_term, next_offset) = parse_term(&tokens[(1 + offset)..])?;
+                term = Expression::BinaryOperator(
+                    BinaryOperator::Addition,
+                    Box::new(term),
+                    Box::new(next_term),
+                );
+                offset = offset + 1 + next_offset;
+            }
+            Some(Token::Minus) => {
+                let (next_term, next_offset) = parse_term(&tokens[(1 + offset)..])?;
+                term = Expression::BinaryOperator(
+                    BinaryOperator::Subtraction,
+                    Box::new(term),
+                    Box::new(next_term),
+                );
+                offset = offset + 1 + next_offset;
+            }
+            _ => break,
+        }
+    }
+    Some((term, offset))
+}
+
+fn parse_relational_expression(tokens: &[Token]) -> Option<(Expression, usize)> {
+    let (ae, o) = parse_additive_expression(tokens)?;
+    let mut additive_expression = ae;
+    let mut offset = o;
+    loop {
+        let mut it = tokens[offset..].iter();
+        match it.next() {
+            Some(Token::LessThan) => {
+                let (next_additive_expression, next_offset) =
+                    parse_additive_expression(&tokens[(1 + offset)..])?;
+                additive_expression = Expression::BinaryOperator(
+                    BinaryOperator::LessThan,
+                    Box::new(additive_expression),
+                    Box::new(next_additive_expression),
+                );
+                offset = offset + 1 + next_offset;
+            }
+            Some(Token::LessThanOrEqual) => {
+                let (next_additive_expression, next_offset) =
+                    parse_additive_expression(&tokens[(1 + offset)..])?;
+                additive_expression = Expression::BinaryOperator(
+                    BinaryOperator::LessThanOrEqual,
+                    Box::new(additive_expression),
+                    Box::new(next_additive_expression),
+                );
+                offset = offset + 1 + next_offset;
+            }
+            Some(Token::GreaterThan) => {
+                let (next_additive_expression, next_offset) =
+                    parse_additive_expression(&tokens[(1 + offset)..])?;
+                additive_expression = Expression::BinaryOperator(
+                    BinaryOperator::GreaterThan,
+                    Box::new(additive_expression),
+                    Box::new(next_additive_expression),
+                );
+                offset = offset + 1 + next_offset;
+            }
+            Some(Token::GreaterThanOrEqual) => {
+                let (next_additive_expression, next_offset) =
+                    parse_additive_expression(&tokens[(1 + offset)..])?;
+                additive_expression = Expression::BinaryOperator(
+                    BinaryOperator::GreaterThanOrEqual,
+                    Box::new(additive_expression),
+                    Box::new(next_additive_expression),
+                );
+                offset = offset + 1 + next_offset;
+            }
+            _ => break,
+        }
+    }
+    Some((additive_expression, offset))
+}
+
+fn parse_equality_expression(tokens: &[Token]) -> Option<(Expression, usize)> {
+    let (re, o) = parse_relational_expression(tokens)?;
+    let mut relational_expression = re;
+    let mut offset = o;
+    loop {
+        let mut it = tokens[offset..].iter();
+        match it.next() {
+            Some(Token::Equal) => {
+                let (next_relational_expression, next_offset) =
+                    parse_relational_expression(&tokens[(1 + offset)..])?;
+                relational_expression = Expression::BinaryOperator(
+                    BinaryOperator::Equal,
+                    Box::new(relational_expression),
+                    Box::new(next_relational_expression),
+                );
+                offset = offset + 1 + next_offset;
+            }
+            Some(Token::NotEqual) => {
+                let (next_relational_expression, next_offset) =
+                    parse_relational_expression(&tokens[(1 + offset)..])?;
+                relational_expression = Expression::BinaryOperator(
+                    BinaryOperator::NotEqual,
+                    Box::new(relational_expression),
+                    Box::new(next_relational_expression),
+                );
+                offset = offset + 1 + next_offset;
+            }
+            _ => break,
+        }
+    }
+    Some((relational_expression, offset))
+}
+
+fn parse_logical_and_expression(tokens: &[Token]) -> Option<(Expression, usize)> {
+    let (ee, o) = parse_equality_expression(tokens)?;
+    let mut equality_expression = ee;
+    let mut offset = o;
+    loop {
+        let mut it = tokens[offset..].iter();
+        match it.next() {
+            Some(Token::And) => {
+                let (next_equality_expression, next_offset) =
+                    parse_equality_expression(&tokens[(1 + offset)..])?;
+                equality_expression = Expression::BinaryOperator(
+                    BinaryOperator::And,
+                    Box::new(equality_expression),
+                    Box::new(next_equality_expression),
+                );
+                offset = offset + 1 + next_offset;
+            }
+            _ => break,
+        }
+    }
+    Some((equality_expression, offset))
+}
+
+fn parse_expression(tokens: &[Token]) -> Option<(Expression, usize)> {
+    let (lae, o) = parse_logical_and_expression(tokens)?;
+    let mut logical_and_expression = lae;
+    let mut offset = o;
+    loop {
+        let mut it = tokens[offset..].iter();
+        match it.next() {
+            Some(Token::Or) => {
+                let (next_logical_and_expression, next_offset) =
+                    parse_logical_and_expression(&tokens[(1 + offset)..])?;
+                logical_and_expression = Expression::BinaryOperator(
+                    BinaryOperator::Or,
+                    Box::new(logical_and_expression),
+                    Box::new(next_logical_and_expression),
+                );
+                offset = offset + 1 + next_offset;
+            }
+            _ => break,
+        }
+    }
+    Some((logical_and_expression, offset))
 }
 
 fn parse_statement(tokens: &[Token]) -> Option<(Statement, usize)> {
@@ -515,27 +803,63 @@ fn test_tokenizer() {
         [Token::Integer(1), Token::Integer(2)]
     );
     assert_eq!(tokenize("1"), [Token::Integer(1)]);
-    assert_eq!(tokenize("-1"), [Token::Negation, Token::Integer(1)]);
-    assert_eq!(tokenize("!1"), [Token::LogicalNegation, Token::Integer(1)]);
+    assert_eq!(tokenize("-1"), [Token::Minus, Token::Integer(1)]);
+    assert_eq!(tokenize("!1"), [Token::Bang, Token::Integer(1)]);
     assert_eq!(
         tokenize("1+2"),
-        [Token::Integer(1), Token::Addition, Token::Integer(2)]
+        [Token::Integer(1), Token::Plus, Token::Integer(2)]
     );
     assert_eq!(
         tokenize("1*2"),
-        [Token::Integer(1), Token::Multiplication, Token::Integer(2)]
+        [Token::Integer(1), Token::Asterisk, Token::Integer(2)]
     );
     assert_eq!(
         tokenize("1/2"),
-        [Token::Integer(1), Token::Division, Token::Integer(2)]
+        [Token::Integer(1), Token::Slash, Token::Integer(2)]
     );
     assert_eq!(
         tokenize("1%2"),
-        [Token::Integer(1), Token::Modulo, Token::Integer(2)]
+        [Token::Integer(1), Token::Percent, Token::Integer(2)]
+    );
+    assert_eq!(
+        tokenize("1==2"),
+        [Token::Integer(1), Token::Equal, Token::Integer(2)]
+    );
+    assert_eq!(
+        tokenize("1!=2"),
+        [Token::Integer(1), Token::NotEqual, Token::Integer(2)]
+    );
+    assert_eq!(
+        tokenize("1<2"),
+        [Token::Integer(1), Token::LessThan, Token::Integer(2)]
+    );
+    assert_eq!(
+        tokenize("1<=2"),
+        [Token::Integer(1), Token::LessThanOrEqual, Token::Integer(2)]
+    );
+    assert_eq!(
+        tokenize("1>2"),
+        [Token::Integer(1), Token::GreaterThan, Token::Integer(2)]
+    );
+    assert_eq!(
+        tokenize("1>=2"),
+        [
+            Token::Integer(1),
+            Token::GreaterThanOrEqual,
+            Token::Integer(2)
+        ]
+    );
+    assert_eq!(
+        tokenize("1&&2"),
+        [Token::Integer(1), Token::And, Token::Integer(2)]
+    );
+    assert_eq!(
+        tokenize("1||2"),
+        [Token::Integer(1), Token::Or, Token::Integer(2)]
     );
     assert_eq!(
         tokenize("3-1"),
-        [Token::Integer(3), Token::Negation, Token::Integer(1)]
+        [Token::Integer(3), Token::Minus, Token::Integer(1)]
     );
     assert_eq!(tokenize("123"), [Token::Integer(123)]);
     assert_eq!(tokenize("1 2"), [Token::Integer(1), Token::Integer(2)]);
@@ -550,11 +874,11 @@ fn test_tokenizer() {
     assert_eq!(tokenize("int"), [Token::Keyword(Keyword::Int)]);
     assert_eq!(
         tokenize("-x"),
-        [Token::Negation, Token::Identifier(String::from("x"))]
+        [Token::Minus, Token::Identifier(String::from("x"))]
     );
     assert_eq!(
         tokenize("!x"),
-        [Token::LogicalNegation, Token::Identifier(String::from("x"))]
+        [Token::Bang, Token::Identifier(String::from("x"))]
     );
     assert_eq!(
         tokenize("intblaj"),
@@ -615,6 +939,126 @@ fn test_parse_unary_operator() {
             ),
             2
         )
+    );
+}
+
+#[test]
+fn test_parse_associativity() {
+    let tokens = tokenize("int main() {\n  return 1 - 2 - 3;\n}\n");
+    assert_eq!(
+        parse(&tokens).expect("error"),
+        Program::Program(Function::Function(
+            "main".to_string(),
+            Statement::Return(Expression::BinaryOperator(
+                BinaryOperator::Subtraction,
+                Box::new(Expression::BinaryOperator(
+                    BinaryOperator::Subtraction,
+                    Box::new(Expression::Constant(1)),
+                    Box::new(Expression::Constant(2))
+                )),
+                Box::new(Expression::Constant(3))
+            ))
+        ))
+    );
+}
+
+#[test]
+fn test_parse_associativity_2() {
+    let tokens = tokenize("int main() {\n  return 6 / 3 / 2;\n}\n");
+    assert_eq!(
+        parse(&tokens).expect("error"),
+        Program::Program(Function::Function(
+            "main".to_string(),
+            Statement::Return(Expression::BinaryOperator(
+                BinaryOperator::Division,
+                Box::new(Expression::BinaryOperator(
+                    BinaryOperator::Division,
+                    Box::new(Expression::Constant(6)),
+                    Box::new(Expression::Constant(3))
+                )),
+                Box::new(Expression::Constant(2))
+            ))
+        ))
+    );
+}
+
+#[test]
+fn test_parse_precedence() {
+    let tokens = tokenize("int main() {\n  return 2 + 3 * 4;\n}\n");
+    assert_eq!(
+        parse(&tokens).expect("error"),
+        Program::Program(Function::Function(
+            "main".to_string(),
+            Statement::Return(Expression::BinaryOperator(
+                BinaryOperator::Addition,
+                Box::new(Expression::Constant(2)),
+                Box::new(Expression::BinaryOperator(
+                    BinaryOperator::Multiplication,
+                    Box::new(Expression::Constant(3)),
+                    Box::new(Expression::Constant(4))
+                ))
+            ))
+        ))
+    );
+}
+
+#[test]
+fn test_parse_and_or_precedence() {
+    let tokens = tokenize("int main() {\n  return 1 || 0 && 2;\n}\n");
+    assert_eq!(
+        parse(&tokens).expect("error"),
+        Program::Program(Function::Function(
+            "main".to_string(),
+            Statement::Return(Expression::BinaryOperator(
+                BinaryOperator::Or,
+                Box::new(Expression::Constant(1)),
+                Box::new(Expression::BinaryOperator(
+                    BinaryOperator::And,
+                    Box::new(Expression::Constant(0)),
+                    Box::new(Expression::Constant(2))
+                ))
+            ))
+        ))
+    );
+}
+
+#[test]
+fn test_parse_and_or_precedence_2() {
+    let tokens = tokenize("int main() {\n  return (1 || 0) && 0;\n}\n");
+    assert_eq!(
+        parse(&tokens).expect("error"),
+        Program::Program(Function::Function(
+            "main".to_string(),
+            Statement::Return(Expression::BinaryOperator(
+                BinaryOperator::And,
+                Box::new(Expression::BinaryOperator(
+                    BinaryOperator::Or,
+                    Box::new(Expression::Constant(1)),
+                    Box::new(Expression::Constant(0))
+                )),
+                Box::new(Expression::Constant(0))
+            ))
+        ))
+    );
+}
+
+#[test]
+fn test_parse_and_or_precedence_3() {
+    let tokens = tokenize("int main() {\n  return 2 == 2 > 0;\n}\n");
+    assert_eq!(
+        parse(&tokens).expect("error"),
+        Program::Program(Function::Function(
+            "main".to_string(),
+            Statement::Return(Expression::BinaryOperator(
+                BinaryOperator::Equal,
+                Box::new(Expression::Constant(2)),
+                Box::new(Expression::BinaryOperator(
+                    BinaryOperator::GreaterThan,
+                    Box::new(Expression::Constant(2)),
+                    Box::new(Expression::Constant(0)),
+                ))
+            ))
+        ))
     );
 }
 

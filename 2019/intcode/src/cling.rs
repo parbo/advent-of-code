@@ -530,15 +530,26 @@ pub enum Expression {
 }
 
 #[derive(PartialEq, Debug, Clone)]
+pub enum Declaration {
+    Variable(String, Option<Expression>),
+}
+
+#[derive(PartialEq, Debug, Clone)]
 pub enum Statement {
     Return(Expression),
-    Declaration(String, Option<Expression>),
     Expression(Expression),
+    Conditional(Expression, Box<Statement>, Option<Box<Statement>>),
+}
+
+#[derive(PartialEq, Debug, Clone)]
+pub enum BlockItem {
+    Statement(Statement),
+    Declaration(Declaration),
 }
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum Function {
-    Function(String, Vec<Statement>),
+    Function(String, Vec<BlockItem>),
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -999,6 +1010,102 @@ fn parse_statement(tokens: &[TokenWithLocation]) -> Result<(Statement, usize), P
                 ));
             }
         }
+        Some(TokenWithLocation(Token::Keyword(Keyword::If), loc)) => {
+            let mut offset = 1;
+            if let TokenWithLocation(Token::OpenParen, _) = tokens[offset..]
+                .iter()
+                .next()
+                .ok_or_else(|| ParseError::UnexpectedEOF)?
+            {
+                offset += 1;
+                if let Ok((exp, new_offset)) = parse_expression(&tokens[offset..]) {
+                    offset += new_offset;
+                    if let TokenWithLocation(Token::CloseParen, _) = tokens[offset..]
+                        .iter()
+                        .next()
+                        .ok_or_else(|| ParseError::UnexpectedEOF)?
+                    {
+                        offset += 1;
+                        if let Ok((statement, new_offset)) = parse_statement(&tokens[offset..]) {
+                            offset += new_offset;
+                            let mut opt_else_statement = None;
+                            if let Some(TokenWithLocation(Token::Keyword(Keyword::Else), _)) =
+                                tokens[offset..].iter().next()
+                            {
+                                offset += 1;
+                                if let Ok((statement, new_offset)) =
+                                    parse_statement(&tokens[offset..])
+                                {
+                                    offset += new_offset;
+                                    opt_else_statement = Some(Box::new(statement));
+                                } else {
+                                    return Err(ParseError::SyntaxError(
+                                        "Expected statement after 'else'".into(),
+                                        tokens[offset].1.clone(),
+                                    ));
+                                }
+                            }
+                            return Ok((
+                                Statement::Conditional(
+                                    exp,
+                                    Box::new(statement),
+                                    opt_else_statement,
+                                ),
+                                offset,
+                            ));
+                        } else {
+                            return Err(ParseError::SyntaxError(
+                                "Expected statement after 'if (expression)'".into(),
+                                tokens[offset].1.clone(),
+                            ));
+                        }
+                    } else {
+                        return Err(ParseError::SyntaxError(
+                            "Expected ) after 'if (expression'".into(),
+                            tokens[offset].1.clone(),
+                        ));
+                    }
+                } else {
+                    return Err(ParseError::SyntaxError(
+                        "Expected expression after 'if ('".into(),
+                        tokens[offset].1.clone(),
+                    ));
+                }
+            } else {
+                return Err(ParseError::SyntaxError(
+                    "Expected ( after if".into(),
+                    loc.clone(),
+                ));
+            }
+        }
+        _ => {
+            if let Ok((exp, new_offset)) = parse_expression(&tokens) {
+                if let TokenWithLocation(Token::SemiColon, _) =
+                    tokens[new_offset..]
+                        .iter()
+                        .next()
+                        .ok_or_else(|| ParseError::UnexpectedEOF)?
+                {
+                    return Ok((Statement::Expression(exp), new_offset + 1));
+                } else {
+                    return Err(ParseError::SyntaxError(
+                        "Expected ; at end of expression statement".into(),
+                        tokens[new_offset].1.clone(),
+                    ));
+                }
+            } else {
+                return Err(ParseError::SyntaxError(
+                    "Expected expression".into(),
+                    tokens[0].1.clone(),
+                ));
+            }
+        }
+    }
+}
+
+fn parse_declaration(tokens: &[TokenWithLocation]) -> Result<(Declaration, usize), ParseError> {
+    let mut it = tokens.iter();
+    match it.next() {
         Some(TokenWithLocation(Token::Keyword(Keyword::Int), _)) => {
             let mut offset = 1;
             let mut opt_assign = None;
@@ -1028,7 +1135,7 @@ fn parse_statement(tokens: &[TokenWithLocation]) -> Result<(Statement, usize), P
                     .next()
                     .ok_or_else(|| ParseError::UnexpectedEOF)?
                 {
-                    return Ok((Statement::Declaration(name.clone(), opt_assign), offset + 1));
+                    return Ok((Declaration::Variable(name.clone(), opt_assign), offset + 1));
                 } else {
                     return Err(ParseError::SyntaxError(
                         "Expected ; after declaration".into(),
@@ -1037,33 +1144,26 @@ fn parse_statement(tokens: &[TokenWithLocation]) -> Result<(Statement, usize), P
                 }
             }
         }
-        _ => {
-            if let Ok((exp, new_offset)) = parse_expression(&tokens) {
-                if let TokenWithLocation(Token::SemiColon, _) =
-                    tokens[new_offset..]
-                        .iter()
-                        .next()
-                        .ok_or_else(|| ParseError::UnexpectedEOF)?
-                {
-                    return Ok((Statement::Expression(exp), new_offset + 1));
-                } else {
-                    return Err(ParseError::SyntaxError(
-                        "Expected ; at end of expression statement".into(),
-                        tokens[new_offset].1.clone(),
-                    ));
-                }
+        _ => {}
+    }
+    return Err(ParseError::SyntaxError(
+        "Expected declaration".into(),
+        tokens[0].1.clone(),
+    ));
+}
+
+fn parse_blockitem(tokens: &[TokenWithLocation]) -> Result<(BlockItem, usize), ParseError> {
+    let res = parse_statement(tokens);
+    match res {
+        Err(e) => {
+            if let Ok((d, offset)) = parse_declaration(tokens) {
+                Ok((BlockItem::Declaration(d), offset))
             } else {
-                return Err(ParseError::SyntaxError(
-                    "Expected expression".into(),
-                    tokens[0].1.clone(),
-                ));
+                Err(e)
             }
         }
+        Ok((s, o)) => Ok((BlockItem::Statement(s), o)),
     }
-    Err(ParseError::SyntaxError(
-        "Expected statement".into(),
-        tokens[0].1.clone(),
-    ))
 }
 
 fn parse_function(tokens: &[TokenWithLocation]) -> Result<(Function, usize), ParseError> {
@@ -1083,13 +1183,13 @@ fn parse_function(tokens: &[TokenWithLocation]) -> Result<(Function, usize), Par
                     if let TokenWithLocation(Token::OpenBrace, _) =
                         it.next().ok_or_else(|| ParseError::UnexpectedEOF)?
                     {
-                        let mut statements = vec![];
+                        let mut blockitems = vec![];
                         let mut offset = 5;
                         let err = loop {
-                            let res = parse_statement(&tokens[offset..]);
+                            let res = parse_blockitem(&tokens[offset..]);
                             match res {
-                                Ok((statement, new_offset)) => {
-                                    statements.push(statement);
+                                Ok((blockitem, new_offset)) => {
+                                    blockitems.push(blockitem);
                                     offset = offset + new_offset;
                                 }
                                 Err(e) => {
@@ -1102,7 +1202,7 @@ fn parse_function(tokens: &[TokenWithLocation]) -> Result<(Function, usize), Par
                             .next()
                             .ok_or_else(|| ParseError::UnexpectedEOF)?
                         {
-                            return Ok((Function::Function(name.clone(), statements), offset + 1));
+                            return Ok((Function::Function(name.clone(), blockitems), offset + 1));
                         } else {
                             return Err(err);
                         }
@@ -1298,20 +1398,20 @@ fn test_tokenizer() {
         to_tokens("if (1) { return iff; } else { return elsevier; }"),
         [
             Token::Keyword(Keyword::If),
-	    Token::OpenParen,
-	    Token::Integer(1),
-	    Token::CloseParen,
-	    Token::OpenBrace,
-	    Token::Keyword(Keyword::Return),
-	    Token::Identifier("iff".into()),
-	    Token::SemiColon,
-	    Token::CloseBrace,
-	    Token::Keyword(Keyword::Else),
-	    Token::OpenBrace,
-	    Token::Keyword(Keyword::Return),
-	    Token::Identifier("elsevier".into()),
-	    Token::SemiColon,
-	    Token::CloseBrace,
+            Token::OpenParen,
+            Token::Integer(1),
+            Token::CloseParen,
+            Token::OpenBrace,
+            Token::Keyword(Keyword::Return),
+            Token::Identifier("iff".into()),
+            Token::SemiColon,
+            Token::CloseBrace,
+            Token::Keyword(Keyword::Else),
+            Token::OpenBrace,
+            Token::Keyword(Keyword::Return),
+            Token::Identifier("elsevier".into()),
+            Token::SemiColon,
+            Token::CloseBrace,
         ]
     );
 }
@@ -1423,7 +1523,9 @@ fn test_parser() {
         parse(&tokens).expect("error"),
         Program::Program(Function::Function(
             "main".to_string(),
-            vec![Statement::Return(Expression::Constant(2))]
+            vec![BlockItem::Statement(Statement::Return(
+                Expression::Constant(2)
+            ))]
         ))
     );
 }
@@ -1456,14 +1558,16 @@ fn test_parse_associativity() {
         parse(&tokens).expect("error"),
         Program::Program(Function::Function(
             "main".to_string(),
-            vec![Statement::Return(Expression::BinaryOperator(
-                BinaryOperator::Subtraction,
-                Box::new(Expression::BinaryOperator(
+            vec![BlockItem::Statement(Statement::Return(
+                Expression::BinaryOperator(
                     BinaryOperator::Subtraction,
-                    Box::new(Expression::Constant(1)),
-                    Box::new(Expression::Constant(2))
-                )),
-                Box::new(Expression::Constant(3))
+                    Box::new(Expression::BinaryOperator(
+                        BinaryOperator::Subtraction,
+                        Box::new(Expression::Constant(1)),
+                        Box::new(Expression::Constant(2))
+                    )),
+                    Box::new(Expression::Constant(3))
+                )
             ))]
         ))
     );
@@ -1476,14 +1580,16 @@ fn test_parse_associativity_2() {
         parse(&tokens).expect("error"),
         Program::Program(Function::Function(
             "main".to_string(),
-            vec![Statement::Return(Expression::BinaryOperator(
-                BinaryOperator::Division,
-                Box::new(Expression::BinaryOperator(
+            vec![BlockItem::Statement(Statement::Return(
+                Expression::BinaryOperator(
                     BinaryOperator::Division,
-                    Box::new(Expression::Constant(6)),
-                    Box::new(Expression::Constant(3))
-                )),
-                Box::new(Expression::Constant(2))
+                    Box::new(Expression::BinaryOperator(
+                        BinaryOperator::Division,
+                        Box::new(Expression::Constant(6)),
+                        Box::new(Expression::Constant(3))
+                    )),
+                    Box::new(Expression::Constant(2))
+                )
             ))]
         ))
     );
@@ -1496,14 +1602,16 @@ fn test_parse_precedence() {
         parse(&tokens).expect("error"),
         Program::Program(Function::Function(
             "main".to_string(),
-            vec![Statement::Return(Expression::BinaryOperator(
-                BinaryOperator::Addition,
-                Box::new(Expression::Constant(2)),
-                Box::new(Expression::BinaryOperator(
-                    BinaryOperator::Multiplication,
-                    Box::new(Expression::Constant(3)),
-                    Box::new(Expression::Constant(4))
-                ))
+            vec![BlockItem::Statement(Statement::Return(
+                Expression::BinaryOperator(
+                    BinaryOperator::Addition,
+                    Box::new(Expression::Constant(2)),
+                    Box::new(Expression::BinaryOperator(
+                        BinaryOperator::Multiplication,
+                        Box::new(Expression::Constant(3)),
+                        Box::new(Expression::Constant(4))
+                    ))
+                )
             ))]
         ))
     );
@@ -1516,14 +1624,16 @@ fn test_parse_and_or_precedence() {
         parse(&tokens).expect("error"),
         Program::Program(Function::Function(
             "main".to_string(),
-            vec![Statement::Return(Expression::BinaryOperator(
-                BinaryOperator::Or,
-                Box::new(Expression::Constant(1)),
-                Box::new(Expression::BinaryOperator(
-                    BinaryOperator::And,
-                    Box::new(Expression::Constant(0)),
-                    Box::new(Expression::Constant(2))
-                ))
+            vec![BlockItem::Statement(Statement::Return(
+                Expression::BinaryOperator(
+                    BinaryOperator::Or,
+                    Box::new(Expression::Constant(1)),
+                    Box::new(Expression::BinaryOperator(
+                        BinaryOperator::And,
+                        Box::new(Expression::Constant(0)),
+                        Box::new(Expression::Constant(2))
+                    ))
+                )
             ))]
         ))
     );
@@ -1536,14 +1646,16 @@ fn test_parse_and_or_precedence_2() {
         parse(&tokens).expect("error"),
         Program::Program(Function::Function(
             "main".to_string(),
-            vec![Statement::Return(Expression::BinaryOperator(
-                BinaryOperator::And,
-                Box::new(Expression::BinaryOperator(
-                    BinaryOperator::Or,
-                    Box::new(Expression::Constant(1)),
+            vec![BlockItem::Statement(Statement::Return(
+                Expression::BinaryOperator(
+                    BinaryOperator::And,
+                    Box::new(Expression::BinaryOperator(
+                        BinaryOperator::Or,
+                        Box::new(Expression::Constant(1)),
+                        Box::new(Expression::Constant(0))
+                    )),
                     Box::new(Expression::Constant(0))
-                )),
-                Box::new(Expression::Constant(0))
+                )
             ))]
         ))
     );
@@ -1556,14 +1668,16 @@ fn test_parse_and_or_precedence_3() {
         parse(&tokens).expect("error"),
         Program::Program(Function::Function(
             "main".to_string(),
-            vec![Statement::Return(Expression::BinaryOperator(
-                BinaryOperator::Equal,
-                Box::new(Expression::Constant(2)),
-                Box::new(Expression::BinaryOperator(
-                    BinaryOperator::GreaterThan,
+            vec![BlockItem::Statement(Statement::Return(
+                Expression::BinaryOperator(
+                    BinaryOperator::Equal,
                     Box::new(Expression::Constant(2)),
-                    Box::new(Expression::Constant(0)),
-                ))
+                    Box::new(Expression::BinaryOperator(
+                        BinaryOperator::GreaterThan,
+                        Box::new(Expression::Constant(2)),
+                        Box::new(Expression::Constant(0)),
+                    ))
+                )
             ))]
         ))
     );
@@ -1577,12 +1691,14 @@ fn test_parse_assign() {
         Program::Program(Function::Function(
             "main".to_string(),
             vec![
-                Statement::Declaration("a".to_string(), None),
-                Statement::Expression(Expression::Assignment(
+                BlockItem::Declaration(Declaration::Variable("a".to_string(), None)),
+                BlockItem::Statement(Statement::Expression(Expression::Assignment(
                     "a".to_string(),
                     Box::new(Expression::Constant(2))
-                )),
-                Statement::Return(Expression::VariableReference("a".to_string()))
+                ))),
+                BlockItem::Statement(Statement::Return(Expression::VariableReference(
+                    "a".to_string()
+                )))
             ]
         ))
     );
@@ -1596,15 +1712,17 @@ fn test_parse_assign_val() {
         Program::Program(Function::Function(
             "main".to_string(),
             vec![
-                Statement::Declaration("a".to_string(), None),
-                Statement::Declaration(
+                BlockItem::Declaration(Declaration::Variable("a".to_string(), None)),
+                BlockItem::Declaration(Declaration::Variable(
                     "b".to_string(),
                     Some(Expression::Assignment(
                         "a".to_string(),
                         Box::new(Expression::Constant(0))
                     ))
-                ),
-                Statement::Return(Expression::VariableReference("b".to_string()))
+                )),
+                BlockItem::Statement(Statement::Return(Expression::VariableReference(
+                    "b".to_string()
+                )))
             ]
         ))
     );
@@ -1618,20 +1736,20 @@ fn test_parse_exp_return_val() {
         Program::Program(Function::Function(
             "main".to_string(),
             vec![
-                Statement::Declaration("a".to_string(), None),
-                Statement::Declaration("b".to_string(), None),
-                Statement::Expression(Expression::Assignment(
+                BlockItem::Declaration(Declaration::Variable("a".to_string(), None)),
+                BlockItem::Declaration(Declaration::Variable("b".to_string(), None)),
+                BlockItem::Statement(Statement::Expression(Expression::Assignment(
                     "a".to_string(),
                     Box::new(Expression::Assignment(
                         "b".to_string(),
                         Box::new(Expression::Constant(4))
                     ))
-                )),
-                Statement::Return(Expression::BinaryOperator(
+                ))),
+                BlockItem::Statement(Statement::Return(Expression::BinaryOperator(
                     BinaryOperator::Subtraction,
                     Box::new(Expression::VariableReference("a".to_string())),
                     Box::new(Expression::VariableReference("b".to_string()))
-                )),
+                ))),
             ]
         ))
     );
@@ -1688,4 +1806,71 @@ fn test_syntax_error_3() {
 #[should_panic]
 fn test_syntax_error_4() {
     parse(&tokenize("int main() {\n  return 2;\n")).expect("error");
+}
+
+#[test]
+fn test_parse_multiple_ifs() {
+    let tokens = tokenize(
+        "\
+int main() {
+    int a = 0;
+    int b = 0;
+
+    if (a)
+        a = 2;
+    else
+        a = 3;
+
+    if (b)
+        b = 4;
+    else
+        b = 5;
+
+    return a + b;
+}
+",
+    );
+    assert_eq!(
+        parse(&tokens).expect("error"),
+        Program::Program(Function::Function(
+            "main".into(),
+            vec![
+                BlockItem::Declaration(Declaration::Variable(
+                    "a".into(),
+                    Some(Expression::Constant(0))
+                )),
+                BlockItem::Declaration(Declaration::Variable(
+                    "b".into(),
+                    Some(Expression::Constant(0))
+                )),
+                BlockItem::Statement(Statement::Conditional(
+                    Expression::VariableReference("a".into()),
+                    Box::new(Statement::Expression(Expression::Assignment(
+                        "a".into(),
+                        Box::new(Expression::Constant(2))
+                    ))),
+                    Some(Box::new(Statement::Expression(Expression::Assignment(
+                        "a".into(),
+                        Box::new(Expression::Constant(3))
+                    ))))
+                )),
+                BlockItem::Statement(Statement::Conditional(
+                    Expression::VariableReference("b".into()),
+                    Box::new(Statement::Expression(Expression::Assignment(
+                        "b".into(),
+                        Box::new(Expression::Constant(4))
+                    ))),
+                    Some(Box::new(Statement::Expression(Expression::Assignment(
+                        "b".into(),
+                        Box::new(Expression::Constant(5))
+                    ))))
+                )),
+                BlockItem::Statement(Statement::Return(Expression::BinaryOperator(
+                    BinaryOperator::Addition,
+                    Box::new(Expression::VariableReference("a".into())),
+                    Box::new(Expression::VariableReference("b".into()))
+                )))
+            ]
+        ))
+    )
 }

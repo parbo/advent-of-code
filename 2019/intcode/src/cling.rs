@@ -4,6 +4,7 @@ use std::fmt;
 pub enum Keyword {
     Int,
     If,
+    Else,
     Return,
 }
 
@@ -17,8 +18,10 @@ pub enum Token {
     OpenBrace,
     CloseBrace,
     SemiColon,
+    Colon,
     Minus,
     Bang,
+    QuestionMark,
     Plus,
     Asterisk,
     Slash,
@@ -144,6 +147,14 @@ fn semi_colon_tokenizer(a: &str) -> Option<TokenizeResult> {
     }
 }
 
+fn colon_tokenizer(a: &str) -> Option<TokenizeResult> {
+    if a.chars().next()? == ':' {
+        Some(TokenizeResult(Token::Colon, 1, true))
+    } else {
+        None
+    }
+}
+
 fn minus_tokenizer(a: &str) -> Option<TokenizeResult> {
     if a.chars().next()? == '-' {
         Some(TokenizeResult(Token::Minus, 1, true))
@@ -155,6 +166,14 @@ fn minus_tokenizer(a: &str) -> Option<TokenizeResult> {
 fn bang_tokenizer(a: &str) -> Option<TokenizeResult> {
     if a.chars().next()? == '!' {
         Some(TokenizeResult(Token::Bang, 1, true))
+    } else {
+        None
+    }
+}
+
+fn question_mark_tokenizer(a: &str) -> Option<TokenizeResult> {
+    if a.chars().next()? == '?' {
+        Some(TokenizeResult(Token::QuestionMark, 1, true))
     } else {
         None
     }
@@ -294,6 +313,7 @@ fn match_keyword(a: &str) -> Option<Keyword> {
     match a {
         "int" => Some(Keyword::Int),
         "if" => Some(Keyword::If),
+        "else" => Some(Keyword::Else),
         "return" => Some(Keyword::Return),
         _ => None,
     }
@@ -396,7 +416,7 @@ fn string_tokenizer(a: &str) -> Option<TokenizeResult> {
 }
 
 pub fn tokenize(text: &str) -> Vec<TokenWithLocation> {
-    let tokenizers: [fn(&str) -> Option<TokenizeResult>; 27] = [
+    let tokenizers: [fn(&str) -> Option<TokenizeResult>; 29] = [
         whitespace_tokenizer,
         block_comment_tokenizer,
         comment_tokenizer,
@@ -405,6 +425,7 @@ pub fn tokenize(text: &str) -> Vec<TokenWithLocation> {
         open_brace_tokenizer,
         close_brace_tokenizer,
         semi_colon_tokenizer,
+        colon_tokenizer,
         and_tokenizer,
         or_tokenizer,
         equal_tokenizer,
@@ -415,6 +436,7 @@ pub fn tokenize(text: &str) -> Vec<TokenWithLocation> {
         greater_than_tokenizer,
         minus_tokenizer,
         bang_tokenizer,
+        question_mark_tokenizer,
         plus_tokenizer,
         asterisk_tokenizer,
         slash_tokenizer,
@@ -1260,6 +1282,36 @@ fn test_tokenizer() {
             Token::Integer(2),
             Token::SemiColon,
             Token::CloseBrace
+        ]
+    );
+    assert_eq!(
+        to_tokens("1 ? 2 : 3"),
+        [
+            Token::Integer(1),
+            Token::QuestionMark,
+            Token::Integer(2),
+            Token::Colon,
+            Token::Integer(3)
+        ]
+    );
+    assert_eq!(
+        to_tokens("if (1) { return iff; } else { return elsevier; }"),
+        [
+            Token::Keyword(Keyword::If),
+	    Token::OpenParen,
+	    Token::Integer(1),
+	    Token::CloseParen,
+	    Token::OpenBrace,
+	    Token::Keyword(Keyword::Return),
+	    Token::Identifier("iff".into()),
+	    Token::SemiColon,
+	    Token::CloseBrace,
+	    Token::Keyword(Keyword::Else),
+	    Token::OpenBrace,
+	    Token::Keyword(Keyword::Return),
+	    Token::Identifier("elsevier".into()),
+	    Token::SemiColon,
+	    Token::CloseBrace,
         ]
     );
 }

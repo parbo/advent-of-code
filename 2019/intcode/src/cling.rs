@@ -543,15 +543,15 @@ impl fmt::Display for ParseError {
     }
 }
 
-fn parse_factor(tokens: &[TokenWithLocation]) -> Result<Option<(Expression, usize)>, ParseError> {
+fn parse_factor(tokens: &[TokenWithLocation]) -> Result<(Expression, usize), ParseError> {
     let mut it = tokens.iter();
     match it.next() {
         Some(TokenWithLocation(Token::OpenParen, loc)) => {
-            if let Some((exp, offset)) = parse_expression(&tokens[1..])? {
+            if let Ok((exp, offset)) = parse_expression(&tokens[1..]) {
                 if let Some(TokenWithLocation(Token::CloseParen, _)) =
                     tokens[(1 + offset)..].iter().next()
                 {
-                    Ok(Some((exp, 1 + offset + 1)))
+                    Ok((exp, 1 + offset + 1))
                 } else {
                     Err(ParseError::SyntaxError(
                         "Expected )".into(),
@@ -566,11 +566,11 @@ fn parse_factor(tokens: &[TokenWithLocation]) -> Result<Option<(Expression, usiz
             }
         }
         Some(TokenWithLocation(Token::Minus, loc)) => {
-            if let Some((exp, offset)) = parse_factor(&tokens[1..])? {
-                Ok(Some((
+            if let Ok((exp, offset)) = parse_factor(&tokens[1..]) {
+                Ok((
                     Expression::UnaryOperator(UnaryOperator::Negation, Box::new(exp)),
                     1 + offset,
-                )))
+                ))
             } else {
                 Err(ParseError::SyntaxError(
                     "Expected expression after -".into(),
@@ -579,11 +579,11 @@ fn parse_factor(tokens: &[TokenWithLocation]) -> Result<Option<(Expression, usiz
             }
         }
         Some(TokenWithLocation(Token::Bang, loc)) => {
-            if let Some((exp, offset)) = parse_factor(&tokens[1..])? {
-                Ok(Some((
+            if let Ok((exp, offset)) = parse_factor(&tokens[1..]) {
+                Ok((
                     Expression::UnaryOperator(UnaryOperator::LogicalNegation, Box::new(exp)),
                     1 + offset,
-                )))
+                ))
             } else {
                 Err(ParseError::SyntaxError(
                     "Expected expression after !".into(),
@@ -591,26 +591,29 @@ fn parse_factor(tokens: &[TokenWithLocation]) -> Result<Option<(Expression, usiz
                 ))
             }
         }
-        Some(TokenWithLocation(Token::Integer(x), _)) => Ok(Some((Expression::Constant(*x), 1))),
+        Some(TokenWithLocation(Token::Integer(x), _)) => Ok((Expression::Constant(*x), 1)),
         Some(TokenWithLocation(Token::Identifier(name), _)) => {
-            Ok(Some((Expression::VariableReference(name.clone()), 1)))
+            Ok((Expression::VariableReference(name.clone()), 1))
         }
-        _ => Ok(None),
+        _ => Err(ParseError::SyntaxError(
+            "Expected factor".into(),
+            tokens[0].1.clone(),
+        )),
     }
 }
 
-fn parse_term(tokens: &[TokenWithLocation]) -> Result<Option<(Expression, usize)>, ParseError> {
-    match parse_factor(tokens)? {
-        None => Ok(None),
-        Some((f, o)) => {
+fn parse_term(tokens: &[TokenWithLocation]) -> Result<(Expression, usize), ParseError> {
+    match parse_factor(tokens) {
+        Err(e) => Err(e),
+        Ok((f, o)) => {
             let mut factor = f;
             let mut offset = o;
             loop {
                 let mut it = tokens[offset..].iter();
                 match it.next() {
                     Some(TokenWithLocation(Token::Asterisk, _)) => {
-                        if let Some((next_factor, next_offset)) =
-                            parse_factor(&tokens[(1 + offset)..])?
+                        if let Ok((next_factor, next_offset)) =
+                            parse_factor(&tokens[(1 + offset)..])
                         {
                             factor = Expression::BinaryOperator(
                                 BinaryOperator::Multiplication,
@@ -626,8 +629,8 @@ fn parse_term(tokens: &[TokenWithLocation]) -> Result<Option<(Expression, usize)
                         }
                     }
                     Some(TokenWithLocation(Token::Slash, _)) => {
-                        if let Some((next_factor, next_offset)) =
-                            parse_factor(&tokens[(1 + offset)..])?
+                        if let Ok((next_factor, next_offset)) =
+                            parse_factor(&tokens[(1 + offset)..])
                         {
                             factor = Expression::BinaryOperator(
                                 BinaryOperator::Division,
@@ -643,8 +646,8 @@ fn parse_term(tokens: &[TokenWithLocation]) -> Result<Option<(Expression, usize)
                         }
                     }
                     Some(TokenWithLocation(Token::Percent, _)) => {
-                        if let Some((next_factor, next_offset)) =
-                            parse_factor(&tokens[(1 + offset)..])?
+                        if let Ok((next_factor, next_offset)) =
+                            parse_factor(&tokens[(1 + offset)..])
                         {
                             factor = Expression::BinaryOperator(
                                 BinaryOperator::Modulo,
@@ -662,25 +665,24 @@ fn parse_term(tokens: &[TokenWithLocation]) -> Result<Option<(Expression, usize)
                     _ => break,
                 }
             }
-            Ok(Some((factor, offset)))
+            Ok((factor, offset))
         }
     }
 }
 
 fn parse_additive_expression(
     tokens: &[TokenWithLocation],
-) -> Result<Option<(Expression, usize)>, ParseError> {
-    match parse_term(tokens)? {
-        None => Ok(None),
-        Some((t, o)) => {
+) -> Result<(Expression, usize), ParseError> {
+    match parse_term(tokens) {
+        Err(e) => Err(e),
+        Ok((t, o)) => {
             let mut term = t;
             let mut offset = o;
             loop {
                 let mut it = tokens[offset..].iter();
                 match it.next() {
                     Some(TokenWithLocation(Token::Plus, loc)) => {
-                        if let Some((next_term, next_offset)) = parse_term(&tokens[(1 + offset)..])?
-                        {
+                        if let Ok((next_term, next_offset)) = parse_term(&tokens[(1 + offset)..]) {
                             term = Expression::BinaryOperator(
                                 BinaryOperator::Addition,
                                 Box::new(term),
@@ -695,8 +697,7 @@ fn parse_additive_expression(
                         }
                     }
                     Some(TokenWithLocation(Token::Minus, loc)) => {
-                        if let Some((next_term, next_offset)) = parse_term(&tokens[(1 + offset)..])?
-                        {
+                        if let Ok((next_term, next_offset)) = parse_term(&tokens[(1 + offset)..]) {
                             term = Expression::BinaryOperator(
                                 BinaryOperator::Subtraction,
                                 Box::new(term),
@@ -713,25 +714,25 @@ fn parse_additive_expression(
                     _ => break,
                 }
             }
-            Ok(Some((term, offset)))
+            Ok((term, offset))
         }
     }
 }
 
 fn parse_relational_expression(
     tokens: &[TokenWithLocation],
-) -> Result<Option<(Expression, usize)>, ParseError> {
-    match parse_additive_expression(tokens)? {
-        None => Ok(None),
-        Some((ae, o)) => {
+) -> Result<(Expression, usize), ParseError> {
+    match parse_additive_expression(tokens) {
+        Err(e) => Err(e),
+        Ok((ae, o)) => {
             let mut additive_expression = ae;
             let mut offset = o;
             loop {
                 let mut it = tokens[offset..].iter();
                 match it.next() {
                     Some(TokenWithLocation(Token::LessThan, loc)) => {
-                        if let Some((next_additive_expression, next_offset)) =
-                            parse_additive_expression(&tokens[(1 + offset)..])?
+                        if let Ok((next_additive_expression, next_offset)) =
+                            parse_additive_expression(&tokens[(1 + offset)..])
                         {
                             additive_expression = Expression::BinaryOperator(
                                 BinaryOperator::LessThan,
@@ -747,8 +748,8 @@ fn parse_relational_expression(
                         }
                     }
                     Some(TokenWithLocation(Token::LessThanOrEqual, loc)) => {
-                        if let Some((next_additive_expression, next_offset)) =
-                            parse_additive_expression(&tokens[(1 + offset)..])?
+                        if let Ok((next_additive_expression, next_offset)) =
+                            parse_additive_expression(&tokens[(1 + offset)..])
                         {
                             additive_expression = Expression::BinaryOperator(
                                 BinaryOperator::LessThanOrEqual,
@@ -764,8 +765,8 @@ fn parse_relational_expression(
                         }
                     }
                     Some(TokenWithLocation(Token::GreaterThan, loc)) => {
-                        if let Some((next_additive_expression, next_offset)) =
-                            parse_additive_expression(&tokens[(1 + offset)..])?
+                        if let Ok((next_additive_expression, next_offset)) =
+                            parse_additive_expression(&tokens[(1 + offset)..])
                         {
                             additive_expression = Expression::BinaryOperator(
                                 BinaryOperator::GreaterThan,
@@ -781,8 +782,8 @@ fn parse_relational_expression(
                         }
                     }
                     Some(TokenWithLocation(Token::GreaterThanOrEqual, loc)) => {
-                        if let Some((next_additive_expression, next_offset)) =
-                            parse_additive_expression(&tokens[(1 + offset)..])?
+                        if let Ok((next_additive_expression, next_offset)) =
+                            parse_additive_expression(&tokens[(1 + offset)..])
                         {
                             additive_expression = Expression::BinaryOperator(
                                 BinaryOperator::GreaterThanOrEqual,
@@ -800,25 +801,25 @@ fn parse_relational_expression(
                     _ => break,
                 }
             }
-            Ok(Some((additive_expression, offset)))
+            Ok((additive_expression, offset))
         }
     }
 }
 
 fn parse_equality_expression(
     tokens: &[TokenWithLocation],
-) -> Result<Option<(Expression, usize)>, ParseError> {
-    match parse_relational_expression(tokens)? {
-        None => Ok(None),
-        Some((re, o)) => {
+) -> Result<(Expression, usize), ParseError> {
+    match parse_relational_expression(tokens) {
+        Err(e) => Err(e),
+        Ok((re, o)) => {
             let mut relational_expression = re;
             let mut offset = o;
             loop {
                 let mut it = tokens[offset..].iter();
                 match it.next() {
                     Some(TokenWithLocation(Token::Equal, loc)) => {
-                        if let Some((next_relational_expression, next_offset)) =
-                            parse_relational_expression(&tokens[(1 + offset)..])?
+                        if let Ok((next_relational_expression, next_offset)) =
+                            parse_relational_expression(&tokens[(1 + offset)..])
                         {
                             relational_expression = Expression::BinaryOperator(
                                 BinaryOperator::Equal,
@@ -834,8 +835,8 @@ fn parse_equality_expression(
                         }
                     }
                     Some(TokenWithLocation(Token::NotEqual, loc)) => {
-                        if let Some((next_relational_expression, next_offset)) =
-                            parse_relational_expression(&tokens[(1 + offset)..])?
+                        if let Ok((next_relational_expression, next_offset)) =
+                            parse_relational_expression(&tokens[(1 + offset)..])
                         {
                             relational_expression = Expression::BinaryOperator(
                                 BinaryOperator::NotEqual,
@@ -853,25 +854,25 @@ fn parse_equality_expression(
                     _ => break,
                 }
             }
-            Ok(Some((relational_expression, offset)))
+            Ok((relational_expression, offset))
         }
     }
 }
 
 fn parse_logical_and_expression(
     tokens: &[TokenWithLocation],
-) -> Result<Option<(Expression, usize)>, ParseError> {
-    match parse_equality_expression(tokens)? {
-        None => Ok(None),
-        Some((ee, o)) => {
+) -> Result<(Expression, usize), ParseError> {
+    match parse_equality_expression(tokens) {
+        Err(e) => Err(e),
+        Ok((ee, o)) => {
             let mut equality_expression = ee;
             let mut offset = o;
             loop {
                 let mut it = tokens[offset..].iter();
                 match it.next() {
                     Some(TokenWithLocation(Token::And, loc)) => {
-                        if let Some((next_equality_expression, next_offset)) =
-                            parse_equality_expression(&tokens[(1 + offset)..])?
+                        if let Ok((next_equality_expression, next_offset)) =
+                            parse_equality_expression(&tokens[(1 + offset)..])
                         {
                             equality_expression = Expression::BinaryOperator(
                                 BinaryOperator::And,
@@ -889,25 +890,25 @@ fn parse_logical_and_expression(
                     _ => break,
                 }
             }
-            Ok(Some((equality_expression, offset)))
+            Ok((equality_expression, offset))
         }
     }
 }
 
 fn parse_logical_or_expression(
     tokens: &[TokenWithLocation],
-) -> Result<Option<(Expression, usize)>, ParseError> {
-    match parse_logical_and_expression(tokens)? {
-        None => Ok(None),
-        Some((lae, o)) => {
+) -> Result<(Expression, usize), ParseError> {
+    match parse_logical_and_expression(tokens) {
+        Err(e) => Err(e),
+        Ok((lae, o)) => {
             let mut logical_and_expression = lae;
             let mut offset = o;
             loop {
                 let mut it = tokens[offset..].iter();
                 match it.next() {
                     Some(TokenWithLocation(Token::Or, loc)) => {
-                        if let Some((next_logical_and_expression, next_offset)) =
-                            parse_logical_and_expression(&tokens[(1 + offset)..])?
+                        if let Ok((next_logical_and_expression, next_offset)) =
+                            parse_logical_and_expression(&tokens[(1 + offset)..])
                         {
                             logical_and_expression = Expression::BinaryOperator(
                                 BinaryOperator::Or,
@@ -925,24 +926,22 @@ fn parse_logical_or_expression(
                     _ => break,
                 }
             }
-            Ok(Some((logical_and_expression, offset)))
+            Ok((logical_and_expression, offset))
         }
     }
 }
 
-fn parse_expression(
-    tokens: &[TokenWithLocation],
-) -> Result<Option<(Expression, usize)>, ParseError> {
+fn parse_expression(tokens: &[TokenWithLocation]) -> Result<(Expression, usize), ParseError> {
     let mut offset = 0;
     if let Some(TokenWithLocation(Token::Identifier(name), _)) = tokens[offset..].iter().next() {
         offset = offset + 1;
         if let Some(TokenWithLocation(Token::Assign, loc)) = tokens[offset..].iter().next() {
             offset = offset + 1;
-            if let Some((exp, new_offset)) = parse_expression(&tokens[offset..])? {
-                return Ok(Some((
+            if let Ok((exp, new_offset)) = parse_expression(&tokens[offset..]) {
+                return Ok((
                     Expression::Assignment(name.clone(), Box::new(exp)),
                     offset + new_offset,
-                )));
+                ));
             } else {
                 return Err(ParseError::SyntaxError(
                     "Expected expression after =".into(),
@@ -954,17 +953,17 @@ fn parse_expression(
     parse_logical_or_expression(tokens)
 }
 
-fn parse_statement(tokens: &[TokenWithLocation]) -> Result<Option<(Statement, usize)>, ParseError> {
+fn parse_statement(tokens: &[TokenWithLocation]) -> Result<(Statement, usize), ParseError> {
     let mut it = tokens.iter();
     match it.next() {
         Some(TokenWithLocation(Token::Keyword(Keyword::Return), loc)) => {
-            if let Some((exp, offset)) = parse_expression(&tokens[1..])? {
+            if let Ok((exp, offset)) = parse_expression(&tokens[1..]) {
                 if let TokenWithLocation(Token::SemiColon, _) = tokens[(1 + offset)..]
                     .iter()
                     .next()
                     .ok_or_else(|| ParseError::UnexpectedEOF)?
                 {
-                    return Ok(Some((Statement::Return(exp), 1 + offset + 1)));
+                    return Ok((Statement::Return(exp), 1 + offset + 1));
                 } else {
                     return Err(ParseError::SyntaxError(
                         "Expected ; at end of return statement".into(),
@@ -990,7 +989,7 @@ fn parse_statement(tokens: &[TokenWithLocation]) -> Result<Option<(Statement, us
                 if let Some(TokenWithLocation(Token::Assign, loc)) = tokens[offset..].iter().next()
                 {
                     offset = offset + 1;
-                    if let Some((exp, new_offset)) = parse_expression(&tokens[offset..])? {
+                    if let Ok((exp, new_offset)) = parse_expression(&tokens[offset..]) {
                         offset = offset + new_offset;
                         opt_assign = Some(exp);
                     } else {
@@ -1007,24 +1006,24 @@ fn parse_statement(tokens: &[TokenWithLocation]) -> Result<Option<(Statement, us
                     .next()
                     .ok_or_else(|| ParseError::UnexpectedEOF)?
                 {
-                    return Ok(Some((
-                        Statement::Declaration(name.clone(), opt_assign),
-                        offset + 1,
-                    )));
+                    return Ok((Statement::Declaration(name.clone(), opt_assign), offset + 1));
                 } else {
-                    return Err(ParseError::SyntaxError("Expected ; after declaration".into(), tokens[offset-1].1.clone()));
+                    return Err(ParseError::SyntaxError(
+                        "Expected ; after declaration".into(),
+                        tokens[offset - 1].1.clone(),
+                    ));
                 }
             }
         }
         _ => {
-            if let Some((exp, new_offset)) = parse_expression(&tokens)? {
+            if let Ok((exp, new_offset)) = parse_expression(&tokens) {
                 if let TokenWithLocation(Token::SemiColon, _) =
                     tokens[new_offset..]
                         .iter()
                         .next()
                         .ok_or_else(|| ParseError::UnexpectedEOF)?
                 {
-                    return Ok(Some((Statement::Expression(exp), new_offset + 1)));
+                    return Ok((Statement::Expression(exp), new_offset + 1));
                 } else {
                     return Err(ParseError::SyntaxError(
                         "Expected ; at end of expression statement".into(),
@@ -1032,14 +1031,20 @@ fn parse_statement(tokens: &[TokenWithLocation]) -> Result<Option<(Statement, us
                     ));
                 }
             } else {
-                return Ok(None);
+                return Err(ParseError::SyntaxError(
+                    "Expected expression".into(),
+                    tokens[0].1.clone(),
+                ));
             }
         }
     }
-    Ok(None)
+    Err(ParseError::SyntaxError(
+        "Expected statement".into(),
+        tokens[0].1.clone(),
+    ))
 }
 
-fn parse_function(tokens: &[TokenWithLocation]) -> Result<Option<(Function, usize)>, ParseError> {
+fn parse_function(tokens: &[TokenWithLocation]) -> Result<(Function, usize), ParseError> {
     let mut it = tokens.iter();
     if let TokenWithLocation(Token::Keyword(Keyword::Int), _) =
         it.next().ok_or_else(|| ParseError::UnexpectedEOF)?
@@ -1053,32 +1058,31 @@ fn parse_function(tokens: &[TokenWithLocation]) -> Result<Option<(Function, usiz
                 if let TokenWithLocation(Token::CloseParen, loc) =
                     it.next().ok_or_else(|| ParseError::UnexpectedEOF)?
                 {
-                    if let TokenWithLocation(Token::OpenBrace, loc) =
+                    if let TokenWithLocation(Token::OpenBrace, _) =
                         it.next().ok_or_else(|| ParseError::UnexpectedEOF)?
                     {
                         let mut statements = vec![];
                         let mut offset = 5;
-                        loop {
-                            if let Some((statement, new_offset)) =
-                                parse_statement(&tokens[offset..])?
-                            {
-                                statements.push(statement);
-                                offset = offset + new_offset;
-                            } else {
-                                break;
+                        let err = loop {
+                            let res = parse_statement(&tokens[offset..]);
+                            match res {
+                                Ok((statement, new_offset)) => {
+                                    statements.push(statement);
+                                    offset = offset + new_offset;
+                                }
+                                Err(e) => {
+                                    break e;
+                                }
                             }
-                        }
+                        };
                         if let TokenWithLocation(Token::CloseBrace, _) = tokens[offset..]
                             .iter()
                             .next()
                             .ok_or_else(|| ParseError::UnexpectedEOF)?
                         {
-                            return Ok(Some((
-                                Function::Function(name.clone(), statements),
-                                offset + 1,
-                            )));
+                            return Ok((Function::Function(name.clone(), statements), offset + 1));
                         } else {
-                            return Err(ParseError::SyntaxError("Expected }".into(), loc.clone()));
+                            return Err(err);
                         }
                     } else {
                         return Err(ParseError::SyntaxError("Expected {".into(), loc.clone()));
@@ -1089,26 +1093,27 @@ fn parse_function(tokens: &[TokenWithLocation]) -> Result<Option<(Function, usiz
             }
         }
     }
-    Ok(None)
+    Err(ParseError::SyntaxError(
+        "Expected function".into(),
+        tokens[0].1.clone(),
+    ))
 }
 
-fn parse_program(tokens: &[TokenWithLocation]) -> Result<Option<(Program, usize)>, ParseError> {
+fn parse_program(tokens: &[TokenWithLocation]) -> Result<(Program, usize), ParseError> {
     match parse_function(tokens) {
-        Ok(Some((function, offset))) => Ok(Some((Program::Program(function), offset))),
-        Ok(None) => Ok(None),
+        Ok((function, offset)) => Ok((Program::Program(function), offset)),
         Err(e) => Err(e),
     }
 }
 
 pub fn parse(a: &[TokenWithLocation]) -> Result<Program, ParseError> {
     match parse_program(a) {
-        Ok(Some((program, i))) => {
+        Ok((program, i)) => {
             if i != a.len() {
                 return Err(ParseError::SyntaxError("Error".to_string(), a[i].1.clone()));
             }
             Ok(program)
         }
-        Ok(None) => Err(ParseError::UnexpectedEOF),
         Err(e) => Err(e),
     }
 }
@@ -1375,20 +1380,20 @@ fn test_parser() {
 fn test_parse_unary_operator() {
     assert_eq!(
         parse_expression(&tokenize("-7")).expect("error"),
-        Some((
+        (
             Expression::UnaryOperator(UnaryOperator::Negation, Box::new(Expression::Constant(7))),
             2
-        ))
+        )
     );
     assert_eq!(
         parse_expression(&tokenize("!1")).expect("error"),
-        Some((
+        (
             Expression::UnaryOperator(
                 UnaryOperator::LogicalNegation,
                 Box::new(Expression::Constant(1))
             ),
             2
-        ))
+        )
     );
 }
 
@@ -1587,7 +1592,10 @@ fn test_parse_syntax_error() {
     let res = parse(&tokens);
     if let Err(e) = res {
         let s = format!("{}", e);
-        assert_eq!(s, "SyntaxError: Expected ; --> <none>:2:7");
+        assert_eq!(
+            s,
+            "SyntaxError: Expected ; at end of expression statement --> <none>:2:7"
+        );
     } else {
         panic!();
     }
@@ -1600,7 +1608,7 @@ fn test_parse_syntax_error_2() {
     let res = parse(&tokens);
     if let Err(e) = res {
         let s = format!("{}", e);
-        assert_eq!(s, "SyntaxError: Expected factor after * --> <none>:2:5");
+        assert_eq!(s, "SyntaxError: Expected expression --> <none>:2:2");
     } else {
         panic!();
     }

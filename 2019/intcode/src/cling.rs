@@ -527,6 +527,7 @@ pub enum Expression {
     BinaryOperator(BinaryOperator, Box<Expression>, Box<Expression>),
     Assignment(String, Box<Expression>),
     VariableReference(String),
+    Conditional(Box<Expression>, Box<Expression>, Box<Expression>),
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -964,6 +965,47 @@ fn parse_logical_or_expression(
     }
 }
 
+fn parse_conditional_expression(
+    tokens: &[TokenWithLocation],
+) -> Result<(Expression, usize), ParseError> {
+    let (loe, o) = parse_logical_or_expression(tokens)?;
+    let mut offset = o;
+    if let Some(TokenWithLocation(Token::QuestionMark, _)) = tokens[offset..].iter().next() {
+        offset += 1;
+        if let Ok((exp_a, new_offset)) = parse_expression(&tokens[offset..]) {
+            offset += new_offset;
+            if let Some(TokenWithLocation(Token::Colon, _)) = tokens[offset..].iter().next()
+            {
+                offset += 1;
+                if let Ok((exp_b, new_offset)) = parse_conditional_expression(&tokens[offset..]) {
+                    offset += new_offset;
+                    return Ok((
+                        Expression::Conditional(Box::new(loe), Box::new(exp_a), Box::new(exp_b)),
+                        offset,
+                    ));
+                } else {
+                    return Err(ParseError::SyntaxError(
+                        "Expected expression after 'exp ? exp :'".into(),
+                        tokens[offset].1.clone(),
+                    ));
+                }
+            } else {
+                return Err(ParseError::SyntaxError(
+                    "Expected ':' after 'exp ? exp'".into(),
+                    tokens[offset].1.clone(),
+                ));
+            }
+        } else {
+            return Err(ParseError::SyntaxError(
+                "Expected expression after '?'".into(),
+                tokens[offset].1.clone(),
+            ));
+        }
+    } else {
+        return Ok((loe, o));
+    }
+}
+
 fn parse_expression(tokens: &[TokenWithLocation]) -> Result<(Expression, usize), ParseError> {
     let mut offset = 0;
     if let Some(TokenWithLocation(Token::Identifier(name), _)) = tokens[offset..].iter().next() {
@@ -983,7 +1025,7 @@ fn parse_expression(tokens: &[TokenWithLocation]) -> Result<(Expression, usize),
             }
         }
     }
-    parse_logical_or_expression(tokens)
+    parse_conditional_expression(tokens)
 }
 
 fn parse_statement(tokens: &[TokenWithLocation]) -> Result<(Statement, usize), ParseError> {
@@ -1871,6 +1913,24 @@ int main() {
                     Box::new(Expression::VariableReference("b".into()))
                 )))
             ]
+        ))
+    )
+}
+
+#[test]
+fn test_parse_ternary() {
+    let tokens = tokenize("int main() {\n    return 1 ? 2 : 3;\n}\n");
+    assert_eq!(
+        parse(&tokens).expect("error"),
+        Program::Program(Function::Function(
+            "main".into(),
+            vec![BlockItem::Statement(Statement::Return(
+                Expression::Conditional(
+                    Box::new(Expression::Constant(1)),
+                    Box::new(Expression::Constant(2)),
+                    Box::new(Expression::Constant(3)),
+                )
+            ))]
         ))
     )
 }

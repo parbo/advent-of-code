@@ -1272,6 +1272,61 @@ fn parse_statement(tokens: &[TokenWithLocation]) -> Result<(Statement, usize), P
                 tokens[offset].1.clone(),
             ));
         }
+        Some(TokenWithLocation(Token::Keyword(Keyword::While), _)) => {
+            let mut offset = 1;
+            if let TokenWithLocation(Token::OpenParen, _) = tokens[offset..]
+                .iter()
+                .next()
+                .ok_or_else(|| ParseError::UnexpectedEOF)?
+            {
+                offset += 1;
+                if let Ok((exp, new_offset)) = parse_expression(&tokens[offset..]) {
+                    offset += new_offset;
+                    if let TokenWithLocation(Token::CloseParen, _) = tokens[offset..]
+			.iter()
+			.next()
+			.ok_or_else(|| ParseError::UnexpectedEOF)?
+                    {
+			offset += 1;
+		        if let Ok((statement, new_offset)) = parse_statement(&tokens[offset..]) {
+                            offset += new_offset;
+			    return Ok((Statement::While(exp, Box::new(statement)), offset));
+			}
+		    }
+		}
+	    }
+            return Err(ParseError::SyntaxError(
+                "Could not parse 'while' statement".into(),
+                tokens[offset].1.clone(),
+            ));
+	}
+        Some(TokenWithLocation(Token::Keyword(Keyword::Do), _)) => {
+            let mut offset = 1;
+	    if let Ok((statement, new_offset)) = parse_statement(&tokens[offset..]) {
+                offset += new_offset;
+                if let TokenWithLocation(Token::Keyword(Keyword::While), _) = tokens[offset..]
+		    .iter()
+		    .next()
+		    .ok_or_else(|| ParseError::UnexpectedEOF)?
+                {
+		    offset += 1;
+		    if let Ok((exp, new_offset)) = parse_expression(&tokens[offset..]) {
+                        offset += new_offset;
+			if let TokenWithLocation(Token::SemiColon, _) = tokens[offset..]
+			    .iter()
+			    .next()
+			    .ok_or_else(|| ParseError::UnexpectedEOF)?
+			{
+			    return Ok((Statement::While(exp, Box::new(statement)), offset));
+			}
+		    }
+		}
+	    }
+            return Err(ParseError::SyntaxError(
+                "Could not parse 'do' statement".into(),
+                tokens[offset].1.clone(),
+            ));
+	}
         Some(TokenWithLocation(Token::Keyword(Keyword::Break), _)) => {
             if let TokenWithLocation(Token::SemiColon, _) = tokens[1..]
                 .iter()

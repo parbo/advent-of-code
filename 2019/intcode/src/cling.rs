@@ -540,6 +540,7 @@ pub enum Statement {
     Return(Expression),
     Expression(Expression),
     Conditional(Expression, Box<Statement>, Option<Box<Statement>>),
+    Compound(Vec<BlockItem>)
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -629,10 +630,16 @@ fn parse_factor(tokens: &[TokenWithLocation]) -> Result<(Expression, usize), Par
         Some(TokenWithLocation(Token::Identifier(name), _)) => {
             Ok((Expression::VariableReference(name.clone()), 1))
         }
-        _ => Err(ParseError::SyntaxError(
-            "Expected factor".into(),
-            tokens[0].1.clone(),
-        )),
+        _ => {
+	    if tokens.len() > 0 {
+		Err(ParseError::SyntaxError(
+		    "Expected factor".into(),
+		    tokens[0].1.clone(),
+		))
+	    } else {
+		Err(ParseError::UnexpectedEOF)
+	    }
+	}
     }
 }
 
@@ -1120,6 +1127,31 @@ fn parse_statement(tokens: &[TokenWithLocation]) -> Result<(Statement, usize), P
                 ));
             }
         }
+        Some(TokenWithLocation(Token::OpenBrace, _)) => {
+            let mut blockitems = vec![];
+            let mut offset = 1;
+            let err = loop {
+                let res = parse_blockitem(&tokens[offset..]);
+                match res {
+                    Ok((blockitem, new_offset)) => {
+                        blockitems.push(blockitem);
+                        offset = offset + new_offset;
+                    }
+                    Err(e) => {
+                        break e;
+                    }
+                }
+            };
+            if let TokenWithLocation(Token::CloseBrace, _) = tokens[offset..]
+                .iter()
+                .next()
+                .ok_or_else(|| ParseError::UnexpectedEOF)?
+            {
+                return Ok((Statement::Compound(blockitems), offset + 1));
+            } else {
+                return Err(err);
+            }
+	},
         _ => {
             if let Ok((exp, new_offset)) = parse_expression(&tokens) {
                 if let TokenWithLocation(Token::SemiColon, _) =
@@ -1136,10 +1168,14 @@ fn parse_statement(tokens: &[TokenWithLocation]) -> Result<(Statement, usize), P
                     ));
                 }
             } else {
-                return Err(ParseError::SyntaxError(
-                    "Expected expression".into(),
-                    tokens[0].1.clone(),
-                ));
+		if tokens.len() > 0 {
+                    return Err(ParseError::SyntaxError(
+			"Expected expression".into(),
+			tokens[0].1.clone(),
+                    ));
+		} else {
+		    return Err(ParseError::UnexpectedEOF);
+		}
             }
         }
     }
@@ -1188,10 +1224,14 @@ fn parse_declaration(tokens: &[TokenWithLocation]) -> Result<(Declaration, usize
         }
         _ => {}
     }
-    return Err(ParseError::SyntaxError(
-        "Expected declaration".into(),
-        tokens[0].1.clone(),
-    ));
+    if tokens.len() > 0 {
+	return Err(ParseError::SyntaxError(
+            "Expected declaration".into(),
+            tokens[0].1.clone(),
+	));
+    } else {
+	return Err(ParseError::UnexpectedEOF);
+    }
 }
 
 fn parse_blockitem(tokens: &[TokenWithLocation]) -> Result<(BlockItem, usize), ParseError> {

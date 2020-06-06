@@ -92,7 +92,7 @@ fn part2(program: &Vec<i128>) -> i128 {
     let mut last_good = (0, 0);
     start_x -= 20;
     loop {
-        let (s1, e1) = get_beam_at(program, start_x, y);
+        let (_s1, e1) = get_beam_at(program, start_x, y);
         let (s2, _e2) = get_beam_at(program, start_x, y + sq - 1);
         let s = e1 - sq;
         if s2 == s {

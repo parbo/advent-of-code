@@ -380,8 +380,7 @@ where
         + std::cmp::PartialEq
         + num::Signed
         + Copy
-        + std::iter::Product<&'a T>
-        + std::ops::AddAssign,
+        + std::iter::Product<&'a T>,
 {
     let prod = modulii.iter().product::<T>();
 
@@ -389,7 +388,7 @@ where
 
     for (&residue, &modulus) in residues.iter().zip(modulii) {
         let p = prod / modulus;
-        sum += residue * mod_inv(p, modulus)? * p
+        sum = sum + residue * mod_inv(p, modulus)? * p
     }
 
     Some(sum % prod)

@@ -634,11 +634,7 @@ where
     T: Clone + Copy + Default + PartialEq,
 {
     fn get_value(&self, pos: Point) -> Option<T> {
-        if let Some(x) = self.get(&pos) {
-            Some(*x)
-        } else {
-            None
-        }
+        self.get(&pos).copied()
     }
     fn set_value(&mut self, pos: Point, value: T) {
         *self.entry(pos).or_insert(value) = value;
@@ -1251,7 +1247,7 @@ impl Iterator for HexGridIteratorHelper {
             };
             let curr = self.curr;
             self.curr = c;
-            curr.and_then(|x| Some(axial_to_cube(x)))
+            curr.map(axial_to_cube)
         } else {
             None
         }
@@ -1351,11 +1347,7 @@ where
     T: Clone + Copy + Default + PartialEq,
 {
     fn get_value(&self, pos: Vec3) -> Option<T> {
-        if let Some(x) = self.get(&pos) {
-            Some(*x)
-        } else {
-            None
-        }
+	self.get(&pos).copied()
     }
     fn set_value(&mut self, pos: Vec3, value: T) {
         *self.entry(pos).or_insert(value) = value;
@@ -1574,7 +1566,7 @@ pub fn axial_to_cube(axial: Point) -> Vec3 {
 pub fn cube_to_axial(cube: Vec3) -> Point {
     let q = cube[0];
     let r = cube[2];
-    return [q, r];
+    [q, r]
 }
 
 pub fn cube_to_oddr(cube: Vec3) -> Point {
@@ -1767,8 +1759,8 @@ where
 {
     fn draw(&mut self, area: &G) {
         self.window.clear();
-        let g = self.convert(area);
-        let ([min_x, min_y], [max_x, max_y]) = g.extents();
+        let grid = self.convert(area);
+        let ([min_x, min_y], [max_x, max_y]) = grid.extents();
         self.w = self.window.get_max_x();
         self.h = self.window.get_max_y();
         let ww = (4 * (max_x - min_x + 1) + 3) as i32;
@@ -1807,7 +1799,7 @@ where
             for x in min_x..=max_x {
                 let p = [x as i64, y as i64];
                 let d = T::default();
-                let c = g.get(&p).unwrap_or(&d);
+                let c = grid.get(&p).unwrap_or(&d);
                 let s = format!("| {} ", self.to_char(*c));
                 self.put_str(xx, yy, &s);
                 xx += s.len() as i32;

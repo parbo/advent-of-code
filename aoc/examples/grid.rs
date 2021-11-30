@@ -1,19 +1,18 @@
-use aoc;
 use aoc::GridDrawer;
 
 fn make_grid() -> Vec<String> {
-    let mut g = vec![];
-    g.push("+.......+".into());
-    g.push(".........".into());
-    g.push(".#.......".into());
-    g.push(".....AA..".into());
-    g.push(".....AA..".into());
-    g.push(".####....".into());
-    g.push(".........".into());
-    g.push(".........".into());
-    g.push(".........".into());
-    g.push("+.......+".into());
-    g
+    vec![
+        "+.......+".into(),
+        ".........".into(),
+        ".#.......".into(),
+        ".....AA..".into(),
+        ".....AA..".into(),
+        ".####....".into(),
+        ".........".into(),
+        ".........".into(),
+        ".........".into(),
+        "+.......+".into(),
+    ]
 }
 
 fn print_i64() {
@@ -318,7 +317,7 @@ fn save_ppm() {
 
 fn main() {
     print_i64();
-    println!("");
+    println!();
     print_char();
     save_ppm();
 }

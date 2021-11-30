@@ -1,26 +1,25 @@
-use aoc;
 use aoc::Grid;
 use aoc::GridDrawer;
 use aoc::GridTranspose;
 use std::collections::HashMap;
 
 fn make_grid() -> Vec<String> {
-    let mut g = vec![];
-    g.push("+.......+".into());
-    g.push(".........".into());
-    g.push(".#.......".into());
-    g.push(".....AA..".into());
-    g.push(".....AABB".into());
-    g.push(".####....".into());
-    g.push(".#.......".into());
-    g.push(".#...####".into());
-    g.push(".#...#...".into());
-    g.push(".##...#..".into());
-    g.push("..####...".into());
-    g.push(".....#...".into());
-    g.push(".........".into());
-    g.push("+.......+".into());
-    g
+    vec![
+        "+.......+".into(),
+        ".........".into(),
+        ".#.......".into(),
+        ".....AA..".into(),
+        ".....AABB".into(),
+        ".####....".into(),
+        ".#.......".into(),
+        ".#...####".into(),
+        ".#...#...".into(),
+        ".##...#..".into(),
+        "..####...".into(),
+        ".....#...".into(),
+        ".........".into(),
+        "+.......+".into(),
+    ]
 }
 
 fn transform() {
@@ -124,23 +123,25 @@ fn transform_sparse() {
 }
 
 fn blit() {
-    let mut g: Vec<String> = vec![];
-    g.push("+........+".into());
-    g.push("..........".into());
-    g.push("..........".into());
-    g.push("..........".into());
-    g.push("..........".into());
-    g.push("..........".into());
-    g.push("..........".into());
-    g.push("..........".into());
-    g.push("..........".into());
-    g.push("+....... +".into());
-    let mut g2: Vec<String> = vec![];
-    g2.push("...#..#.".into());
-    g2.push(".#######".into());
-    g2.push("..#..#..".into());
-    g2.push("######..".into());
-    g2.push("#..#....".into());
+    let g: Vec<String> = vec![
+        "+........+".into(),
+        "..........".into(),
+        "..........".into(),
+        "..........".into(),
+        "..........".into(),
+        "..........".into(),
+        "..........".into(),
+        "..........".into(),
+        "..........".into(),
+        "+....... +".into(),
+    ];
+    let g2: Vec<String> = vec![
+        "...#..#.".into(),
+        ".#######".into(),
+        "..#..#..".into(),
+        "######..".into(),
+        "#..#....".into(),
+    ];
     let mut grid = aoc::parse_grid(&g);
     let grid2 = aoc::parse_grid(&g2);
     let mut gd = aoc::PrintGridDrawer::new(|x| x);
@@ -152,8 +153,8 @@ fn transpose_iterator() {
     let orig_grid = aoc::parse_grid(&make_grid());
     let mut gd = aoc::PrintGridDrawer::new(|x| x);
     for g in orig_grid.transpositions() {
-	gd.draw(&g);
-	println!();
+        gd.draw(&g);
+        println!();
     }
 }
 

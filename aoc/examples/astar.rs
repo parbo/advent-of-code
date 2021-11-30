@@ -1,20 +1,19 @@
-use aoc;
 use aoc::Grid;
 use aoc::GridDrawer;
 
 fn make_grid() -> Vec<String> {
-    let mut g = vec![];
-    g.push("#########".into());
-    g.push("#.......#".into());
-    g.push("#####...#".into());
-    g.push("#.......#".into());
-    g.push("#..######".into());
-    g.push("##......#".into());
-    g.push("#####...#".into());
-    g.push("#...#...#".into());
-    g.push("#.......#".into());
-    g.push("#########".into());
-    g
+    vec![
+        "#########".into(),
+        "#.......#".into(),
+        "#####...#".into(),
+        "#.......#".into(),
+        "#..######".into(),
+        "##......#".into(),
+        "#####...#".into(),
+        "#...#...#".into(),
+        "#.......#".into(),
+        "#########".into(),
+    ]
 }
 
 fn astar_char() {

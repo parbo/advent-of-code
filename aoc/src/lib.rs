@@ -376,11 +376,7 @@ where
 
 pub fn chinese_remainder<'a, T>(residues: &[T], modulii: &'a [T]) -> Option<T>
 where
-    T: 'a
-        + std::cmp::PartialEq
-        + num::Signed
-        + Copy
-        + std::iter::Product<&'a T>,
+    T: 'a + std::cmp::PartialEq + num::Signed + Copy + std::iter::Product<&'a T>,
 {
     let prod = modulii.iter().product::<T>();
 
@@ -1347,7 +1343,7 @@ where
     T: Clone + Copy + Default + PartialEq,
 {
     fn get_value(&self, pos: Vec3) -> Option<T> {
-	self.get(&pos).copied()
+        self.get(&pos).copied()
     }
     fn set_value(&mut self, pos: Vec3, value: T) {
         *self.entry(pos).or_insert(value) = value;
@@ -2025,7 +2021,7 @@ mod tests {
         let expected: Vec<Vec<char>> = vec!["#   ".chars().collect(), "####".chars().collect()];
         g.flip_vertical();
         assert_eq!(g, expected);
-        let mut g = orig_g.clone();
+        let mut g = orig_g;
         let expected: Vec<Vec<char>> = vec!["####".chars().collect(), "   #".chars().collect()];
         g.flip_horizontal();
         assert_eq!(g, expected);
@@ -2051,7 +2047,7 @@ mod tests {
         .collect();
         g.flip_vertical();
         assert_eq!(g, expected);
-        let mut g = orig_g.clone();
+        let mut g = orig_g;
         let expected: HashMap<Point, char> = vec![
             ([-1, 0], '#'),
             ([0, 0], '#'),

@@ -4,24 +4,11 @@ type Parsed = Vec<i64>;
 type Answer = i64;
 
 fn part1(data: &Parsed) -> Answer {
-    let mut num = 0;
-    let mut last_v = None;
-    for v in data {
-        if let Some(lv) = last_v {
-            if v > lv {
-                num += 1;
-            }
-        }
-        last_v = Some(v);
-    }
-    num
+    data.windows(2).filter(|a| a[1] > a[0]).count() as i64
 }
 
 fn part2(data: &Parsed) -> Answer {
-    let mut sliding = vec![];
-    for i in 0..(data.len() - 2) {
-        sliding.push(data[i] + data[i + 1] + data[i + 2])
-    }
+    let sliding = data.windows(3).map(|a| a.iter().sum()).collect();
     part1(&sliding)
 }
 

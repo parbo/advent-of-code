@@ -171,6 +171,13 @@ pub fn split(s: &str, pred: fn(char) -> bool) -> Vec<&str> {
         .collect()
 }
 
+pub fn split_w(s: &str) -> Vec<&str> {
+    s.split(|c: char| c.is_whitespace())
+        .map(|w| w.trim())
+        .filter(|x| !x.is_empty())
+        .collect()
+}
+
 pub fn split_ch(s: &str, c: char) -> Vec<&str> {
     s.split(|x| x == c)
         .map(|w| w.trim())

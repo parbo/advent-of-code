@@ -18,16 +18,8 @@ fn part1(numbers: &Parsed) -> Answer {
     let mut gamma = 0;
     let mut epsilon = 0;
     for bit in 0..bits {
-        let mut count_1 = 0;
-        let mut count_0 = 0;
-        for number in numbers {
-            let val = number[bit];
-            match val {
-                '0' => count_0 += 1,
-                '1' => count_1 += 1,
-                _ => panic!(),
-            }
-        }
+        let count_1 = numbers.iter().filter(|x| x[bit] == '1').count();
+        let count_0 = numbers.iter().filter(|x| x[bit] == '0').count();
         if count_1 > count_0 {
             gamma = gamma + (1 << (bits - bit - 1));
         } else {
@@ -41,46 +33,22 @@ fn find(nums: &Parsed, most: bool) -> Answer {
     let mut numbers = nums.clone();
     let bits = numbers[0].len();
     for bit in 0..bits {
-        let mut count_1 = 0;
-        let mut count_0 = 0;
-        for number in &numbers {
-            let val = number[bit];
-            match val {
-                '0' => count_0 += 1,
-                '1' => count_1 += 1,
-                _ => panic!(),
-            }
-        }
-        if count_1 > count_0 {
-	    if most {
-		numbers = numbers.into_iter().filter(|x| x[bit] == '1').collect();
-	    } else {
-		numbers = numbers.into_iter().filter(|x| x[bit] == '0').collect();
-	    }
-        } else if count_0 > count_1 {
-	    if most {
-		numbers = numbers.into_iter().filter(|x| x[bit] == '0').collect();
-	    } else {
-		numbers = numbers.into_iter().filter(|x| x[bit] == '1').collect();
-	    }
-        } else {
-            numbers = numbers
-                .into_iter()
-                .filter(|x| if most { x[bit] == '1' } else { x[bit] == '0' })
-                .collect();
-        }
+        let count_1 = numbers.iter().filter(|x| x[bit] == '1').count();
+        let count_0 = numbers.iter().filter(|x| x[bit] == '0').count();
+        let cond = if count_0 > count_1 { most } else { !most };
+        numbers = numbers
+            .into_iter()
+            .filter(|x| if cond { x[bit] == '0' } else { x[bit] == '1' })
+            .collect();
         if numbers.len() == 1 {
             break;
         }
     }
-    let mut ans = 0;
-    for bit in 0..bits {
-        let val = numbers[0][bit];
-        if val == '1' {
-            ans = ans + (1 << (bits - bit - 1));
-        }
-    }
-    ans
+    numbers[0]
+        .iter()
+        .enumerate()
+        .map(|(bit, x)| if *x == '1' { 1 << (bits - bit - 1) } else { 0 })
+        .sum()
 }
 
 fn part2(numbers: &Parsed) -> Answer {

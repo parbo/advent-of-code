@@ -1,15 +1,5 @@
 use std::iter::*;
 
-// #[derive(parse_display::Display, parse_display::FromStr, Debug, Clone, PartialEq, Eq, Hash)]
-// #[display("{thing}: {al}-{ah} or {bl}-{bh}")]
-// struct Rule {
-//     thing: String,
-//     al: i64,
-//     ah: i64,
-//     bl: i64,
-//     bh: i64,
-// }
-
 type Parsed = Vec<Vec<char>>;
 type Answer = i64;
 

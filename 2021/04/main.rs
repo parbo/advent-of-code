@@ -16,11 +16,13 @@ type Parsed = Bingo;
 type Answer = i64;
 
 impl Board {
-    fn has_bingo(&self) -> bool {
+    fn has_bingo(&self) -> i64 {
+        let mut i = 0;
         for row in &self.board {
             if row.iter().all(|(_num, marked)| *marked) {
-                return true;
+                return i;
             }
+            i += 1;
         }
         let cols = self.board[0].len();
         'outer: for col in 0..cols {
@@ -29,9 +31,9 @@ impl Board {
                     continue 'outer;
                 }
             }
-            return true;
+            return -1 * (col as i64);
         }
-        false
+        0
     }
 
     fn score(&self, num: i64) -> i64 {
@@ -60,15 +62,20 @@ impl Board {
 
     fn draw(&mut self, window: &Window, offset: (i32, i32)) {
         let mut y = 0;
-	let bingo = self.has_bingo();
+        let bingo = self.has_bingo();
         for row in &mut self.board {
             let mut x = 0;
             for col in row {
-		if bingo {
-                    window.color_set(if col.1 { 4 } else { 3 });
-		} else {
+                let bb = y as i64 == bingo || x as i64 == -bingo;
+                if bingo != 0 {
+                    if bb {
+                        window.color_set(if col.1 { 6 } else { 5 });
+                    } else {
+                        window.color_set(if col.1 { 4 } else { 3 });
+                    }
+                } else {
                     window.color_set(if col.1 { 2 } else { 1 });
-		}
+                }
                 window.mvaddstr(
                     offset.1 * 6 + y as i32,
                     3 * (offset.0 * 6 + x) as i32,
@@ -84,7 +91,7 @@ impl Board {
 fn part1(bingo: &mut Parsed) -> Answer {
     for num in &bingo.numbers {
         for board in &mut bingo.boards {
-            if board.mark(*num) && board.has_bingo() {
+            if board.mark(*num) && board.has_bingo() != 0 {
                 return board.score(*num);
             }
         }
@@ -102,6 +109,8 @@ fn part2(bingo: &mut Parsed) -> Answer {
     init_pair(2, COLOR_BLACK, COLOR_WHITE);
     init_pair(3, COLOR_GREEN, COLOR_BLACK);
     init_pair(4, COLOR_BLACK, COLOR_GREEN);
+    init_pair(5, COLOR_RED, COLOR_BLACK);
+    init_pair(6, COLOR_BLACK, COLOR_RED);
     curs_set(0);
     window.keypad(true);
     window.scrollok(true);
@@ -115,7 +124,7 @@ fn part2(bingo: &mut Parsed) -> Answer {
             if won.contains(&i) {
                 continue;
             }
-            if bingo.boards[i].mark(*num) && bingo.boards[i].has_bingo() {
+            if bingo.boards[i].mark(*num) && bingo.boards[i].has_bingo() != 0 {
                 last = Some((i, num));
                 won.insert(i);
             }

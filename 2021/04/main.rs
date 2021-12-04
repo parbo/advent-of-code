@@ -1,6 +1,9 @@
 use std::{collections::HashSet, iter::*};
 
-type Board = Vec<Vec<(i64, bool)>>;
+#[derive(Debug)]
+struct Board {
+    board: Vec<Vec<(i64, bool)>>,
+}
 
 #[derive(Debug)]
 struct Bingo {
@@ -11,53 +14,55 @@ struct Bingo {
 type Parsed = Bingo;
 type Answer = i64;
 
-#[allow(clippy::ptr_arg)]
-fn has_bingo(board: &Board) -> bool {
-    for row in board {
-        if row.iter().all(|(_num, marked)| *marked) {
-            return true;
-        }
-    }
-    'outer: for col in 0..board[0].len() {
-        for row in board {
-            if !row[col].1 {
-                continue 'outer;
-            }
-        }
-        return true;
-    }
-    false
-}
-
-#[allow(clippy::ptr_arg)]
-fn score(board: &Board, num: i64) -> i64 {
-    num * board
-        .iter()
-        .map(|row| {
-            row.iter()
-                .map(|(num, marked)| if *marked { 0 } else { *num })
-                .sum::<i64>()
-        })
-        .sum::<i64>()
-}
-
-fn mark(board: &mut Board, num: i64) -> bool {
-    for row in board {
-        for col in row {
-            if col.0 == num {
-                col.1 = true;
+impl Board {
+    fn has_bingo(&self) -> bool {
+        for row in &self.board {
+            if row.iter().all(|(_num, marked)| *marked) {
                 return true;
             }
         }
+        let cols = self.board[0].len();
+        'outer: for col in 0..cols {
+            for row in &self.board {
+                if !row[col].1 {
+                    continue 'outer;
+                }
+            }
+            return true;
+        }
+        false
     }
-    false
+
+    fn score(&self, num: i64) -> i64 {
+        num * self
+            .board
+            .iter()
+            .map(|row| {
+                row.iter()
+                    .map(|(num, marked)| if *marked { 0 } else { *num })
+                    .sum::<i64>()
+            })
+            .sum::<i64>()
+    }
+
+    fn mark(&mut self, num: i64) -> bool {
+        for row in &mut self.board {
+            for col in row {
+                if col.0 == num {
+                    col.1 = true;
+                    return true;
+                }
+            }
+        }
+        false
+    }
 }
 
 fn part1(bingo: &mut Parsed) -> Answer {
     for num in &bingo.numbers {
         for board in &mut bingo.boards {
-            if mark(board, *num) && has_bingo(board) {
-                return score(board, *num);
+            if board.mark(*num) && board.has_bingo() {
+                return board.score(*num);
             }
         }
     }
@@ -72,14 +77,14 @@ fn part2(bingo: &mut Parsed) -> Answer {
             if won.contains(&i) {
                 continue;
             }
-            if mark(&mut bingo.boards[i], *num) && has_bingo(&bingo.boards[i]) {
+            if bingo.boards[i].mark(*num) && bingo.boards[i].has_bingo() {
                 last = Some((i, num));
                 won.insert(i);
             }
         }
     }
     let (ix, num) = last.unwrap();
-    score(&bingo.boards[ix], *num)
+    bingo.boards[ix].score(*num)
 }
 
 fn parse(lines: &[String]) -> Parsed {
@@ -90,8 +95,8 @@ fn parse(lines: &[String]) -> Parsed {
         .collect();
     let mut boards = vec![];
     for section in sections.iter().skip(1) {
-        boards.push(
-            section
+        boards.push(Board {
+            board: section
                 .iter()
                 .map(|x| {
                     aoc::split_w(x)
@@ -100,7 +105,7 @@ fn parse(lines: &[String]) -> Parsed {
                         .collect::<Vec<_>>()
                 })
                 .collect(),
-        );
+        });
     }
     Bingo { numbers, boards }
 }

@@ -1,3 +1,4 @@
+use pancurses::*;
 use std::{collections::HashSet, iter::*};
 
 #[derive(Debug)]
@@ -56,6 +57,28 @@ impl Board {
         }
         false
     }
+
+    fn draw(&mut self, window: &Window, offset: (i32, i32)) {
+        let mut y = 0;
+	let bingo = self.has_bingo();
+        for row in &mut self.board {
+            let mut x = 0;
+            for col in row {
+		if bingo {
+                    window.color_set(if col.1 { 4 } else { 3 });
+		} else {
+                    window.color_set(if col.1 { 2 } else { 1 });
+		}
+                window.mvaddstr(
+                    offset.1 * 6 + y as i32,
+                    3 * (offset.0 * 6 + x) as i32,
+                    format!("{:2} ", col.0),
+                );
+                x += 1
+            }
+            y += 1;
+        }
+    }
 }
 
 fn part1(bingo: &mut Parsed) -> Answer {
@@ -70,10 +93,25 @@ fn part1(bingo: &mut Parsed) -> Answer {
 }
 
 fn part2(bingo: &mut Parsed) -> Answer {
+    let window = initscr();
+    nl();
+    noecho();
+    start_color();
+    use_default_colors();
+    init_pair(1, COLOR_WHITE, COLOR_BLACK);
+    init_pair(2, COLOR_BLACK, COLOR_WHITE);
+    init_pair(3, COLOR_GREEN, COLOR_BLACK);
+    init_pair(4, COLOR_BLACK, COLOR_GREEN);
+    curs_set(0);
+    window.keypad(true);
+    window.scrollok(true);
+    window.nodelay(true);
+    window.timeout(200);
     let mut won = HashSet::new();
     let mut last = None;
     for num in &bingo.numbers {
         for i in 0..bingo.boards.len() {
+            bingo.boards[i].draw(&window, (i as i32 % 10i32, i as i32 / 10i32));
             if won.contains(&i) {
                 continue;
             }
@@ -82,7 +120,16 @@ fn part2(bingo: &mut Parsed) -> Answer {
                 won.insert(i);
             }
         }
+        window.refresh();
+        let _ = window.getch();
     }
+    // Draw one last time
+    for i in 0..bingo.boards.len() {
+        bingo.boards[i].draw(&window, (i as i32 % 10i32, i as i32 / 10i32));
+    }
+    window.refresh();
+    let _ = window.getch();
+    endwin();
     let (ix, num) = last.unwrap();
     bingo.boards[ix].score(*num)
 }
@@ -107,6 +154,7 @@ fn parse(lines: &[String]) -> Parsed {
                 .collect(),
         });
     }
+    println!("boards: {}", boards.len());
     Bingo { numbers, boards }
 }
 

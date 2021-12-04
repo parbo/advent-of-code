@@ -20,7 +20,7 @@ impl Board {
         let mut i = 0;
         for row in &self.board {
             if row.iter().all(|(_num, marked)| *marked) {
-                return i;
+                return i + 1;
             }
             i += 1;
         }
@@ -31,7 +31,7 @@ impl Board {
                     continue 'outer;
                 }
             }
-            return -1 * (col as i64);
+            return -1 * ((col + 1) as i64);
         }
         0
     }
@@ -66,7 +66,7 @@ impl Board {
         for row in &mut self.board {
             let mut x = 0;
             for col in row {
-                let bb = y as i64 == bingo || x as i64 == -bingo;
+                let bb = (y + 1) as i64 == bingo || (x + 1) as i64 == -bingo;
                 if bingo != 0 {
                     if bb {
                         window.color_set(if col.1 { 6 } else { 5 });

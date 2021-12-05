@@ -1293,65 +1293,6 @@ where
     fn rotate_180_cw(&mut self);
     fn rotate_240_cw(&mut self);
     fn rotate_300_cw(&mut self);
-    // fn fill(&mut self, pos: Vec3, value: T) {
-    //     let ([min_x, min_y, min_z], [max_x, max_y, max_z]) = self.extents();
-    //     if let Some(old) = self.get_value(pos) {
-    //         if value != old {
-    //             let mut todo = vec![];
-    //             todo.push(pos);
-    //             while let Some(p) = todo.pop() {
-    //                 if let Some(curr) = self.get_value(p) {
-    //                     if curr == old {
-    //                         self.set_value(p, value);
-    //                         if p[0] > min_x {
-    //                             todo.push([p[0] - 1, p[1], p[2]]);
-    //                         }
-    //                         if p[0] < max_x {
-    //                             todo.push([p[0] + 1, p[1], p[2]]);
-    //                         }
-    //                         if p[1] > min_y {
-    //                             todo.push([p[0], p[1] - 1, p[2]]);
-    //                         }
-    //                         if p[1] < max_y {
-    //                             todo.push([p[0], p[1] + 1, p[2]]);
-    //                         }
-    //                         if p[2] > min_z {
-    //                             todo.push([p[0], p[1], p[2] - 1]);
-    //                         }
-    //                         if p[2] < max_z {
-    //                             todo.push([p[0], p[1], p[2] + 1]);
-    //                         }
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-    // fn line(&mut self, a: Vec3, b: Vec3, value: T);
-    // fn blit(&mut self, pos: Vec3, g: &dyn HexGrid<T>) {
-    //     let (start, end) = g.extents();
-    //     self.blit_rect(pos, g, start, end);
-    // }
-    // // pos is position to blit to, start/end is the rect to copy from grid
-    // fn blit_rect(&mut self, pos: Vec3, g: &dyn HexGrid<T>, start: Vec3, end: Vec3) {
-    //     let ([min_x, min_y, min_z], [max_x, max_y, max_z]) = g.extents();
-    //     let min_xx = min_x.max(start[0]);
-    //     let min_yy = min_y.max(start[1]);
-    //     let min_zz = min_z.max(start[2]);
-    //     let max_xx = max_x.min(end[0]);
-    //     let max_yy = max_y.min(end[1]);
-    //     let max_zz = max_z.min(end[2]);
-    //     for (dy, yy) in (min_yy..=max_yy).enumerate() {
-    //         for (dx, xx) in (min_xx..=max_xx).enumerate() {
-    // 		for (dz, zz) in (min_zz..=max_zz).enumerate() {
-    //                 let [xxx, yyy, zzz] = vec_add(pos, [dx as i64, dy as i64, dz as i64]);
-    //                 if let Some(v) = g.get_value([xx, yy, zz]) {
-    // 			self.set_value([xxx, yyy, zzz], v);
-    //                 }
-    // 		}
-    //         }
-    //     }
-    // }
 }
 
 impl<S: ::std::hash::BuildHasher, T> HexGrid<T> for HashMap<Vec3, T, S>

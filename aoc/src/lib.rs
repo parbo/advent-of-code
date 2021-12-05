@@ -330,6 +330,15 @@ pub fn parse_char(s: &str, ix: usize) -> Result<char, ParseError> {
     get_char(s, ix).ok_or(ParseError::Generic)
 }
 
+pub fn parse_point(s: &str) -> Result<Point, ParseError> {
+    let parts : Vec<&str> = s.split(|x| x == ',').map(|w| w.trim()).collect();
+    if parts.len() == 2 {
+        Ok([parts[0].parse()?, parts[1].parse()?])
+    } else {
+        Err(ParseError::Generic)
+    }
+}
+
 pub fn cum_sum<T: num::Num + Copy>(a: &[T]) -> Vec<T> {
     a.iter()
         .scan(T::zero(), |state, x| {
@@ -2066,5 +2075,21 @@ mod tests {
         .collect();
         g.flip_horizontal();
         assert_eq!(g, expected);
+    }
+
+    #[test]
+    fn test_parse_point_ok() {
+        let parsed = parse_point("12,42");
+        assert!(!parsed.is_err());
+        assert_eq!(parsed.unwrap(), [12, 42]);
+    }
+
+    #[test]
+    fn test_parse_point_fail() {
+        assert!(parse_point("1242").is_err());
+        assert!(parse_point("12,,42").is_err());
+        assert!(parse_point("12,42,").is_err());
+        assert!(parse_point("12,a2").is_err());
+        assert!(parse_point("a2,42").is_err());
     }
 }

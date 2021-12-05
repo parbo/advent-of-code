@@ -10,14 +10,15 @@ use std::iter::*;
 //     bh: i64,
 // }
 
-type Parsed = Vec<i64>;
+type ParsedItem = i64;
+type Parsed = Vec<ParsedItem>;
 type Answer = i64;
 
-fn part1(_: &Parsed) -> Answer {
+fn part1(_: &[ParsedItem]) -> Answer {
     0
 }
 
-fn part2(_: &Parsed) -> Answer {
+fn part2(_: &[ParsedItem]) -> Answer {
     0
 }
 

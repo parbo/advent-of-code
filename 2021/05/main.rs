@@ -8,7 +8,8 @@ struct Line {
     b: Point,
 }
 
-type Parsed = Vec<Line>;
+type ParsedItem = Line;
+type Parsed = Vec<ParsedItem>;
 type Answer = i64;
 
 fn solve<F>(lines: &[Line], p: F) -> Answer
@@ -17,7 +18,7 @@ where
 {
     let mut counts = HashMap::new();
     lines
-        .into_iter()
+        .iter()
         .filter(p)
         .map(|line| aoc::plot_line(line.a, line.b))
         .for_each(|points| {

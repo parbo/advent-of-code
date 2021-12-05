@@ -2,7 +2,7 @@ use aoc::Point;
 use std::collections::HashMap;
 use std::iter::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug)]
 struct Line {
     a: Point,
     b: Point,
@@ -11,26 +11,31 @@ struct Line {
 type Parsed = Vec<Line>;
 type Answer = i64;
 
-fn part1(lines: &Parsed) -> Answer {
+fn solve<F>(lines: &[Line], p: F) -> Answer
+where
+    F: Fn(&&Line) -> bool,
+{
     let mut counts = HashMap::new();
-    for line in lines {
-        if line.a[0] == line.b[0] || line.a[1] == line.b[1] {
-            for p in aoc::plot_line(line.a, line.b) {
-                *counts.entry(p).or_insert(0) += 1;
-            }
-        }
-    }
+    lines
+        .into_iter()
+        .filter(p)
+        .map(|line| aoc::plot_line(line.a, line.b))
+        .for_each(|points| {
+            points
+                .into_iter()
+                .for_each(|p| *counts.entry(p).or_insert(0) += 1)
+        });
     counts.iter().filter(|(_, c)| **c >= 2).count() as Answer
 }
 
+fn part1(lines: &Parsed) -> Answer {
+    solve(lines, |line| {
+        line.a[0] == line.b[0] || line.a[1] == line.b[1]
+    })
+}
+
 fn part2(lines: &Parsed) -> Answer {
-    let mut counts = HashMap::new();
-    for line in lines {
-        for p in aoc::plot_line(line.a, line.b) {
-            *counts.entry(p).or_insert(0) += 1;
-        }
-    }
-    counts.iter().filter(|(_, c)| **c >= 2).count() as Answer
+    solve(lines, |_| true)
 }
 
 fn parse_point(s: &str) -> Point {
@@ -58,14 +63,4 @@ fn main() {
         part2(&parsed)
     };
     println!("{}", result);
-}
-
-#[cfg(test)]
-mod tests {
-    // use super::*;
-
-    // #[test]
-    // fn test_part1() {
-    //     assert_eq!(part1(&vec![0]), 0);
-    // }
 }

@@ -1,9 +1,10 @@
 use std::iter::*;
 
-type Parsed = Vec<(String, i64)>;
+type ParsedItem = (String, i64);
+type Parsed = Vec<ParsedItem>;
 type Answer = i64;
 
-fn part1(commands: &Parsed) -> Answer {
+fn part1(commands: &[ParsedItem]) -> Answer {
     let mut pos_x = 0;
     let mut depth = 0;
     for (s, x) in commands {
@@ -17,7 +18,7 @@ fn part1(commands: &Parsed) -> Answer {
     pos_x * depth
 }
 
-fn part2(commands: &Parsed) -> Answer {
+fn part2(commands: &[ParsedItem]) -> Answer {
     let mut aim = 0;
     let mut pos_x = 0;
     let mut depth = 0;
@@ -48,14 +49,4 @@ fn main() {
         part2(&parsed)
     };
     println!("{}", result);
-}
-
-#[cfg(test)]
-mod tests {
-    // use super::*;
-
-    // #[test]
-    // fn test_part1() {
-    //     assert_eq!(part1(&vec![0]), 0);
-    // }
 }

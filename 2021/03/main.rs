@@ -1,9 +1,10 @@
 use std::iter::*;
 
-type Parsed = Vec<Vec<char>>;
+type ParsedItem = Vec<char>;
+type Parsed = Vec<ParsedItem>;
 type Answer = i64;
 
-fn part1(numbers: &Parsed) -> Answer {
+fn part1(numbers: &[ParsedItem]) -> Answer {
     let bits = numbers[0].len();
     let mut gamma = 0;
     let mut epsilon = 0;
@@ -11,16 +12,16 @@ fn part1(numbers: &Parsed) -> Answer {
         let count_1 = numbers.iter().filter(|x| x[bit] == '1').count();
         let count_0 = numbers.iter().filter(|x| x[bit] == '0').count();
         if count_1 > count_0 {
-            gamma = gamma + (1 << (bits - bit - 1));
+            gamma += 1 << (bits - bit - 1);
         } else {
-            epsilon = epsilon + (1 << (bits - bit - 1));
+            epsilon += 1 << (bits - bit - 1);
         }
     }
     epsilon * gamma
 }
 
-fn find(nums: &Parsed, most: bool) -> Answer {
-    let mut numbers = nums.clone();
+fn find(nums: &[ParsedItem], most: bool) -> Answer {
+    let mut numbers = nums.to_owned();
     let bits = numbers[0].len();
     for bit in 0..bits {
         let count_1 = numbers.iter().filter(|x| x[bit] == '1').count();
@@ -41,9 +42,9 @@ fn find(nums: &Parsed, most: bool) -> Answer {
         .sum()
 }
 
-fn part2(numbers: &Parsed) -> Answer {
-    let o2r = find(&numbers, true);
-    let co2 = find(&numbers, false);
+fn part2(numbers: &[ParsedItem]) -> Answer {
+    let o2r = find(numbers, true);
+    let co2 = find(numbers, false);
     o2r * co2
 }
 

@@ -17,12 +17,10 @@ type Answer = i64;
 
 impl Board {
     fn has_bingo(&self) -> i64 {
-        let mut i = 0;
-        for row in &self.board {
+        for (i, row) in self.board.iter().enumerate() {
             if row.iter().all(|(_num, marked)| *marked) {
-                return i + 1;
+                return (i + 1) as i64;
             }
-            i += 1;
         }
         let cols = self.board[0].len();
         'outer: for col in 0..cols {
@@ -31,7 +29,7 @@ impl Board {
                     continue 'outer;
                 }
             }
-            return -1 * ((col + 1) as i64);
+            return -((col + 1) as i64);
         }
         0
     }
@@ -61,11 +59,9 @@ impl Board {
     }
 
     fn draw(&mut self, window: &Window, offset: (i32, i32)) {
-        let mut y = 0;
         let bingo = self.has_bingo();
-        for row in &mut self.board {
-            let mut x = 0;
-            for col in row {
+        for (y, row) in self.board.iter_mut().enumerate() {
+            for (x, col) in row.iter().enumerate() {
                 let bb = (y + 1) as i64 == bingo || (x + 1) as i64 == -bingo;
                 if bingo != 0 {
                     if bb {
@@ -78,12 +74,10 @@ impl Board {
                 }
                 window.mvaddstr(
                     offset.1 * 6 + y as i32,
-                    3 * (offset.0 * 6 + x) as i32,
+                    3i32 * (offset.0 * 6i32 + x as i32),
                     format!("{:2} ", col.0),
                 );
-                x += 1
             }
-            y += 1;
         }
     }
 }
@@ -99,28 +93,35 @@ fn part1(bingo: &mut Parsed) -> Answer {
     -1
 }
 
-fn part2(bingo: &mut Parsed) -> Answer {
-    let window = initscr();
-    nl();
-    noecho();
-    start_color();
-    use_default_colors();
-    init_pair(1, COLOR_WHITE, COLOR_BLACK);
-    init_pair(2, COLOR_BLACK, COLOR_WHITE);
-    init_pair(3, COLOR_GREEN, COLOR_BLACK);
-    init_pair(4, COLOR_BLACK, COLOR_GREEN);
-    init_pair(5, COLOR_RED, COLOR_BLACK);
-    init_pair(6, COLOR_BLACK, COLOR_RED);
-    curs_set(0);
-    window.keypad(true);
-    window.scrollok(true);
-    window.nodelay(true);
-    window.timeout(200);
+fn part2(bingo: &mut Parsed, draw: bool) -> Answer {
+    let window = if draw {
+        let window = initscr();
+        nl();
+        noecho();
+        start_color();
+        use_default_colors();
+        init_pair(1, COLOR_WHITE, COLOR_BLACK);
+        init_pair(2, COLOR_BLACK, COLOR_WHITE);
+        init_pair(3, COLOR_GREEN, COLOR_BLACK);
+        init_pair(4, COLOR_BLACK, COLOR_GREEN);
+        init_pair(5, COLOR_RED, COLOR_BLACK);
+        init_pair(6, COLOR_BLACK, COLOR_RED);
+        curs_set(0);
+        window.keypad(true);
+        window.scrollok(true);
+        window.nodelay(true);
+        window.timeout(200);
+        Some(window)
+    } else {
+        None
+    };
     let mut won = HashSet::new();
     let mut last = None;
     for num in &bingo.numbers {
         for i in 0..bingo.boards.len() {
-            bingo.boards[i].draw(&window, (i as i32 % 10i32, i as i32 / 10i32));
+	    if let Some(window) = &window {
+		bingo.boards[i].draw(window, (i as i32 % 10i32, i as i32 / 10i32));
+	    }
             if won.contains(&i) {
                 continue;
             }
@@ -129,16 +130,20 @@ fn part2(bingo: &mut Parsed) -> Answer {
                 won.insert(i);
             }
         }
+	if let Some(window) = &window {
+            window.refresh();
+            let _ = window.getch();
+        }
+    }
+    if let Some(window) = &window {
+        // Draw one last time
+        for i in 0..bingo.boards.len() {
+            bingo.boards[i].draw(window, (i as i32 % 10i32, i as i32 / 10i32));
+        }
         window.refresh();
         let _ = window.getch();
+        endwin();
     }
-    // Draw one last time
-    for i in 0..bingo.boards.len() {
-        bingo.boards[i].draw(&window, (i as i32 % 10i32, i as i32 / 10i32));
-    }
-    window.refresh();
-    let _ = window.getch();
-    endwin();
     let (ix, num) = last.unwrap();
     bingo.boards[ix].score(*num)
 }
@@ -163,7 +168,6 @@ fn parse(lines: &[String]) -> Parsed {
                 .collect(),
         });
     }
-    println!("boards: {}", boards.len());
     Bingo { numbers, boards }
 }
 
@@ -172,8 +176,10 @@ fn main() {
     let mut parsed = parse(&lines);
     let result = if part == 1 {
         part1(&mut parsed)
+    } else if part == 2 {
+        part2(&mut parsed, false)
     } else {
-        part2(&mut parsed)
+        part2(&mut parsed, true)
     };
     println!("{}", result);
 }
@@ -231,6 +237,6 @@ mod tests {
             "22 11 13  6  5".into(),
             " 2  0 12  3  7".into(),
         ]);
-        assert_eq!(part2(&mut bingo), 1924);
+        assert_eq!(part2(&mut bingo, false), 1924);
     }
 }

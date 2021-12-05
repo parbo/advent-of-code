@@ -1,14 +1,15 @@
 use std::iter::*;
 
-type Parsed = Vec<i64>;
+type ParsedItem = i64;
+type Parsed = Vec<ParsedItem>;
 type Answer = i64;
 
-fn part1(data: &Parsed) -> Answer {
+fn part1(data: &[ParsedItem]) -> Answer {
     data.windows(2).filter(|a| a[1] > a[0]).count() as i64
 }
 
-fn part2(data: &Parsed) -> Answer {
-    let sliding = data.windows(3).map(|a| a.iter().sum()).collect();
+fn part2(data: &[ParsedItem]) -> Answer {
+    let sliding: Vec<_> = data.windows(3).map(|a| a.iter().sum()).collect();
     part1(&sliding)
 }
 

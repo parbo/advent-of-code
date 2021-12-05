@@ -28,19 +28,14 @@ where
     counts.iter().filter(|(_, c)| **c >= 2).count() as Answer
 }
 
-fn part1(lines: &Parsed) -> Answer {
+fn part1(lines: &[ParsedItem]) -> Answer {
     solve(lines, |line| {
         line.a[0] == line.b[0] || line.a[1] == line.b[1]
     })
 }
 
-fn part2(lines: &Parsed) -> Answer {
+fn part2(lines: &[ParsedItem]) -> Answer {
     solve(lines, |_| true)
-}
-
-fn parse_point(s: &str) -> Point {
-    let x = aoc::split_ch(s, ',');
-    [x[0].parse().unwrap(), x[1].parse().unwrap()]
 }
 
 fn parse(lines: &[String]) -> Parsed {
@@ -48,8 +43,8 @@ fn parse(lines: &[String]) -> Parsed {
         .iter()
         .map(|x| aoc::split_w(x))
         .map(|x| Line {
-            a: parse_point(x[0]),
-            b: parse_point(x[2]),
+            a: aoc::parse_point(x[0]).unwrap(),
+            b: aoc::parse_point(x[2]).unwrap(),
         })
         .collect()
 }

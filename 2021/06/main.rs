@@ -5,16 +5,13 @@ type Parsed = Vec<ParsedItem>;
 type Answer = i64;
 
 fn solve(f: &[ParsedItem], days: i32) -> Answer {
-    let mut fish: VecDeque<i64> = VecDeque::from([0, 0, 0, 0, 0, 0, 0, 0, 0]);
-    for ff in f {
-        fish[*ff as usize] += 1;
-    }
+    let mut fish = VecDeque::from(vec![0;9]);
+    f.iter().for_each(|ff| fish[*ff as usize] += 1);
     for _i in 0..days {
-        let born = *fish.front().unwrap();
         fish.rotate_left(1);
-        fish[6] += born;
+        fish[6] += fish[8];
     }
-    fish.iter().sum::<i64>() as Answer
+    fish.iter().sum::<i64>()
 }
 
 fn part1(f: &[ParsedItem]) -> Answer {

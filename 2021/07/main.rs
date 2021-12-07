@@ -1,4 +1,4 @@
-use std::{collections::HashMap, iter::*};
+use std::iter::*;
 
 type ParsedItem = i64;
 type Parsed = Vec<ParsedItem>;
@@ -7,29 +7,26 @@ type Answer = i64;
 fn part1(crabs: &[ParsedItem]) -> Answer {
     let s = *crabs.iter().min().unwrap();
     let e = *crabs.iter().max().unwrap();
-    let mut cost = HashMap::new();
+    let mut cost = vec![];
     for i in s..e {
-        let mut fuel = 0;
-        for c in crabs {
-            fuel += (c - i).abs();
-        }
-        cost.insert(i, fuel);
+        cost.push(crabs.iter().map(|c| (c - i).abs()).sum());
     }
-    *cost.iter().min_by_key(|(_k, v)| **v).unwrap().1
+    *cost.iter().min().unwrap()
 }
 
 fn part2(crabs: &[ParsedItem]) -> Answer {
     let s = *crabs.iter().min().unwrap();
     let e = *crabs.iter().max().unwrap();
-    let mut cost = HashMap::new();
+    let mut cost = vec![];
     for i in s..e {
-        let mut fuel = 0;
-        for c in crabs {
-            fuel += (1..((c - i).abs() + 1)).sum::<i64>();
-        }
-        cost.insert(i, fuel);
+        cost.push(
+            crabs
+                .iter()
+                .map(|c| (1..((c - i).abs() + 1)).sum::<i64>())
+                .sum(),
+        );
     }
-    *cost.iter().min_by_key(|(_k, v)| **v).unwrap().1
+    *cost.iter().min().unwrap()
 }
 
 fn parse(lines: &[String]) -> Parsed {

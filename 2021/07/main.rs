@@ -7,26 +7,24 @@ type Answer = i64;
 fn part1(crabs: &[ParsedItem]) -> Answer {
     let s = *crabs.iter().min().unwrap();
     let e = *crabs.iter().max().unwrap();
-    let mut cost = vec![];
-    for i in s..e {
-        cost.push(crabs.iter().map(|c| (c - i).abs()).sum());
-    }
-    *cost.iter().min().unwrap()
+    (s..e)
+        .map(|i| crabs.iter().map(|c| (c - i).abs()).sum())
+        .min()
+        .unwrap()
 }
 
 fn part2(crabs: &[ParsedItem]) -> Answer {
     let s = *crabs.iter().min().unwrap();
     let e = *crabs.iter().max().unwrap();
-    let mut cost = vec![];
-    for i in s..e {
-        cost.push(
+    (s..e)
+        .map(|i| {
             crabs
                 .iter()
                 .map(|c| (1..((c - i).abs() + 1)).sum::<i64>())
-                .sum(),
-        );
-    }
-    *cost.iter().min().unwrap()
+                .sum()
+        })
+        .min()
+        .unwrap()
 }
 
 fn parse(lines: &[String]) -> Parsed {

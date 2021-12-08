@@ -24,40 +24,29 @@ fn part2(patterns: &[ParsedItem]) -> Answer {
         ptn.sort_by(|a, b| a.len().cmp(&b.len()));
         for i in 0..ptn.len() {
             let p = &ptn[i];
-            let _ = match p.len() {
-                2 => {
-                    let c0 = (0..ptn.len()).filter(|x| ptn[*x].contains(&p[0])).count();
-                    let c1 = (0..ptn.len()).filter(|x| ptn[*x].contains(&p[1])).count();
-                    if c0 == 8 && c1 == 9 {
-                        mappings.insert(p[0], 'c');
-                        mappings.insert(p[1], 'f');
-                    } else if c0 == 9 && c1 == 8 {
-                        mappings.insert(p[0], 'f');
-                        mappings.insert(p[1], 'c');
-                    } else {
-                        println!("{:?}, {}, {}, {}, {}", ptn, p[0], p[1], c0, c1);
-                        panic!();
-                    }
+            for c in p {
+                if mappings.contains_key(c) {
+                    continue;
                 }
-                3 => {
-                    for c in p {
-                        if mappings.contains_key(c) {
-                            continue;
+                let cn = (0..ptn.len()).filter(|x| ptn[*x].contains(c)).count();
+                match p.len() {
+                    2 => {
+                        if cn == 8 {
+                            mappings.insert(*c, 'c');
+                        } else if cn == 9 {
+                            mappings.insert(*c, 'f');
+                        } else {
+                            panic!();
                         }
-                        let cn = (0..ptn.len()).filter(|x| ptn[*x].contains(c)).count();
+                    }
+                    3 => {
                         if cn == 8 {
                             mappings.insert(*c, 'a');
                         } else {
                             panic!();
                         }
                     }
-                }
-                4 => {
-                    for c in p {
-                        if mappings.contains_key(c) {
-                            continue;
-                        }
-                        let cn = (0..ptn.len()).filter(|x| ptn[*x].contains(c)).count();
+                    4 => {
                         if cn == 6 {
                             mappings.insert(*c, 'b');
                         } else if cn == 7 {
@@ -66,13 +55,7 @@ fn part2(patterns: &[ParsedItem]) -> Answer {
                             panic!();
                         }
                     }
-                }
-                7 => {
-                    for c in p {
-                        if mappings.contains_key(c) {
-                            continue;
-                        }
-                        let cn = (0..ptn.len()).filter(|x| ptn[*x].contains(c)).count();
+                    7 => {
                         if cn == 4 {
                             mappings.insert(*c, 'e');
                         } else if cn == 7 {
@@ -81,14 +64,14 @@ fn part2(patterns: &[ParsedItem]) -> Answer {
                             panic!();
                         }
                     }
+                    _ => (),
                 }
-                _ => (),
-            };
+            }
         }
         let mut val = 0;
         for o in output {
             val = val * 10;
-            let mut segments : Vec<char> = o.chars().map(|c| *mappings.get(&c).unwrap()).collect();
+            let mut segments: Vec<char> = o.chars().map(|c| *mappings.get(&c).unwrap()).collect();
             segments.sort();
             let s: String = segments.into_iter().collect();
             match s.as_str() {

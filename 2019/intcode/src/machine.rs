@@ -55,17 +55,17 @@ enum Mode {
     Relative,
 }
 
-fn mode(value: i128, pos: usize) -> Mode {
+fn mode(value: i128, pos: usize) -> Option<Mode> {
     let mut div = 100;
     for _ in 1..pos {
         div = div * 10;
     }
     let m = (value / div) % 10;
     match m {
-        0 => Mode::Position,
-        1 => Mode::Immediate,
-        2 => Mode::Relative,
-        _ => panic!("OH NOES: {}", m),
+        0 => Some(Mode::Position),
+        1 => Some(Mode::Immediate),
+        2 => Some(Mode::Relative),
+        _ => None,
     }
 }
 
@@ -392,38 +392,39 @@ impl Machine {
                 let m = mode(val, 1 + r);
                 let v = self.memory.get(address + 1 + r).unwrap_or(&0);
                 match &m {
-                    Mode::Immediate => {
+                    Some(Mode::Immediate) => {
 			ins.add_read(Arg::Immediate { value: *v });
                     }
-                    Mode::Position => {
+                    Some(Mode::Position) => {
                         ins.add_read(Arg::Position {
                             address: *v as usize,
                         });
                     }
-                    Mode::Relative => {
+                    Some(Mode::Relative) => {
                         ins.add_read(Arg::Relative {
                             base: self.relative_base,
                             offset: *v,
                         });
                     }
+		    _ => ()
                 }
             }
             for w in 0..def.2 {
                 let m = mode(val, 1 + def.1 + w);
                 let v = self.memory.get(address + 1 + def.1 + w).unwrap_or(&0);
                 match &m {
-                    Mode::Position => {
+                    Some(Mode::Position) => {
                         ins.add_write(Arg::Position {
                             address: *v as usize,
                         });
                     }
-                    Mode::Relative => {
+                    Some(Mode::Relative) => {
                         ins.add_write(Arg::Relative {
                             base: self.relative_base,
                             offset: *v,
                         });
                     }
-                    _ => panic!("OH NOES"),
+                    _ => (),
                 }
             }
             Disassembly::Instruction(ins)

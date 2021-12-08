@@ -37,8 +37,8 @@ impl Debugger<'_> {
                 Disassembly::Instruction(x) => {
                     match x.op {
                         // Find function
-                        Op::SP => match &x.read()[0] {
-                            Arg::Immediate { value } => {
+                        Op::SP => match &x.read().get(0) {
+                            Some(Arg::Immediate { value }) => {
                                 if value.is_positive() {
                                     sp = *value;
                                     sp_addr = a;
@@ -50,9 +50,9 @@ impl Debugger<'_> {
                             }
                             _ => {}
                         },
-                        Op::JIT => match &x.read()[0] {
-                            Arg::Immediate { value: 1 } => match &x.read()[1] {
-                                Arg::Relative { base: _, offset: 0 } => {
+                        Op::JIT => match &x.read().get(0) {
+                            Some(Arg::Immediate { value: 1 }) => match &x.read().get(1) {
+                                Some(Arg::Relative { base: _, offset: 0 }) => {
                                     println!("found function {} -> {}", sp_addr, a);
                                 }
                                 _ => {}
@@ -187,6 +187,31 @@ impl Debugger<'_> {
         }
     }
 
+    fn print_output(&mut self) {
+        for o in self.machine.outputs() {
+            if o >= 0 && o < 256 {
+                print!("{}", std::char::from_u32(o as u32).unwrap());
+            } else {
+                println!("value: {}", o);
+            }
+        }
+    }
+
+    fn handle_io(&mut self, rl: &mut Editor<()>, state: State) {
+        if state == State::Output {
+            self.print_output();
+        }
+        if state == State::Input {
+            if let Ok(s) = rl.readline("INP >> ") {
+                let x = s.trim();
+                for c in x.chars() {
+                    self.machine.add_input(c as i128);
+                }
+                self.machine.add_input(10);
+            }
+        }
+    }
+
     pub fn debug(&mut self) {
         // `()` can be used when no completer is required
         let mut rl = Editor::<()>::new();
@@ -205,7 +230,9 @@ impl Debugger<'_> {
                         line = last.unwrap();
                     }
                     if line == "s" {
-                        if self.machine.step() == State::Halted {
+                        let state = self.machine.step();
+                        self.handle_io(&mut rl, state);
+                        if state == State::Halted {
                             println!("Program halted");
                         } else {
                             let _ = self.print_instruction(self.machine.ip(), true);
@@ -248,12 +275,14 @@ impl Debugger<'_> {
                         }
                     } else if line == "c" {
                         loop {
-                            if self.machine.step() == State::Halted {
-                                println!("Program halted");
-                                break;
-                            }
+                            let state = self.machine.step();
+                            self.handle_io(&mut rl, state);
                             if self.breakpoints.contains(&self.machine.ip()) {
                                 println!("Breakpoint reached");
+                                break;
+                            }
+                            if state == State::Halted {
+                                println!("Program halted");
                                 break;
                             }
                         }

@@ -1,10 +1,12 @@
 use aoc::{Grid, GridDrawer};
+use std::cmp::Reverse;
+use std::collections::BinaryHeap;
 use std::iter::*;
 
 type Parsed = Vec<Vec<i64>>;
 type Answer = i64;
 
-fn part1(map: &Parsed) -> Answer {
+fn get_low_points(map: &Parsed) -> Vec<aoc::Point> {
     let mut low_points = vec![];
     'outer: for p in map.points() {
         let ph = map.get_value(p).unwrap();
@@ -18,6 +20,11 @@ fn part1(map: &Parsed) -> Answer {
         low_points.push(p);
     }
     low_points
+}
+
+fn part1(map: &Parsed) -> Answer {
+    let low_points = get_low_points(map);
+    low_points
         .iter()
         .map(|p| map.get_value(*p).unwrap())
         .map(|h| h + 1)
@@ -28,43 +35,47 @@ fn part2(m: &Parsed, draw: bool) -> Answer {
     let mut map = m.clone();
     let mut basins = vec![];
     let ([min_x, min_y], [max_x, max_y]) = map.extents();
-    let mut gd = aoc::BitmapGridDrawer::new(
+    let mut gd = aoc::BitmapSpriteGridDrawer::new(
+        (3, 3),
         |x| match x {
-            -1i64 => [0x79, 0xa2, 0xd8],
-            9 => [0xff, 0xff, 0x66],
-            x => [0, (x * 0x10 + 0x19) as u8, 0],
+            -1i64 => vec![[0x79, 0xa2, 0xd8]; 9],
+            9 => vec![[0xff, 0xff, 0x66]; 9],
+            x => vec![[0, (x * 0x10 + 0x19) as u8, 0]; 9],
         },
         "ppm/day09",
     );
-    for pos in map.points() {
+    let low_points = get_low_points(&map);
+    for pos in low_points {
         let value = map.get_value(pos).unwrap();
         if value == 9 && value == -1 {
             continue;
         }
         let mut num = 0;
-        let mut todo = vec![];
-        todo.push(pos);
-        while let Some(p) = todo.pop() {
+        let mut todo = BinaryHeap::new();
+        let mut last_gen = -1;
+        todo.push(Reverse((0, pos)));
+        while let Some(Reverse((gen, p))) = todo.pop() {
             if let Some(curr) = map.get_value(p) {
                 if curr != 9 && curr != -1 {
                     num += 1;
                     map.set_value(p, -1);
                     if p[0] > min_x {
-                        todo.push([p[0] - 1, p[1]]);
+                        todo.push(Reverse((gen + 1, [p[0] - 1, p[1]])));
                     }
                     if p[0] < max_x {
-                        todo.push([p[0] + 1, p[1]]);
+                        todo.push(Reverse((gen + 1, [p[0] + 1, p[1]])));
                     }
                     if p[1] > min_y {
-                        todo.push([p[0], p[1] - 1]);
+                        todo.push(Reverse((gen + 1, [p[0], p[1] - 1])));
                     }
                     if p[1] < max_y {
-                        todo.push([p[0], p[1] + 1]);
+                        todo.push(Reverse((gen + 1, [p[0], p[1] + 1])));
                     }
-		    if draw {
-			gd.draw(&map);
-			gd.save_image();
-		    }
+                    if draw && last_gen != gen {
+                        gd.draw(&map);
+                        gd.save_image();
+                    }
+                    last_gen = gen;
                 }
             }
         }
@@ -92,7 +103,7 @@ fn main() {
     let result = if part == 1 {
         part1(&parsed)
     } else if part == 2 {
-	part2(&parsed, false)
+        part2(&parsed, false)
     } else {
         part2(&parsed, true)
     };
@@ -104,15 +115,32 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_part2() {
+    fn test_part1() {
         assert_eq!(
-            part2(&parse(&vec![
+            part1(&parse(&vec![
                 "2199943210".into(),
                 "3987894921".into(),
                 "9856789892".into(),
                 "8767896789".into(),
                 "9899965678".into()
             ])),
+            15
+        );
+    }
+
+    #[test]
+    fn test_part2() {
+        assert_eq!(
+            part2(
+                &parse(&vec![
+                    "2199943210".into(),
+                    "3987894921".into(),
+                    "9856789892".into(),
+                    "8767896789".into(),
+                    "9899965678".into()
+                ]),
+                false
+            ),
             1134
         );
     }

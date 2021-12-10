@@ -5,11 +5,12 @@ type Parsed = Vec<ParsedItem>;
 type Answer = i64;
 
 fn score_line(line: &[char]) -> (bool, i64) {
-    let mut valid = HashMap::new();
-    valid.insert(')', ('(', 3));
-    valid.insert(']', ('[', 57));
-    valid.insert('}', ('{', 1197));
-    valid.insert('>', ('<', 25137));
+    let valid = HashMap::from([
+        (')', ('(', 3)),
+        (']', ('[', 57)),
+        ('}', ('{', 1197)),
+        ('>', ('<', 25137)),
+    ]);
     let mut stack = vec![];
     let mut err = None;
     for c in line {
@@ -32,11 +33,7 @@ fn score_line(line: &[char]) -> (bool, i64) {
     if let Some(v) = err {
         (false, *v)
     } else {
-	let mut cscore = HashMap::new();
-	cscore.insert('(', 1);
-	cscore.insert('[', 2);
-	cscore.insert('{', 3);
-	cscore.insert('<', 4);
+        let cscore = HashMap::from([('(', 1), ('[', 2), ('{', 3), ('<', 4)]);
         let mut s = 0;
         for c in stack.iter().rev() {
             s = s * 5;

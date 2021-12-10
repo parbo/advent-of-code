@@ -19,13 +19,13 @@ fn score_line(line: &[char]) -> (bool, i64) {
             x => {
                 let p = stack.pop().unwrap();
                 if let Some((v, s)) = valid.get(x) {
-		    if v != p {
-			err = Some(s);
-			break;
-		    }
+                    if v != p {
+                        err = Some(s);
+                        break;
+                    }
                 } else {
-		    panic!();
-		}
+                    panic!();
+                }
             }
         }
     }
@@ -53,7 +53,7 @@ fn part1(lines: &[ParsedItem]) -> Answer {
 }
 
 fn part2(lines: &[ParsedItem]) -> Answer {
-    let mut scores : Vec<_> = lines
+    let mut scores: Vec<_> = lines
         .iter()
         .map(|line| score_line(line))
         .filter(|(valid, _score)| *valid)

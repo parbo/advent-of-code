@@ -4,85 +4,64 @@ type ParsedItem = Vec<char>;
 type Parsed = Vec<ParsedItem>;
 type Answer = i64;
 
-fn part1(lines: &[ParsedItem]) -> Answer {
-    let mut score = HashMap::new();
-    score.insert(')', 3);
-    score.insert(']', 57);
-    score.insert('}', 1197);
-    score.insert('>', 25137);
+fn score_line(line: &[char]) -> (bool, i64) {
     let mut valid = HashMap::new();
-    valid.insert(')', '(');
-    valid.insert(']', '[');
-    valid.insert('}', '{');
-    valid.insert('>', '<');
-    let mut sum = 0;
-    for line in lines {
-        let mut stack = vec![];
-        let mut err = None;
-        for c in line {
-            match c {
-                '[' | '(' | '{' | '<' => stack.push(c),
-                x => {
-                    let p = stack.pop().unwrap();
-                    if valid.get(x).unwrap() != p {
-                        err = score.get(x);
-                        break;
-                    }
-                }
+    valid.insert(')', ('(', 3));
+    valid.insert(']', ('[', 57));
+    valid.insert('}', ('{', 1197));
+    valid.insert('>', ('<', 25137));
+    let mut stack = vec![];
+    let mut err = None;
+    for c in line {
+        match c {
+            '[' | '(' | '{' | '<' => stack.push(c),
+            x => {
+                let p = stack.pop().unwrap();
+                if let Some((v, s)) = valid.get(x) {
+		    if v != p {
+			err = Some(s);
+			break;
+		    }
+                } else {
+		    panic!();
+		}
             }
-        }
-
-        if let Some(v) = err {
-            sum += v;
         }
     }
-    sum
-}
 
-fn part2(lines: &[ParsedItem]) -> Answer {
-    let mut score = HashMap::new();
-    score.insert(')', 3);
-    score.insert(']', 57);
-    score.insert('}', 1197);
-    score.insert('>', 25137);
-    let mut cscore = HashMap::new();
-    cscore.insert('(', 1);
-    cscore.insert('[', 2);
-    cscore.insert('{', 3);
-    cscore.insert('<', 4);
-    let mut valid = HashMap::new();
-    valid.insert(')', '(');
-    valid.insert(']', '[');
-    valid.insert('}', '{');
-    valid.insert('>', '<');
-    let mut scores = vec![];
-    for line in lines {
-        let mut stack = vec![];
-        let mut err = None;
-        for c in line {
-            match c {
-                '[' | '(' | '{' | '<' => stack.push(c),
-                x => {
-                    let p = stack.pop().unwrap();
-                    if valid.get(x).unwrap() != p {
-                        err = score.get(x);
-                        break;
-                    }
-                }
-            }
-        }
-
-        if let Some(_v) = err {
-            continue;
-        }
-
+    if let Some(v) = err {
+        (false, *v)
+    } else {
+	let mut cscore = HashMap::new();
+	cscore.insert('(', 1);
+	cscore.insert('[', 2);
+	cscore.insert('{', 3);
+	cscore.insert('<', 4);
         let mut s = 0;
         for c in stack.iter().rev() {
             s = s * 5;
             s += cscore.get(c).unwrap();
         }
-        scores.push(s);
+        (true, s)
     }
+}
+
+fn part1(lines: &[ParsedItem]) -> Answer {
+    lines
+        .iter()
+        .map(|line| score_line(line))
+        .filter(|(valid, _score)| !valid)
+        .map(|(_, score)| score)
+        .sum()
+}
+
+fn part2(lines: &[ParsedItem]) -> Answer {
+    let mut scores : Vec<_> = lines
+        .iter()
+        .map(|line| score_line(line))
+        .filter(|(valid, _score)| *valid)
+        .map(|(_, score)| score)
+        .collect();
     scores.sort();
     scores[scores.len() / 2]
 }

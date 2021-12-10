@@ -18,13 +18,10 @@ fn score_line(line: &[char]) -> (bool, i64) {
             '[' | '(' | '{' | '<' => stack.push(c),
             x => {
                 let p = stack.pop().unwrap();
-                if let Some((v, s)) = valid.get(x) {
-                    if v != p {
-                        err = Some(s);
-                        break;
-                    }
-                } else {
-                    panic!();
+                let (v, s) = valid.get(x).unwrap();
+                if v != p {
+                    err = Some(s);
+                    break;
                 }
             }
         }
@@ -47,8 +44,7 @@ fn part1(lines: &[ParsedItem]) -> Answer {
     lines
         .iter()
         .map(|line| score_line(line))
-        .filter(|(valid, _score)| !valid)
-        .map(|(_, score)| score)
+        .filter_map(|(valid, score)| if valid { None } else { Some(score) })
         .sum()
 }
 
@@ -56,8 +52,7 @@ fn part2(lines: &[ParsedItem]) -> Answer {
     let mut scores: Vec<_> = lines
         .iter()
         .map(|line| score_line(line))
-        .filter(|(valid, _score)| *valid)
-        .map(|(_, score)| score)
+        .filter_map(|(valid, score)| if valid { Some(score) } else { None })
         .collect();
     scores.sort();
     scores[scores.len() / 2]

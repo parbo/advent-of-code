@@ -1,6 +1,6 @@
 use aoc::{Grid, GridDrawer};
 use std::{
-    collections::{BTreeSet, HashSet},
+    collections::HashSet,
     iter::*,
 };
 
@@ -8,33 +8,29 @@ type Parsed = Vec<Vec<i64>>;
 type Answer = i64;
 
 fn step(g: &mut Parsed) -> usize {
-    let mut flash = BTreeSet::new();
+    let mut flash = vec![];
     // Increase by 1
     for p in g.points() {
         let v = g.get_value(p).unwrap() + 1;
         g.set_value(p, v);
         if v == 10 {
-            flash.insert(p);
+            flash.push(p);
         }
     }
     // Do the flash
     let mut flashed = HashSet::new();
-    loop {
-        let mp = flash.iter().cloned().next();
-        if let Some(p) = mp {
-	    flash.remove(&p);
+    while !flash.is_empty() {
+	for p in flash.split_off(0) {
 	    flashed.insert(p);
             for d in aoc::DIRECTIONS_INCL_DIAGONALS {
                 let nb = aoc::point_add(p, d);
                 if let Some(v) = g.get_value(nb) {
 		    g.set_value(nb, v + 1);
 		    if v + 1 == 10 {
-                        flash.insert(nb);
+                        flash.push(nb);
 		    }
 		}
             }
-        } else {
-            break;
         }
     }
     let num = flashed.len();

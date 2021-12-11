@@ -7,95 +7,67 @@ use std::{
 type Parsed = Vec<Vec<i64>>;
 type Answer = i64;
 
-fn part1(grid: &Parsed) -> Answer {
-    let mut g = grid.clone();
-    let mut flashes = 0;
-//    let mut d = aoc::PrintGridDrawer::new(|c: i64| c.to_string().chars().next().unwrap());
-    for i in 0..100 {
-        let mut flash = BTreeSet::new();
-        // Increase by 1
-        for p in g.points() {
-            let v = g.get_value(p).unwrap() + 1;
-            g.set_value(p, v);
-            if v == 10 {
-                flash.insert(p);
-            }
+fn step(g: &mut Parsed) -> usize {
+    let mut flash = BTreeSet::new();
+    // Increase by 1
+    for p in g.points() {
+        let v = g.get_value(p).unwrap() + 1;
+        g.set_value(p, v);
+        if v == 10 {
+            flash.insert(p);
         }
-        // Do the flash
-	let mut flashed = HashSet::new();
-        loop {
-            let mp = flash.iter().cloned().next();
-            if let Some(p) = mp {
-		flash.remove(&p);
-		flashed.insert(p);
-                for d in aoc::DIRECTIONS_INCL_DIAGONALS {
-                    let nb = aoc::point_add(p, d);
-                    if let Some(v) = g.get_value(nb) {
-			g.set_value(nb, v + 1);
-			if v + 1 == 10 {
-                            flash.insert(nb);
-			}
-		    }
-                }
-            } else {
-                break;
-            }
-        }
-        flashes += flashed.len();
-        // reset to 0
-        for p in flashed {
-            g.set_value(p, 0);
-        }
-	// if i <= 10 || i % 10 == 0 {
-	//     d.draw(&g);
-	// }
     }
-    flashes as Answer
+    // Do the flash
+    let mut flashed = HashSet::new();
+    loop {
+        let mp = flash.iter().cloned().next();
+        if let Some(p) = mp {
+	    flash.remove(&p);
+	    flashed.insert(p);
+            for d in aoc::DIRECTIONS_INCL_DIAGONALS {
+                let nb = aoc::point_add(p, d);
+                if let Some(v) = g.get_value(nb) {
+		    g.set_value(nb, v + 1);
+		    if v + 1 == 10 {
+                        flash.insert(nb);
+		    }
+		}
+            }
+        } else {
+            break;
+        }
+    }
+    let num = flashed.len();
+    // reset to 0
+    for p in flashed {
+        g.set_value(p, 0);
+    }
+    num
 }
 
-fn part2(grid: &Parsed) -> Answer {
+fn part1(grid: &Parsed) -> Answer {
+    let mut g = grid.clone();
+    (0..100).map(|_| step(&mut g)).sum::<usize>() as Answer
+}
+
+fn part2(grid: &Parsed, draw: bool) -> Answer {
     let mut g = grid.clone();
     let total = g.len() * g[0].len();
-//    let mut d = aoc::PrintGridDrawer::new(|c: i64| c.to_string().chars().next().unwrap());
+    let mut gd = aoc::BitmapSpriteGridDrawer::new(
+        (8, 8),
+        |x| match x {
+            0 => vec![[0xff, 0xff, 0xff]; 64],
+            x => vec![[0, (x * 0x10 + 0x19) as u8, 0]; 64],
+        },
+        "ppm/day11",
+    );
     let mut i = 0;
     loop {
-        let mut flash = BTreeSet::new();
-        // Increase by 1
-        for p in g.points() {
-            let v = g.get_value(p).unwrap() + 1;
-            g.set_value(p, v);
-            if v == 10 {
-                flash.insert(p);
-            }
-        }
-        // Do the flash
-	let mut flashed = HashSet::new();
-        loop {
-            let mp = flash.iter().cloned().next();
-            if let Some(p) = mp {
-		flash.remove(&p);
-		flashed.insert(p);
-                for d in aoc::DIRECTIONS_INCL_DIAGONALS {
-                    let nb = aoc::point_add(p, d);
-                    if let Some(v) = g.get_value(nb) {
-			g.set_value(nb, v + 1);
-			if v + 1 == 10 {
-                            flash.insert(nb);
-			}
-		    }
-                }
-            } else {
-                break;
-            }
-        }
-	let num = flashed.len();
-        // reset to 0
-        for p in flashed {
-            g.set_value(p, 0);
-        }
-	// if i <= 10 || i % 10 == 0 {
-	//     d.draw(&g);
-	// }
+	let num = step(&mut g);
+	if draw {
+	    gd.draw(&g);
+	    gd.save_image();
+	}
 	i += 1;
 	if num == total {
 	    break;
@@ -113,8 +85,10 @@ fn main() {
     let parsed = parse(&lines);
     let result = if part == 1 {
         part1(&parsed)
+    } else if part == 2 {
+        part2(&parsed, false)
     } else {
-        part2(&parsed)
+        part2(&parsed, true)
     };
     println!("{}", result);
 }
@@ -145,6 +119,6 @@ mod tests {
 
     #[test]
     fn test_part2() {
-        assert_eq!(part2(&parse(&example())), 195);
+        assert_eq!(part2(&parse(&example()), false), 195);
     }
 }

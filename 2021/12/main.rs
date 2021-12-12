@@ -53,14 +53,12 @@ fn make_graph(edges: &[Edge]) -> aoc::UnGraphMap<&Node, i64> {
 
 // Lifted from petgraph's all_simple_paths code
 // and modified to add the conditions..
-fn all_paths<'a, TargetColl>(
-    graph: &'a aoc::UnGraphMap<&'a Node, i64>,
-    from: &'a Node,
-    to: &'a Node,
+fn num_paths(
+    graph: &aoc::UnGraphMap<&Node, i64>,
+    from: &Node,
+    to: &Node,
     allow_two: bool,
-) -> impl Iterator<Item = TargetColl> + 'a
-where
-    TargetColl: FromIterator<(&'a Node, bool)> + Clone + std::cmp::Ord + std::fmt::Debug + 'a,
+) -> usize
 {
     // list of visited small nodes
     // Tuple of node and "num double-visits"
@@ -69,16 +67,11 @@ where
     // last elem is list of childs of last visited node
     let mut stack = vec![graph.neighbors_directed(from, aoc::Outgoing)];
 
-    from_fn(move || {
+    let iter = from_fn(move || {
         while let Some(children) = stack.last_mut() {
             if let Some(child) = children.next() {
                 if child == to {
-                    let path = visited
-                        .iter()
-                        .cloned()
-                        .chain(Some((to, false)))
-                        .collect::<TargetColl>();
-                    return Some(path);
+		    return Some(true);
                 } else {
                     let (add, visited_before) = match child {
                         Node::Large(_) => (true, false),
@@ -102,19 +95,18 @@ where
             }
         }
         None
-    })
+    });
+    iter.count()
 }
 
 fn part1(edges: &[ParsedItem]) -> Answer {
     let g = make_graph(edges);
-    let paths: Vec<Vec<(&Node, bool)>> = all_paths(&g, &Node::Start, &Node::End, false).collect();
-    paths.len() as Answer
+    num_paths(&g, &Node::Start, &Node::End, false) as Answer
 }
 
 fn part2(edges: &[ParsedItem]) -> Answer {
     let g = make_graph(edges);
-    let paths: Vec<Vec<(&Node, bool)>> = all_paths(&g, &Node::Start, &Node::End, true).collect();
-    paths.len() as Answer
+    num_paths(&g, &Node::Start, &Node::End, true) as Answer
 }
 
 fn parse(lines: &[String]) -> Parsed {

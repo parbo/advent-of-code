@@ -58,8 +58,7 @@ fn num_paths(
     from: &Node,
     to: &Node,
     allow_two: bool,
-) -> usize
-{
+) -> usize {
     // list of visited small nodes
     // Tuple of node and "num double-visits"
     let mut visited = vec![(from, false)];
@@ -71,7 +70,7 @@ fn num_paths(
         while let Some(children) = stack.last_mut() {
             if let Some(child) = children.next() {
                 if child == to {
-		    return Some(true);
+                    return Some(true);
                 } else {
                     let (add, visited_before) = match child {
                         Node::Large(_) => (true, false),

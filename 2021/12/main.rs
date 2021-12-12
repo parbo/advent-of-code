@@ -1,4 +1,3 @@
-use std::collections::BTreeSet;
 use std::iter::*;
 use std::str::FromStr;
 use std::time::Instant;
@@ -61,13 +60,11 @@ fn all_paths<'a, TargetColl>(
     allow_two: bool,
 ) -> impl Iterator<Item = TargetColl> + 'a
 where
-    TargetColl: FromIterator<(&'a Node, usize)> + Clone + std::cmp::Ord + std::fmt::Debug + 'a,
+    TargetColl: FromIterator<(&'a Node, bool)> + Clone + std::cmp::Ord + std::fmt::Debug + 'a,
 {
-    // set of paths
-    let mut paths = BTreeSet::new();
     // list of visited small nodes
     // Tuple of node and "num double-visits"
-    let mut visited = vec![(from, 0)];
+    let mut visited = vec![(from, false)];
     // list of childs of currently exploring path nodes,
     // last elem is list of childs of last visited node
     let mut stack = vec![graph.neighbors_directed(from, aoc::Outgoing)];
@@ -79,52 +76,28 @@ where
                     let path = visited
                         .iter()
                         .cloned()
-                        .chain(Some((to, 0)))
+                        .chain(Some((to, false)))
                         .collect::<TargetColl>();
-                    if !paths.contains(&path) {
-                        paths.insert(path.clone());
-                        return Some(path);
-                    }
+                    return Some(path);
                 } else {
-                    match child {
-                        Node::Large(_) => {
-                            let path = visited
-                                .iter()
-                                .cloned()
-                                .chain(Some((child, 0)))
-                                .collect::<TargetColl>();
-                            if !paths.contains(&path) {
-                                visited.push((child, 0));
-                                stack.push(graph.neighbors_directed(child, aoc::Outgoing));
-                            }
-                        }
-                        node => {
-                            // How many visits to this child=
-                            let num = visited.iter().filter(|(c, _i)| c == &child).count();
-                            let ok = if allow_two && *node != Node::Start && *node != Node::End {
-                                // Allow num > 0 if there was no previous double-visits
-                                num == 0 || visited.iter().map(|(_, c)| c).sum::<usize>() == 0
-                            } else {
-                                num == 0
-                            };
-                            if ok {
-                                let path = visited
-                                    .iter()
-                                    .cloned()
-                                    .chain(Some((child, num)))
-                                    .collect::<TargetColl>();
-                                if !paths.contains(&path) {
-                                    visited.push((child, num));
-                                    stack.push(graph.neighbors_directed(child, aoc::Outgoing));
-                                }
-                            }
+                    let (add, visited_before) = match child {
+                        Node::Large(_) => (true, false),
+                        Node::Start | Node::End => (!visited.contains(&(child, false)), false),
+                        Node::Small(_) => {
+                            let visited_before = visited.iter().any(|(c, _)| c == &child);
+                            // Allow visited_before if there was no previous double-visits
+                            let add =
+                                !visited_before || (allow_two && !visited.iter().any(|(_, c)| *c));
+                            (add, visited_before)
                         }
                     };
+                    if add {
+                        visited.push((child, visited_before));
+                        stack.push(graph.neighbors_directed(child, aoc::Outgoing));
+                    }
                 }
             } else {
                 stack.pop();
-                let path = visited.iter().cloned().collect::<TargetColl>();
-                paths.insert(path);
                 visited.pop();
             }
         }
@@ -134,13 +107,13 @@ where
 
 fn part1(edges: &[ParsedItem]) -> Answer {
     let g = make_graph(edges);
-    let paths: Vec<Vec<(&Node, usize)>> = all_paths(&g, &Node::Start, &Node::End, false).collect();
+    let paths: Vec<Vec<(&Node, bool)>> = all_paths(&g, &Node::Start, &Node::End, false).collect();
     paths.len() as Answer
 }
 
 fn part2(edges: &[ParsedItem]) -> Answer {
     let g = make_graph(edges);
-    let paths: Vec<Vec<(&Node, usize)>> = all_paths(&g, &Node::Start, &Node::End, true).collect();
+    let paths: Vec<Vec<(&Node, bool)>> = all_paths(&g, &Node::Start, &Node::End, true).collect();
     paths.len() as Answer
 }
 

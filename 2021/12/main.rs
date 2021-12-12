@@ -1,6 +1,7 @@
 use std::collections::BTreeSet;
 use std::iter::*;
 use std::str::FromStr;
+use std::time::Instant;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, PartialOrd, Ord)]
 enum Node {
@@ -152,13 +153,23 @@ fn parse(lines: &[String]) -> Parsed {
 }
 
 fn main() {
+    let start_time = Instant::now();
     let (part, lines) = aoc::read_lines();
+    let io_time = Instant::now();
     let parsed = parse(&lines);
+    let parse_time = Instant::now();
     let result = if part == 1 {
         part1(&parsed)
     } else {
         part2(&parsed)
     };
+    let done_time = Instant::now();
+    println!(
+        "read: {:?}, parse: {:?}, solve: {:?}\n",
+        io_time.duration_since(start_time),
+        parse_time.duration_since(io_time),
+        done_time.duration_since(parse_time)
+    );
     println!("{}", result);
 }
 

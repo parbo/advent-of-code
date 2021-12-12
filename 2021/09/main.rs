@@ -10,8 +10,8 @@ fn get_low_points(map: &Parsed) -> Vec<aoc::Point> {
     let mut low_points = vec![];
     'outer: for p in map.points() {
         let ph = map.get_value(p).unwrap();
-        for d in aoc::DIRECTIONS {
-            if let Some(h) = map.get_value(aoc::point_add(p, d)) {
+        for nb in aoc::neighbors(p) {
+            if let Some(h) = map.get_value(nb) {
                 if ph >= h {
                     continue 'outer;
                 }

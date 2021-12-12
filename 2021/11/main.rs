@@ -22,8 +22,7 @@ fn step(g: &mut Parsed) -> usize {
     while !flash.is_empty() {
 	for p in flash.split_off(0) {
 	    flashed.insert(p);
-            for d in aoc::DIRECTIONS_INCL_DIAGONALS {
-                let nb = aoc::point_add(p, d);
+            for nb in aoc::neighbors_incl_diagonals(p) {
                 if let Some(v) = g.get_value(nb) {
 		    g.set_value(nb, v + 1);
 		    if v + 1 == 10 {

@@ -26,11 +26,13 @@ pub use petgraph::graph::Graph;
 pub use petgraph::graph::UnGraph;
 pub use petgraph::graphmap::GraphMap;
 pub use petgraph::graphmap::UnGraphMap;
+pub use petgraph::Direction::Outgoing;
 pub use petgraph::visit;
 pub use petgraph::*;
 pub use regex::Regex;
 pub use serde_scan::from_str;
 pub use serde_scan::scan;
+pub use indexmap::{IndexSet, IndexMap};
 
 pub type Point = self::vecmath::Vector2<i64>;
 pub type FPoint = self::vecmath::Vector2<f64>;
@@ -82,6 +84,14 @@ pub fn cmul2(v1: Point, v2: Point) -> Point {
     let [x1, y1] = v1;
     let [x2, y2] = v2;
     [x1 * x2, y1 * y2]
+}
+
+pub fn inside_extent(p: Point, extent: (Point, Point)) -> bool {
+    let min_x = extent.0[0];
+    let min_y = extent.0[1];
+    let max_x = extent.1[0];
+    let max_y = extent.1[1];
+    p[0] >= min_x && p[0] <= max_x && p[1] >= min_y && p[1] <= max_y
 }
 
 pub const NORTH: Point = [0, -1];
@@ -331,7 +341,7 @@ pub fn parse_char(s: &str, ix: usize) -> Result<char, ParseError> {
 }
 
 pub fn parse_point(s: &str) -> Result<Point, ParseError> {
-    let parts : Vec<&str> = s.split(|x| x == ',').map(|w| w.trim()).collect();
+    let parts: Vec<&str> = s.split(|x| x == ',').map(|w| w.trim()).collect();
     if parts.len() == 2 {
         Ok([parts[0].parse()?, parts[1].parse()?])
     } else {

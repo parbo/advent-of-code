@@ -32,7 +32,6 @@ pub use petgraph::*;
 pub use regex::Regex;
 pub use serde_scan::from_str;
 pub use serde_scan::scan;
-pub use indexmap::{IndexSet, IndexMap};
 
 pub type Point = self::vecmath::Vector2<i64>;
 pub type FPoint = self::vecmath::Vector2<f64>;

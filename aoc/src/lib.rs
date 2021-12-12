@@ -125,6 +125,27 @@ pub const DIRECTIONS_INCL_DIAGONALS: [Point; 8] = [
 ];
 pub const HEX_DIRECTIONS: [Vec3; 6] = [HEX_E, HEX_W, HEX_SW, HEX_SE, HEX_NW, HEX_NE];
 
+pub fn neighbors(p: Point) -> impl Iterator<Item = Point> {
+    let mut diter = DIRECTIONS.iter();
+    from_fn(move || {
+	diter.next().map(|d| point_add(p, *d))
+    })
+}
+
+pub fn neighbors_incl_diagonals(p: Point) -> impl Iterator<Item = Point> {
+    let mut diter = DIRECTIONS_INCL_DIAGONALS.iter();
+    from_fn(move || {
+	diter.next().map(|d| point_add(p, *d))
+    })
+}
+
+pub fn hex_neighbors(p: Vec3) -> impl Iterator<Item = Vec3> {
+    let mut diter = HEX_DIRECTIONS.iter();
+    from_fn(move || {
+	diter.next().map(|d| vec_add(p, *d))
+    })
+}
+
 lazy_static! {
     pub static ref DIRECTION_MAP: HashMap<&'static str, Point> = {
         let mut map = HashMap::new();

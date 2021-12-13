@@ -17,14 +17,14 @@ fn fold_grid(
 ) -> (HashMap<Point, char>, (Point, Point)) {
     let mut g = HashMap::new();
     let (min, mut max) = ext;
-    for p in grid.points() {
-        let mut np = p;
+    for p in grid.keys() {
+        let mut np = *p;
         np[fold.0] = if np[fold.0] < fold.1 {
             np[fold.0]
         } else {
             max[fold.0] - np[fold.0]
         };
-        if let Some(v) = grid.get_value(p) {
+        if let Some(v) = grid.get_value(*p) {
             g.set_value(np, v);
         }
     }

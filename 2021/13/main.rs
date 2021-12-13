@@ -12,40 +12,29 @@ type Answer = i64;
 
 fn fold_grid(
     grid: &HashMap<Point, char>,
-    ext: (Point, Point),
     fold: (usize, i64),
-) -> (HashMap<Point, char>, (Point, Point)) {
+) -> HashMap<Point, char> {
     let mut g = HashMap::new();
-    let (min, mut max) = ext;
     for p in grid.keys() {
         let mut np = *p;
-        np[fold.0] = if np[fold.0] < fold.1 {
-            np[fold.0]
-        } else {
-            max[fold.0] - np[fold.0]
-        };
+        np[fold.0] = fold.1 - (fold.1 - p[fold.0]).abs();
         if let Some(v) = grid.get_value(*p) {
             g.set_value(np, v);
         }
     }
-    max[fold.0] = fold.1 - 1;
-    (g, (min, max))
+    g
 }
 
 fn part1(manual: &Parsed) -> Answer {
-    let e = manual.grid.extents();
-    let (g, _ext) = fold_grid(&manual.grid, e, manual.folds[0]);
+    let g = fold_grid(&manual.grid, manual.folds[0]);
     g.len() as Answer
 }
 
 fn part2(manual: &Parsed) -> Answer {
     let mut d = aoc::PrintGridDrawer::new(|c| c);
-    let mut e = manual.grid.extents();
     let mut g = manual.grid.clone();
     for fold in &manual.folds {
-        let (gg, ee) = fold_grid(&g, e, *fold);
-        g = gg;
-        e = ee;
+        g = fold_grid(&g, *fold);
     }
     d.draw(&g);
     0
@@ -129,14 +118,13 @@ mod tests {
     fn test_part2() {
         let manual = parse(&example());
         let mut d = aoc::PrintGridDrawer::new(|c| c);
-        let mut e = manual.grid.extents();
         let mut g = manual.grid.clone();
+        d.draw(&g);
+        println!();
         for fold in &manual.folds {
-            let (gg, ee) = fold_grid(&g, e, *fold);
-            g = gg;
-            e = ee;
+            g = fold_grid(&g, *fold);
             d.draw(&g);
-            println!("ext: {:?}", e);
+            println!();
         }
         assert_eq!(g.len(), 16);
     }

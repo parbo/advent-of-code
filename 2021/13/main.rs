@@ -31,7 +31,7 @@ fn part1(manual: &Parsed) -> Answer {
 }
 
 fn part2(manual: &Parsed) -> Answer {
-    let mut d = aoc::PrintGridDrawer::new(|c| c);
+    let mut d = aoc::PrintGridDrawer::new(|c| if c == '#' { '\u{2588}' } else { ' ' });
     let mut g = manual.grid.clone();
     for fold in &manual.folds {
         g = fold_grid(&g, *fold);

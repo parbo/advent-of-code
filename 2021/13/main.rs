@@ -55,8 +55,7 @@ fn parse(lines: &[String]) -> Parsed {
     let sections = aoc::split_by_empty_line(lines);
     let grid: HashMap<Point, char> = sections[0]
         .iter()
-        .map(|x| aoc::split_ch(x, ','))
-        .map(|x| ([x[0].parse().unwrap(), x[1].parse().unwrap()], '#'))
+        .map(|x| (aoc::parse_point(x).unwrap(), '#'))
         .collect();
     let folds = sections[1]
         .iter()

@@ -21,10 +21,8 @@ fn solve(polymer: &Parsed, gen: usize) -> Answer {
 	for (p, num) in pairs {
             if let Some(c) = polymer.rules.get(&p) {
 		*new_p.entry(p).or_insert(0) -= num;
-		let p1 = (p.0, *c);
-		let p2 = (*c, p.1);
-		*new_p.entry(p1).or_insert(0) += num;
-		*new_p.entry(p2).or_insert(0) += num;
+		*new_p.entry((p.0, *c)).or_insert(0) += num;
+		*new_p.entry((*c, p.1)).or_insert(0) += num;
 	    }
         }
 	pairs = new_p;

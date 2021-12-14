@@ -13,10 +13,8 @@ type Answer = i64;
 
 fn solve(polymer: &Parsed, gen: usize) -> Answer {
     let mut pairs = HashMap::new();
-    let end = polymer.template.len() - 1;
-    for i in 0..end {
-	let p = (polymer.template[i], polymer.template[i + 1]);
-        *pairs.entry(p).or_insert(0) += 1;
+    for w in polymer.template.windows(2) {
+        *pairs.entry((w[0], w[1])).or_insert(0) += 1;
     }
     for _ in 0..gen {
 	let mut new_p = pairs.clone();

@@ -1,4 +1,4 @@
-use std::collections::{HashMap, LinkedList};
+use std::collections::HashMap;
 use std::iter::*;
 use std::time::Instant;
 
@@ -11,58 +11,43 @@ struct Polymer {
 type Parsed = Polymer;
 type Answer = i64;
 
-fn part1(polymer: &Parsed) -> Answer {
-    let mut t: LinkedList<char> = polymer.template.iter().copied().collect();
-    for _ in 0..10 {
-        let mut i = 0;
-        while i + 1 < t.len() {
-            let mut citer = t.iter().skip(i);
-            let p = (*citer.next().unwrap(), *citer.next().unwrap());
-            if let Some(c) = polymer.rules.get(&p) {
-                let mut rest = t.split_off(i + 1);
-                t.push_back(*c);
-                t.append(&mut rest);
-                i += 2;
-            } else {
-		i += 1;
-	    }
-        }
-    }
-    let mut counts = HashMap::new();
-    for c in t {
-        *counts.entry(c).or_insert(0) += 1;
-    }
-    let max = counts.iter().map(|(_, num)| num).max().unwrap();
-    let min = counts.iter().map(|(_, num)| num).min().unwrap();
-    max - min
-}
-
-fn part2(polymer: &Parsed) -> Answer {
+fn solve(polymer: &Parsed, gen: usize) -> Answer {
     let mut pairs = HashMap::new();
     let end = polymer.template.len() - 1;
     for i in 0..end {
 	let p = (polymer.template[i], polymer.template[i + 1]);
         *pairs.entry(p).or_insert(0) += 1;
     }
-    println!("{:?}", pairs);
-    for _ in 0..40 {
+    for _ in 0..gen {
 	let mut new_p = pairs.clone();
 	for (p, num) in pairs {
             if let Some(c) = polymer.rules.get(&p) {
+		*new_p.entry(p).or_insert(0) -= num;
 		let p1 = (p.0, *c);
 		let p2 = (*c, p.1);
 		*new_p.entry(p1).or_insert(0) += num;
 		*new_p.entry(p2).or_insert(0) += num;
 	    }
         }
-	// TODO: recognize pattern
 	pairs = new_p;
-	println!("{:?}", pairs);
     }
-    // let max = counts.iter().map(|(_, num)| num).max().unwrap();
-    // let min = counts.iter().map(|(_, num)| num).min().unwrap();
-    // max - min
-    0
+    let mut counts = HashMap::new();
+    for (p, num) in pairs {
+	*counts.entry(p.0).or_insert(0) += num;
+    }
+    // Also count the last letter
+    *counts.entry(*polymer.template.last().unwrap()).or_insert(0) += 1;
+    let max = counts.iter().map(|(_, num)| num).max().unwrap();
+    let min = counts.iter().map(|(_, num)| num).min().unwrap();
+    max - min
+}
+
+fn part1(polymer: &Parsed) -> Answer {
+    solve(polymer, 10)
+}
+
+fn part2(polymer: &Parsed) -> Answer {
+    solve(polymer, 40)
 }
 
 fn parse(lines: &[String]) -> Parsed {

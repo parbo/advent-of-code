@@ -1,5 +1,6 @@
 use image::{GenericImageView, Rgb, RgbImage};
-use std::collections::HashMap;
+use std::cmp::Reverse;
+use std::collections::{BinaryHeap, HashMap};
 use std::env;
 use std::error;
 use std::fmt;
@@ -22,14 +23,14 @@ pub use mod_exp::mod_exp;
 pub use num::integer::*;
 pub use pancurses::*;
 pub use petgraph::algo;
+pub use petgraph::graph::DiGraph;
 pub use petgraph::graph::Graph;
 pub use petgraph::graph::UnGraph;
-pub use petgraph::graph::DiGraph;
+pub use petgraph::graphmap::DiGraphMap;
 pub use petgraph::graphmap::GraphMap;
 pub use petgraph::graphmap::UnGraphMap;
-pub use petgraph::graphmap::DiGraphMap;
-pub use petgraph::Direction::Outgoing;
 pub use petgraph::visit;
+pub use petgraph::Direction::Outgoing;
 pub use petgraph::*;
 pub use regex::Regex;
 pub use serde_scan::from_str;
@@ -128,23 +129,17 @@ pub const HEX_DIRECTIONS: [Vec3; 6] = [HEX_E, HEX_W, HEX_SW, HEX_SE, HEX_NW, HEX
 
 pub fn neighbors(p: Point) -> impl Iterator<Item = Point> {
     let mut diter = DIRECTIONS.iter();
-    from_fn(move || {
-	diter.next().map(|d| point_add(p, *d))
-    })
+    from_fn(move || diter.next().map(|d| point_add(p, *d)))
 }
 
 pub fn neighbors_incl_diagonals(p: Point) -> impl Iterator<Item = Point> {
     let mut diter = DIRECTIONS_INCL_DIAGONALS.iter();
-    from_fn(move || {
-	diter.next().map(|d| point_add(p, *d))
-    })
+    from_fn(move || diter.next().map(|d| point_add(p, *d)))
 }
 
 pub fn hex_neighbors(p: Vec3) -> impl Iterator<Item = Vec3> {
     let mut diter = HEX_DIRECTIONS.iter();
-    from_fn(move || {
-	diter.next().map(|d| vec_add(p, *d))
-    })
+    from_fn(move || diter.next().map(|d| vec_add(p, *d)))
 }
 
 lazy_static! {
@@ -326,10 +321,10 @@ where
                                 if is_node(&np, &nc) {
                                     if let Some(e) = get_edge_cost(&p, &c, &np, &nc) {
                                         let gnp = graph.add_node(np);
-					// Make sure it's an undirected graph
-					if let Some(ew) = graph.edge_weight(gp, gnp) {
-					    assert_eq!(e, *ew);
-					}
+                                        // Make sure it's an undirected graph
+                                        if let Some(ew) = graph.edge_weight(gp, gnp) {
+                                            assert_eq!(e, *ew);
+                                        }
                                         graph.add_edge(gp, gnp, e);
                                     }
                                 }
@@ -390,7 +385,7 @@ where
     graph
 }
 
-pub fn astar<T: petgraph::EdgeType>(
+pub fn astar_graph<T: petgraph::EdgeType>(
     graph: &GraphMap<Point, i64, T>,
     start: Point,
     goal: Point,
@@ -402,6 +397,62 @@ pub fn astar<T: petgraph::EdgeType>(
         |(_n1, _n2, e)| *e,                                  // true cost
         |n| (goal[0] - n[0]).abs() + (goal[1] - n[1]).abs(), // estimated cost: manhattan distance}
     )
+}
+
+fn manhattan(n: Point, goal: Point) -> i64 {
+    (goal[0] - n[0]).abs() + (goal[1] - n[1]).abs()
+}
+
+pub fn astar_grid<T>(
+    grid: &dyn Grid<T>,
+    is_node: fn(&Point, &T) -> bool,
+    get_edge_cost: fn(&Point, &T, &Point, &T) -> Option<i64>,
+    start: Point,
+    goal: Point,
+) -> Option<(i64, Vec<Point>)>
+where
+    T: PartialEq + Copy,
+{
+    let mut frontier = BinaryHeap::new();
+    let mut came_from = HashMap::new();
+    let mut gscore = HashMap::new();
+    let mut fscore = HashMap::new();
+    gscore.insert(start, 0);
+    frontier.push(Reverse((manhattan(start, goal), start)));
+    while let Some(Reverse((est, current))) = frontier.pop() {
+        if current == goal {
+            let mut path = vec![goal];
+            let mut curr = goal;
+            while curr != start {
+                curr = came_from[&curr];
+                path.push(curr)
+            }
+            return Some((gscore.get_value(goal).unwrap(), path));
+        }
+        let g = *gscore.entry(current).or_insert(i64::MAX);
+        let f = fscore.entry(current).or_insert(i64::MAX);
+        if *f <= est {
+            continue;
+        }
+        let curr_val = grid.get_value(current).unwrap();
+        for nb in neighbors(current) {
+            if let Some(value) = grid.get_value(nb) {
+                if is_node(&nb, &value) {
+                    if let Some(edge_cost) = get_edge_cost(&current, &curr_val, &nb, &value) {
+                        let new_g = g + edge_cost;
+                        let nb_g = gscore.entry(nb).or_insert(i64::MAX);
+                        if new_g < *nb_g {
+                            came_from.insert(nb, current);
+                            *nb_g = new_g;
+                            let new_f = new_g + manhattan(current, nb);
+                            frontier.push(Reverse((new_f, nb)));
+                        }
+                    }
+                }
+            }
+        }
+    }
+    None
 }
 
 pub fn get_char(s: &str, ix: usize) -> Option<char> {

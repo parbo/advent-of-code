@@ -17,15 +17,16 @@ fn solve(grid: &Parsed) -> i64 {
     let mut frontier = BinaryHeap::new();
     let mut came_from = HashMap::new();
     let mut gscore = HashMap::new();
+    let mut fscore = HashMap::new();
     gscore.insert(start, 0);
     frontier.push(Reverse((manhattan(start, goal), start)));
-    while let Some(Reverse((_fscore, current))) = frontier.pop() {
+    while let Some(Reverse((est, current))) = frontier.pop() {
         if current == goal {
             let mut path = vec![];
             let mut curr = goal;
             path.push(curr);
             while curr != start {
-                curr = *came_from.get(&curr).unwrap();
+                curr = came_from[&curr];
                 path.push(curr)
             }
             return path
@@ -35,15 +36,20 @@ fn solve(grid: &Parsed) -> i64 {
                 .map(|p| grid.get_value(p).unwrap())
                 .sum();
         }
+        let g = *gscore.entry(current).or_insert(i64::MAX);
+        let f = fscore.entry(current).or_insert(i64::MAX);
+        if *f <= est {
+            continue;
+        }
         for nb in aoc::neighbors(current) {
-            if let Some(v) = grid.get_value(nb) {
-                let new_g = *gscore.entry(current).or_insert(i64::MAX) + v;
-                let nb_g = *gscore.entry(nb).or_insert(i64::MAX);
-                if new_g < nb_g {
+            if let Some(edge_cost) = grid.get_value(nb) {
+                let new_g = g + edge_cost;
+                let nb_g = gscore.entry(nb).or_insert(i64::MAX);
+                if new_g < *nb_g {
                     came_from.insert(nb, current);
-                    gscore.insert(nb, new_g);
-                    let fscore = new_g + manhattan(current, nb);
-                    frontier.push(Reverse((fscore, nb)));
+                    *nb_g = new_g;
+                    let new_f = new_g + manhattan(current, nb);
+                    frontier.push(Reverse((new_f, nb)));
                 }
             }
         }

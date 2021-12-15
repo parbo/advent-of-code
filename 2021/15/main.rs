@@ -1,7 +1,4 @@
 use aoc::Grid;
-use std::cmp::Reverse;
-use std::collections::{BinaryHeap, HashMap};
-use std::iter::*;
 use std::time::Instant;
 
 type ParsedItem = Vec<i64>;
@@ -14,44 +11,14 @@ fn manhattan(n: aoc::Point, goal: aoc::Point) -> i64 {
 
 fn solve(grid: &Parsed) -> i64 {
     let (start, goal) = grid.extents();
-    let mut frontier = BinaryHeap::new();
-    let mut came_from = HashMap::new();
-    let mut gscore = HashMap::new();
-    let mut fscore = HashMap::new();
-    gscore.insert(start, 0);
-    frontier.push(Reverse((manhattan(start, goal), start)));
-    while let Some(Reverse((est, current))) = frontier.pop() {
-        if current == goal {
-            let mut path = vec![goal];
-            let mut curr = goal;
-            while curr != start {
-                curr = came_from[&curr];
-                path.push(curr)
-            }
-            return path
-                .into_iter()
-                .rev()
-                .skip(1)
-                .map(|p| grid.get_value(p).unwrap())
-                .sum();
-        }
-        let g = *gscore.entry(current).or_insert(i64::MAX);
-        let f = fscore.entry(current).or_insert(i64::MAX);
-        if *f <= est {
-            continue;
-        }
-        for nb in aoc::neighbors(current) {
-            if let Some(edge_cost) = grid.get_value(nb) {
-                let new_g = g + edge_cost;
-                let nb_g = gscore.entry(nb).or_insert(i64::MAX);
-                if new_g < *nb_g {
-                    came_from.insert(nb, current);
-                    *nb_g = new_g;
-                    let new_f = new_g + manhattan(current, nb);
-                    frontier.push(Reverse((new_f, nb)));
-                }
-            }
-        }
+    if let Some((cost, _path)) = aoc::astar_grid(
+        grid,
+        |_p, _c| true,
+        |_p1, _c1, _p2, c2| Some(*c2),
+        start,
+        goal,
+    ) {
+        return cost;
     }
     -1
 }

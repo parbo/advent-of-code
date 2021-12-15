@@ -63,6 +63,22 @@ fn astar_grid_char() {
     gd.draw(&grid);
 }
 
+fn dijkstra_grid_char() {
+    let mut grid = aoc::parse_grid(&make_grid());
+    let a: aoc::Point = [1, 1];
+    let f: aoc::Point = [1, 7];
+    if let Some((cost, path)) =
+        aoc::dijkstra_grid(&grid, |_p, c| *c == '.', |_p1, _c1, _p2, _c2| Some(1), a, f)
+    {
+        println!("cost: {}", cost);
+        for point in &path {
+            grid.set_value(*point, '*');
+        }
+    }
+    let mut gd = aoc::PrintGridDrawer::new(|x| x);
+    gd.draw(&grid);
+}
+
 fn astar_graph_char_sparse() {
     let mut grid =
         aoc::parse_grid_to_sparse(&make_grid(), |c| if c == '.' { Some(c) } else { None });
@@ -87,6 +103,23 @@ fn astar_grid_char_sparse() {
     let f: aoc::Point = [1, 7];
     if let Some((cost, path)) =
         aoc::astar_grid(&grid, |_p, c| *c == '.', |_p1, _c1, _p2, _c2| Some(1), a, f)
+    {
+        println!("cost: {}", cost);
+        for point in &path {
+            grid.set_value(*point, '*');
+        }
+    }
+    let mut gd = aoc::PrintGridDrawer::new(|x| x);
+    gd.draw(&grid);
+}
+
+fn dijkstra_grid_char_sparse() {
+    let mut grid =
+        aoc::parse_grid_to_sparse(&make_grid(), |c| if c == '.' { Some(c) } else { None });
+    let a: aoc::Point = [1, 1];
+    let f: aoc::Point = [1, 7];
+    if let Some((cost, path)) =
+        aoc::dijkstra_grid(&grid, |_p, c| *c == '.', |_p1, _c1, _p2, _c2| Some(1), a, f)
     {
         println!("cost: {}", cost);
         for point in &path {
@@ -137,16 +170,43 @@ fn astar_grid_weighted_directed() {
     gd.draw(&grid);
 }
 
+fn dijkstra_grid_weighted_directed() {
+    let mut grid = aoc::parse_grid(&make_weighted());
+    let a: aoc::Point = [0, 0];
+    let f: aoc::Point = [9, 9];
+    if let Some((cost, path)) = aoc::dijkstra_grid(
+        &grid,
+        |_p, _c| true,
+        |_p1, _c1, _p2, c2| Some(c2.to_digit(10).unwrap() as i64),
+        a,
+        f,
+    ) {
+        println!("cost: {}", cost);
+        for point in &path {
+            grid.set_value(*point, '*');
+        }
+    }
+    let mut gd = aoc::PrintGridDrawer::new(|x| x);
+    gd.draw(&grid);
+}
+
 fn main() {
+    println!("A* graph:");
     astar_graph_char();
-    println!();
+    println!("A* grid:");
     astar_grid_char();
-    println!();
+    println!("Dijkstra grid:");
+    dijkstra_grid_char();
+    println!("A* graph sparse");
     astar_graph_char_sparse();
-    println!();
+    println!("A* grid sparse");
     astar_grid_char_sparse();
-    println!();
+    println!("Dijkstra grid sparse");
+    dijkstra_grid_char_sparse();
+    println!("A* graph weighted directed");
     astar_graph_weighted_directed();
-    println!();
+    println!("A* grid wighted directed");
     astar_grid_weighted_directed();
+    println!("Dijkstra weighted directed");
+    dijkstra_grid_weighted_directed();
 }

@@ -1,6 +1,6 @@
 use image::{GenericImageView, Rgb, RgbImage};
 use std::cmp::Reverse;
-use std::collections::{BinaryHeap, HashMap};
+use std::collections::{BinaryHeap, HashMap, HashSet};
 use std::env;
 use std::error;
 use std::fmt;
@@ -451,6 +451,53 @@ where
                 }
             }
         }
+    }
+    None
+}
+
+pub fn dijkstra_grid<T>(
+    grid: &dyn Grid<T>,
+    is_node: fn(&Point, &T) -> bool,
+    get_edge_cost: fn(&Point, &T, &Point, &T) -> Option<i64>,
+    start: Point,
+    goal: Point,
+) -> Option<(i64, Vec<Point>)>
+where
+    T: PartialEq + Copy,
+{
+    let mut frontier = BinaryHeap::new();
+    let mut visited: HashSet<Point> = HashSet::new();
+    let mut came_from = HashMap::new();
+    frontier.push(Reverse((0, start)));
+    while let Some(Reverse((score, current))) = frontier.pop() {
+	if visited.contains(&current) {
+	    continue;
+	}
+        if current == goal {
+            let mut path = vec![goal];
+            let mut curr = goal;
+            while curr != start {
+                curr = came_from[&curr];
+                path.push(curr)
+            }
+            return Some((score, path));
+        }
+        let curr_val= grid.get_value(current).unwrap();
+        for nb in neighbors(current) {
+	    if visited.contains(&nb) {
+		continue;
+	    }
+            if let Some(value) = grid.get_value(nb) {
+                if is_node(&nb, &value) {
+                    if let Some(edge_cost) = get_edge_cost(&current, &curr_val, &nb, &value) {
+                        let new_score = score + edge_cost;
+                        came_from.insert(nb, current);
+                        frontier.push(Reverse((new_score, nb)));
+                    }
+                }
+            }
+        }
+	visited.insert(current);
     }
     None
 }

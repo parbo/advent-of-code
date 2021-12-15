@@ -22,9 +22,8 @@ fn solve(grid: &Parsed) -> i64 {
     frontier.push(Reverse((manhattan(start, goal), start)));
     while let Some(Reverse((est, current))) = frontier.pop() {
         if current == goal {
-            let mut path = vec![];
+            let mut path = vec![goal];
             let mut curr = goal;
-            path.push(curr);
             while curr != start {
                 curr = came_from[&curr];
                 path.push(curr)

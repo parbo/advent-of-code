@@ -24,8 +24,10 @@ pub use pancurses::*;
 pub use petgraph::algo;
 pub use petgraph::graph::Graph;
 pub use petgraph::graph::UnGraph;
+pub use petgraph::graph::DiGraph;
 pub use petgraph::graphmap::GraphMap;
 pub use petgraph::graphmap::UnGraphMap;
+pub use petgraph::graphmap::DiGraphMap;
 pub use petgraph::Direction::Outgoing;
 pub use petgraph::visit;
 pub use petgraph::*;
@@ -292,10 +294,10 @@ where
     grid
 }
 
-pub fn grid_to_graph<T>(
+pub fn grid_to_undirected_graph<T>(
     grid: &dyn Grid<T>,
     is_node: fn(&Point, &T) -> bool,
-    get_edge: fn(&Point, &T, &Point, &T) -> Option<i64>,
+    get_edge_cost: fn(&Point, &T, &Point, &T) -> Option<i64>,
     directions: usize,
 ) -> UnGraphMap<Point, i64>
 where
@@ -322,7 +324,57 @@ where
                         {
                             if let Some(nc) = grid.get_value(np) {
                                 if is_node(&np, &nc) {
-                                    if let Some(e) = get_edge(&p, &c, &np, &nc) {
+                                    if let Some(e) = get_edge_cost(&p, &c, &np, &nc) {
+                                        let gnp = graph.add_node(np);
+					// Make sure it's an undirected graph
+					if let Some(ew) = graph.edge_weight(gp, gnp) {
+					    assert_eq!(e, *ew);
+					}
+                                        graph.add_edge(gp, gnp, e);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    graph
+}
+
+pub fn grid_to_directed_graph<T>(
+    grid: &dyn Grid<T>,
+    is_node: fn(&Point, &T) -> bool,
+    get_edge_cost: fn(&Point, &T, &Point, &T) -> Option<i64>,
+    directions: usize,
+) -> DiGraphMap<Point, i64>
+where
+    T: PartialEq + Copy,
+{
+    let directions = match directions {
+        4 => DIRECTIONS.to_vec(),
+        8 => DIRECTIONS_INCL_DIAGONALS.to_vec(),
+        _ => panic!(),
+    };
+
+    let mut graph = DiGraphMap::new();
+    let (min, max) = grid.extents();
+
+    for y in min[1]..=max[1] {
+        for x in min[0]..=max[0] {
+            let p: Point = [x as i64, y as i64];
+            if let Some(c) = grid.get_value(p) {
+                if is_node(&p, &c) {
+                    let gp = graph.add_node(p);
+                    for d in &directions {
+                        let np = point_add(p, *d);
+                        if np[0] >= min[0] && np[0] <= max[0] && np[1] >= min[1] && np[1] <= max[1]
+                        {
+                            if let Some(nc) = grid.get_value(np) {
+                                if is_node(&np, &nc) {
+                                    if let Some(e) = get_edge_cost(&p, &c, &np, &nc) {
                                         let gnp = graph.add_node(np);
                                         graph.add_edge(gp, gnp, e);
                                     }
@@ -338,8 +390,8 @@ where
     graph
 }
 
-pub fn astar(
-    graph: &UnGraphMap<Point, i64>,
+pub fn astar<T: petgraph::EdgeType>(
+    graph: &GraphMap<Point, i64, T>,
     start: Point,
     goal: Point,
 ) -> Option<(i64, Vec<Point>)> {

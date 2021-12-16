@@ -81,11 +81,11 @@ fn part2(m: &Parsed, draw: bool) -> Answer {
         }
         basins.push(num);
     }
-    let mut d = aoc::PrintGridDrawer::new(|i| {
+    let mut d = aoc::PrintGridDrawer::new(|i: i64| {
         if i == -1 {
             '*'
         } else {
-            format!("{}", i).chars().next().unwrap()
+            char::from_digit(i as u32, 10).unwrap()
         }
     });
     d.draw(&map);

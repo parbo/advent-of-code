@@ -97,30 +97,9 @@ fn calculate(packet: &Packet) -> i64 {
         2 => packet.packets.iter().map(|c| calculate(c)).min().unwrap(),
         3 => packet.packets.iter().map(|c| calculate(c)).max().unwrap(),
         4 => packet.value.unwrap(),
-        5 => {
-            assert_eq!(packet.packets.len(), 2);
-            if calculate(&packet.packets[0]) > calculate(&packet.packets[1]) {
-                1
-            } else {
-                0
-            }
-        }
-        6 => {
-            assert_eq!(packet.packets.len(), 2);
-            if calculate(&packet.packets[0]) < calculate(&packet.packets[1]) {
-                1
-            } else {
-                0
-            }
-        }
-        7 => {
-            assert_eq!(packet.packets.len(), 2);
-            if calculate(&packet.packets[0]) == calculate(&packet.packets[1]) {
-                1
-            } else {
-                0
-            }
-        }
+        5 => (calculate(&packet.packets[0]) > calculate(&packet.packets[1])) as i64,
+        6 => (calculate(&packet.packets[0]) < calculate(&packet.packets[1])) as i64,
+        7 => (calculate(&packet.packets[0]) == calculate(&packet.packets[1])) as i64,
         _ => panic!(),
     }
 }

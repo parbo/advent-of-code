@@ -47,24 +47,11 @@ fn shoot(mut x: i64, mut y: i64, area: &Area) -> (Option<i64>, Vec<aoc::Point>) 
 
 fn part1(area: &Parsed) -> Answer {
     let mut max_y = 0;
-    let mut y = 1;
-    loop {
-        let mut x = 1;
-        loop {
-            for (v_x, v_y) in [(x, y), (-x, y), (x, -y), (-x, -y)] {
-                let r = shoot(v_x, v_y, area);
-                if let Some(m_y) = r.0 {
-                    max_y = m_y.max(max_y);
-                }
+    for v_y in -1000..=1000 {
+        for v_x in -1000..=1000 {
+            if let Some(m_y) = shoot(v_x, v_y, area).0 {
+                max_y = m_y.max(max_y);
             }
-            x += 1;
-            if max_y > 0 && x > 1000 {
-                break;
-            }
-        }
-        y += 1;
-        if max_y > 0 && y > 1000 {
-            break;
         }
     }
     max_y
@@ -72,33 +59,13 @@ fn part1(area: &Parsed) -> Answer {
 
 fn solve2(area: &Parsed) -> HashMap<(i64, i64), Vec<aoc::Point>> {
     let mut found = HashMap::new();
-    let mut y = 0;
-    let mut any_found;
-    loop {
-        let mut x = 0;
-        let mut any_found_y = false;
-        loop {
-            any_found = false;
-            for (v_x, v_y) in [(x, y), (-x, y), (x, -y), (-x, -y)] {
-                let r = shoot(v_x, v_y, area);
-                if let Some(_m_y) = r.0 {
-                    if !found.insert((v_x, v_y), r.1).is_some() {
-                        any_found = true;
-                    }
-                }
-            }
-            x += 1;
-            if any_found {
-                any_found_y = true;
-            } else if x > 1000 {
-                break;
+    for v_y in -1000..=1000 {
+        for v_x in -1000..=1000 {
+            let r = shoot(v_x, v_y, area);
+            if let Some(_m_y) = r.0 {
+                found.insert((v_x, v_y), r.1);
             }
         }
-        if any_found_y {
-        } else if y > 1000 {
-            break;
-        }
-        y += 1;
     }
     found
 }
@@ -115,14 +82,14 @@ fn draw(area: &Parsed) -> Answer {
         [0.max(area.max_x), 0.max(area.max_y)],
     );
     for (_, p) in &found {
-	let min_x = p.iter().map(|p| p[0]).min().unwrap();
-	let max_x = p.iter().map(|p| p[0]).max().unwrap();
-	let min_y = p.iter().map(|p| p[1]).min().unwrap();
-	let max_y = p.iter().map(|p| p[1]).max().unwrap();
-	ext.0[0] = ext.0[0].min(min_x.clamp(-200, 200));
-	ext.0[1] = ext.0[1].min(min_y.clamp(-200, 200));
-	ext.1[0] = ext.1[0].max(max_x.clamp(-200, 200));
-	ext.1[1] = ext.1[1].max(max_y.clamp(-200, 200));
+        let min_x = p.iter().map(|p| p[0]).min().unwrap();
+        let max_x = p.iter().map(|p| p[0]).max().unwrap();
+        let min_y = p.iter().map(|p| p[1]).min().unwrap();
+        let max_y = p.iter().map(|p| p[1]).max().unwrap();
+        ext.0[0] = ext.0[0].min(min_x.clamp(-200, 200));
+        ext.0[1] = ext.0[1].min(min_y.clamp(-200, 200));
+        ext.1[0] = ext.1[0].max(max_x.clamp(-200, 200));
+        ext.1[1] = ext.1[1].max(max_y.clamp(-200, 200));
     }
     let mut gd = aoc::BitmapSpriteGridDrawer::new(
         (1, 1),
@@ -135,7 +102,7 @@ fn draw(area: &Parsed) -> Answer {
     );
     gd.set_rect(ext);
     gd.set_bg([0, 0, 0]);
-    let mut f : Vec<_> = found.iter().collect();
+    let mut f: Vec<_> = found.iter().collect();
     f.sort();
     for (_, p) in &f {
         let mut g = HashMap::new();
@@ -145,10 +112,10 @@ fn draw(area: &Parsed) -> Answer {
                 g.set_value([x, y], 'T');
             }
         }
-	let mut last_p = [0, 0];
+        let mut last_p = [0, 0];
         for pp in *p {
             g.line(*pp, last_p, '#');
-	    last_p = *pp;
+            last_p = *pp;
         }
         gd.draw(&g);
         gd.save_image();

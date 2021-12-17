@@ -1290,6 +1290,7 @@ where
     basename: String,
     frame: usize,
     rect: Option<(Point, Point)>,
+    bg: [u8; 3],
     image: Option<RgbImage>,
     phantom: PhantomData<T>,
     phantom_g: PhantomData<G>,
@@ -1316,6 +1317,7 @@ where
             frame: 0,
             basename: basename.into(),
             rect: None,
+            bg: [255, 255, 255],
             image: None,
             phantom: PhantomData,
             phantom_g: PhantomData,
@@ -1324,6 +1326,10 @@ where
 
     pub fn set_rect(&mut self, r: (Point, Point)) {
         self.rect = Some(r);
+    }
+
+    pub fn set_bg(&mut self, bg: [u8; 3]) {
+        self.bg = bg;
     }
 
     pub fn save_image(&self) {
@@ -1355,7 +1361,12 @@ where
         let width = max_x - min_x + 1;
         let height = max_y - min_y + 1;
         // Default bg is white
-        let buffer = vec![255; (3 * width * height) as usize];
+        let mut buffer = vec![255; (3 * width * height) as usize];
+        buffer.chunks_mut(3).for_each(|c| {
+            c[0] = self.bg[0];
+            c[1] = self.bg[1];
+            c[2] = self.bg[2]
+        });
         let mut image = RgbImage::from_raw(width as u32, height as u32, buffer).unwrap();
         for y in min_y..=max_y {
             for x in min_x..=max_x {

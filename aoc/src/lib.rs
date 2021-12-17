@@ -470,9 +470,9 @@ where
     let mut came_from = HashMap::new();
     frontier.push(Reverse((0, start)));
     while let Some(Reverse((score, current))) = frontier.pop() {
-	if visited.contains(&current) {
-	    continue;
-	}
+        if visited.contains(&current) {
+            continue;
+        }
         if current == goal {
             let mut path = vec![goal];
             let mut curr = goal;
@@ -482,11 +482,11 @@ where
             }
             return Some((score, path));
         }
-        let curr_val= grid.get_value(current).unwrap();
+        let curr_val = grid.get_value(current).unwrap();
         for nb in neighbors(current) {
-	    if visited.contains(&nb) {
-		continue;
-	    }
+            if visited.contains(&nb) {
+                continue;
+            }
             if let Some(value) = grid.get_value(nb) {
                 if is_node(&nb, &value) {
                     if let Some(edge_cost) = get_edge_cost(&current, &curr_val, &nb, &value) {
@@ -497,7 +497,7 @@ where
                 }
             }
         }
-	visited.insert(current);
+        visited.insert(current);
     }
     None
 }
@@ -1147,6 +1147,7 @@ where
     basename: String,
     frame: usize,
     rect: Option<(Point, Point)>,
+    bg: [u8; 3],
     image: Option<RgbImage>,
     phantom: PhantomData<T>,
     phantom_g: PhantomData<G>,
@@ -1178,6 +1179,7 @@ where
             frame: 0,
             basename: basename.into(),
             rect: None,
+            bg: [255, 255, 255],
             image: None,
             phantom: PhantomData,
             phantom_g: PhantomData,
@@ -1186,6 +1188,10 @@ where
 
     pub fn set_rect(&mut self, r: (Point, Point)) {
         self.rect = Some(r);
+    }
+
+    pub fn set_bg(&mut self, bg: [u8; 3]) {
+        self.bg = bg;
     }
 
     pub fn save_image(&self) {
@@ -1218,8 +1224,12 @@ where
         let height = max_y - min_y + 1;
         let pixelw = width * self.sprite_dimension.0;
         let pixelh = height * self.sprite_dimension.1;
-        // Default bg is white
-        let buffer = vec![255; (3 * pixelw * pixelh) as usize];
+        let mut buffer = vec![255; (3 * pixelw * pixelh) as usize];
+        buffer.chunks_mut(3).for_each(|c| {
+            c[0] = self.bg[0];
+            c[1] = self.bg[1];
+            c[2] = self.bg[2]
+        });
         let mut image = RgbImage::from_raw(pixelw as u32, pixelh as u32, buffer).unwrap();
         for y in min_y..=max_y {
             for x in min_x..=max_x {
@@ -1233,7 +1243,7 @@ where
                         image.put_pixel(xx as u32, yy as u32, rgb);
                         xx += 1;
                         if xx - xxx >= self.sprite_dimension.0 {
-                            xx = x * self.sprite_dimension.0;
+                            xx = (x - min_x) * self.sprite_dimension.0;
                             yy += 1
                         }
                     }

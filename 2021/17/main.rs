@@ -1,4 +1,5 @@
-use std::collections::HashSet;
+use aoc::{Grid, GridDrawer};
+use std::collections::HashMap;
 use std::time::Instant;
 
 #[derive(parse_display::Display, parse_display::FromStr, Debug, Clone, PartialEq, Eq, Hash)]
@@ -13,9 +14,10 @@ struct Area {
 type Parsed = Area;
 type Answer = i64;
 
-fn shoot(mut x: i64, mut y: i64, area: &Area) -> Option<(i64, aoc::Point)> {
+fn shoot(mut x: i64, mut y: i64, area: &Area) -> (Option<i64>, Vec<aoc::Point>) {
     let mut p = [0, 0];
     let mut max_y = 0;
+    let mut path = vec![];
     loop {
         p[0] += x;
         p[1] += y;
@@ -25,9 +27,10 @@ fn shoot(mut x: i64, mut y: i64, area: &Area) -> Option<(i64, aoc::Point)> {
             x += 1;
         }
         y -= 1;
+        path.push(p);
         max_y = p[1].max(max_y);
         if aoc::inside_extent(p, ([area.min_x, area.min_y], [area.max_x, area.max_y])) {
-            return Some((max_y, p));
+            return (Some(max_y), path);
         }
         if p[1] < area.min_y {
             break;
@@ -39,7 +42,7 @@ fn shoot(mut x: i64, mut y: i64, area: &Area) -> Option<(i64, aoc::Point)> {
             break;
         }
     }
-    None
+    (None, path)
 }
 
 fn part1(area: &Parsed) -> Answer {
@@ -49,9 +52,10 @@ fn part1(area: &Parsed) -> Answer {
         let mut x = 1;
         loop {
             for (v_x, v_y) in [(x, y), (-x, y), (x, -y), (-x, -y)] {
-		if let Some((m_y, _p)) = shoot(v_x, v_y, area) {
-		    max_y = m_y.max(max_y);
-		}
+                let r = shoot(v_x, v_y, area);
+                if let Some(m_y) = r.0 {
+                    max_y = m_y.max(max_y);
+                }
             }
             x += 1;
             if max_y > 0 && x > 1000 {
@@ -66,8 +70,8 @@ fn part1(area: &Parsed) -> Answer {
     max_y
 }
 
-fn solve2(area: &Parsed) -> HashSet<(i64, i64)> {
-    let mut found = HashSet::new();
+fn solve2(area: &Parsed) -> HashMap<(i64, i64), Vec<aoc::Point>> {
+    let mut found = HashMap::new();
     let mut y = 0;
     let mut any_found;
     loop {
@@ -76,8 +80,9 @@ fn solve2(area: &Parsed) -> HashSet<(i64, i64)> {
         loop {
             any_found = false;
             for (v_x, v_y) in [(x, y), (-x, y), (x, -y), (-x, -y)] {
-                if let Some((_m_y, _p)) = shoot(v_x, v_y, area) {
-                    if found.insert((v_x, v_y)) {
+                let r = shoot(v_x, v_y, area);
+                if let Some(_m_y) = r.0 {
+                    if !found.insert((v_x, v_y), r.1).is_some() {
                         any_found = true;
                     }
                 }
@@ -103,6 +108,54 @@ fn part2(area: &Parsed) -> Answer {
     found.len() as Answer
 }
 
+fn draw(area: &Parsed) -> Answer {
+    let found = solve2(area);
+    let mut ext = (
+        [0.min(area.min_x), 0.min(area.min_y)],
+        [0.max(area.max_x), 0.max(area.max_y)],
+    );
+    for (_, p) in &found {
+	let min_x = p.iter().map(|p| p[0]).min().unwrap();
+	let max_x = p.iter().map(|p| p[0]).max().unwrap();
+	let min_y = p.iter().map(|p| p[1]).min().unwrap();
+	let max_y = p.iter().map(|p| p[1]).max().unwrap();
+	ext.0[0] = ext.0[0].min(min_x.clamp(-200, 200));
+	ext.0[1] = ext.0[1].min(min_y.clamp(-200, 200));
+	ext.1[0] = ext.1[0].max(max_x.clamp(-200, 200));
+	ext.1[1] = ext.1[1].max(max_y.clamp(-200, 200));
+    }
+    let mut gd = aoc::BitmapSpriteGridDrawer::new(
+        (1, 1),
+        |x| match x {
+            'S' | 'T' => vec![[0x79, 0xa2, 0xd8]; 1],
+            '#' => vec![[0xff, 0xff, 0x66]; 1],
+            _ => panic!(),
+        },
+        "ppm/day17",
+    );
+    gd.set_rect(ext);
+    gd.set_bg([0, 0, 0]);
+    let mut f : Vec<_> = found.iter().collect();
+    f.sort();
+    for (_, p) in &f {
+        let mut g = HashMap::new();
+        g.set_value([0, 0], 'S');
+        for x in area.min_x..=area.max_x {
+            for y in area.min_y..=area.max_y {
+                g.set_value([x, y], 'T');
+            }
+        }
+	let mut last_p = [0, 0];
+        for pp in *p {
+            g.line(*pp, last_p, '#');
+	    last_p = *pp;
+        }
+        gd.draw(&g);
+        gd.save_image();
+    }
+    found.len() as Answer
+}
+
 fn parse(lines: &[String]) -> Parsed {
     lines[0].parse().unwrap()
 }
@@ -115,8 +168,10 @@ fn main() {
     let parse_time = Instant::now();
     let result = if part == 1 {
         part1(&parsed)
-    } else {
+    } else if part == 2 {
         part2(&parsed)
+    } else {
+        draw(&parsed)
     };
     let done_time = Instant::now();
     println!(
@@ -260,7 +315,7 @@ mod tests {
         let parsed = parse(&example());
         let found = solve2(&parsed);
         for f in expected {
-            assert!(found.contains(&f), "{:?} not found!", f);
+            assert!(found.contains_key(&f), "{:?} not found!", f);
         }
     }
 }

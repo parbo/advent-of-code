@@ -34,40 +34,6 @@ type ParsedItem = SnailNumber;
 type Parsed = Vec<SnailNumber>;
 type Answer = i64;
 
-fn add_first(number: &SnailNumber, val: &mut i64) -> SnailNumber {
-    if *val != 0 {
-        println!("add first: {}, {}", number, val);
-    }
-    match number {
-        SnailNumber::Num(x) => {
-            let v = *val;
-            *val = 0;
-            if v != 0 {
-                println!("adding {}, {}", x, v);
-            }
-            SnailNumber::Num(x + v)
-        }
-        SnailNumber::Pair(a, b) => SnailNumber::Pair(Box::new(add_first(a, val)), b.clone()),
-    }
-}
-
-fn add_last(number: &SnailNumber, val: &mut i64) -> SnailNumber {
-    if *val != 0 {
-        println!("add last: {}, {}", number, val);
-    }
-    match number {
-        SnailNumber::Num(x) => {
-            let v = *val;
-            *val = 0;
-            if v != 0 {
-                println!("adding {}, {}", x, v);
-            }
-            SnailNumber::Num(x + v)
-        }
-        SnailNumber::Pair(a, b) => SnailNumber::Pair(a.clone(), Box::new(add_last(b, val))),
-    }
-}
-
 fn do_split(number: &SnailNumber, split: &mut bool) -> SnailNumber {
     // println!("split: {:?}", number);
     match number {
@@ -111,7 +77,7 @@ fn do_explode(
 ) -> SnailNumber {
     if let SnailNumber::Pair(a, b) = number {
         if depth == 4 && !exploded.is_some() {
-            println!("explode pair: {}", number);
+            // println!("explode pair: {}", number);
             // explode this
             let aval = if let SnailNumber::Num(aval) = **a {
                 aval
@@ -126,10 +92,9 @@ fn do_explode(
             *exploded = Some((aval, bval));
             return SnailNumber::Num(-1);
         }
-        return SnailNumber::Pair(
-            Box::new(do_explode(&(**a).clone(), depth + 1, exploded)),
-            Box::new(do_explode(&(**b).clone(), depth + 1, exploded)),
-        );
+        let ea = do_explode(&(**a).clone(), depth + 1, exploded);
+        let eb = do_explode(&(**b).clone(), depth + 1, exploded);
+        return SnailNumber::Pair(Box::new(ea), Box::new(eb));
     }
     number.clone()
 }
@@ -140,20 +105,27 @@ fn explode(number: &SnailNumber) -> SnailNumber {
     if let Some((a, b)) = exploded {
         let r_s = format!("{}", r);
         let parts = aoc::split_str(&r_s, "-1");
-        println!("{:?}", parts);
-        let re1 = aoc::Regex::new(r"(^.*)(\d+)(.*?$)").unwrap();
-        let new_left = re1.replace(parts[0], |c: &aoc::Captures| {
-            format!("{}{}{}", &c[1], c[2].parse::<i64>().unwrap() + a, &c[3])
+        let rev: String = parts[0].chars().rev().collect();
+        let re = aoc::Regex::new(r"(^[^\d]*)(\d+)(.*$)").unwrap();
+        let new_left = re.replace(&rev, |c: &aoc::Captures| {
+            //	    println!("{} + {}, {}",  c[2].parse::<i64>().unwrap(), a, c[2].parse::<i64>().unwrap() + a);
+            format!(
+                "{}{}{}",
+                &c[3].chars().rev().collect::<String>(),
+                c[2].chars()
+                    .rev()
+                    .collect::<String>()
+                    .parse::<i64>()
+                    .unwrap()
+                    + a,
+                &c[1].chars().rev().collect::<String>()
+            )
         });
-        let re2 = aoc::Regex::new(r"(^[^\d]*)(\d+)(.*$)").unwrap();
-        let new_right = re2.replace(parts[1], |c: &aoc::Captures| {
+        // println!("old: {}, new_left: {}", parts[0], new_left);
+        let new_right = re.replace(parts[1], |c: &aoc::Captures| {
             format!("{}{}{}", &c[1], c[2].parse::<i64>().unwrap() + b, &c[3])
         });
         let n_s = format!("{}0{}", new_left, new_right);
-        println!(
-            "exploded: '{}', '{}', '{}', '{}', '{}', '{}'",
-            r_s, parts[0], parts[1], new_left, new_right, n_s
-        );
         parse_line(&n_s.chars().collect::<Vec<char>>()).0
     } else {
         r
@@ -163,26 +135,18 @@ fn explode(number: &SnailNumber) -> SnailNumber {
 fn reduce(number: &SnailNumber) -> SnailNumber {
     let mut n = number.clone();
     loop {
-        let old_n = n.clone();
-        loop {
-            println!("exploding {}", n);
-            let new_n = explode(&n);
-            if new_n == n {
-                break;
-            }
+        // println!("exploding {}", n);
+        let new_n = explode(&n);
+        if new_n != n {
             n = new_n;
+            continue;
         }
-        loop {
-            println!("splitting {}", n);
-            let new_n = split(&n);
-            if new_n == n {
-                break;
-            }
-            n = new_n;
-        }
-        if old_n == n {
+        // println!("splitting {}", n);
+        let new_n = split(&n);
+        if new_n == n {
             break;
         }
+        n = new_n;
     }
     n
 }
@@ -201,22 +165,27 @@ fn magnitude(number: &SnailNumber) -> i64 {
 fn sum(numbers: &[SnailNumber]) -> SnailNumber {
     let mut n = numbers[0].clone();
     for nn in &numbers[1..] {
-        print!("sum: {} + {} = ", n, nn);
         n = reduce(&SnailNumber::Pair(Box::new(n), Box::new(nn.clone())));
-        println!("{}", n);
     }
     n
 }
 
 fn part1(numbers: &[ParsedItem]) -> Answer {
     let mut n = sum(numbers);
-    println!("added: {}", n);
     n = reduce(&n);
     magnitude(&n)
 }
 
-fn part2(_: &[ParsedItem]) -> Answer {
-    0
+fn part2(numbers: &[ParsedItem]) -> Answer {
+    let mut mx = 0;
+    for i in 0..numbers.len() {
+        for j in 1..numbers.len() {
+            let s = sum(&[numbers[i].clone(), numbers[j].clone()]);
+            let m = magnitude(&s);
+            mx = mx.max(m);
+        }
+    }
+    mx
 }
 
 fn parse_num(chars: &[char]) -> (i64, usize) {

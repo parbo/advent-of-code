@@ -36,15 +36,15 @@ type Answer = i64;
 
 fn add_first(number: &SnailNumber, val: &mut i64) -> SnailNumber {
     if *val != 0 {
-	println!("add first: {}, {}", number, val);
+        println!("add first: {}, {}", number, val);
     }
     match number {
         SnailNumber::Num(x) => {
             let v = *val;
             *val = 0;
-	    if v != 0 {
-		println!("adding {}, {}", x, v);
-	    }
+            if v != 0 {
+                println!("adding {}, {}", x, v);
+            }
             SnailNumber::Num(x + v)
         }
         SnailNumber::Pair(a, b) => SnailNumber::Pair(Box::new(add_first(a, val)), b.clone()),
@@ -53,15 +53,15 @@ fn add_first(number: &SnailNumber, val: &mut i64) -> SnailNumber {
 
 fn add_last(number: &SnailNumber, val: &mut i64) -> SnailNumber {
     if *val != 0 {
-	println!("add last: {}, {}", number, val);
+        println!("add last: {}, {}", number, val);
     }
     match number {
         SnailNumber::Num(x) => {
             let v = *val;
             *val = 0;
-	    if v != 0 {
-		println!("adding {}, {}", x, v);
-	    }
+            if v != 0 {
+                println!("adding {}, {}", x, v);
+            }
             SnailNumber::Num(x + v)
         }
         SnailNumber::Pair(a, b) => SnailNumber::Pair(a.clone(), Box::new(add_last(b, val))),
@@ -107,15 +107,11 @@ fn split(number: &SnailNumber) -> SnailNumber {
 fn do_explode(
     number: &SnailNumber,
     depth: usize,
-    exploded: &mut bool,
-) -> (Option<SnailNumber>, Option<(Option<i64>, Option<i64>)>, bool) {
-    // println!(
-    //     "depth: {}, exploded: {}, exploding: {:?}",
-    //     depth, exploded, number
-    // );
+    exploded: &mut Option<(i64, i64)>,
+) -> SnailNumber {
     if let SnailNumber::Pair(a, b) = number {
-        if depth == 4 && !*exploded {
-	    println!("explode pair: {}", number);
+        if depth == 4 && !exploded.is_some() {
+            println!("explode pair: {}", number);
             // explode this
             let aval = if let SnailNumber::Num(aval) = **a {
                 aval
@@ -127,126 +123,41 @@ fn do_explode(
             } else {
                 panic!();
             };
-            *exploded = true;
-            return (None, Some((Some(aval), Some(bval))), false);
+            *exploded = Some((aval, bval));
+            return SnailNumber::Num(-1);
         }
-        let explode_a = do_explode(a, depth + 1, exploded);
-        let explode_b = do_explode(b, depth + 1, exploded);
-        println!("a> {:?}", explode_a);
-        println!("b> {:?}", explode_b);
-        if let (n, Some((x, y)), inserted_a) = explode_a {
-            let mut new_x = x;
-            let mut new_y = y;
-	    let mut inserted = false;
-            let new_left = if let Some(nn) = n {
-		if !inserted_a {
-                    let mut v = new_x.unwrap_or(0);
-                    let r = add_last(&a, &mut v);
-                    if v == 0 {
-			new_x = None;
-                    }
-		    r
-		} else {
-		    nn
-		}
-            } else {
-		inserted = true;
-                // println!("1 replacing {:?} with 0", a);
-                SnailNumber::Num(0)
-            };
-            let old_right = if let Some(old_b) = explode_b.0 {
-                old_b
-            } else {
-                (**b).clone()
-            };
-            let new_right = if let SnailNumber::Num(val) = old_right {
-                if let Some(yy) = y {
-                    new_y = None;
-                    // println!("2 adding {}, {}", val, yy);
-                    SnailNumber::Num(val + yy)
-                } else {
-                    SnailNumber::Num(val)
-                }
-            } else {
-                let mut v = new_y.unwrap_or(0);
-                let r = add_first(&old_right, &mut v);
-		println!("r: {}", r);
-                if v == 0 {
-                    new_y = None;
-                }
-                r
-            };
-	    let mut num = SnailNumber::Pair(Box::new(new_left), Box::new(new_right));
-            let ret = (
-                Some(num),
-                if new_x.is_some() || new_y.is_some() {
-                    Some((new_x, new_y))
-                } else {
-                    None
-                },
-		inserted
-            );
-            // println!("a returning {:?}", ret);
-            return ret;
-        } else if let (n, Some((x, y)), _inserted_b) = explode_b {
-            let mut new_x = x;
-	    let mut inserted = false;
-            let old_left = if let Some(old_a) = explode_a.0 {
-                old_a
-            } else {
-                (**a).clone()
-            };
-            let new_left = if let SnailNumber::Num(val) = old_left {
-                if let Some(xx) = x {
-                    new_x = None;
-                    // println!("3 adding {}, {}", val, xx);
-                    SnailNumber::Num(val + xx)
-                } else {
-                    SnailNumber::Num(val)
-                }
-            } else {
-                old_left
-            };
-            let new_right = if let Some(nn) = n {
-                nn
-            } else {
-                // println!("4 replacing {:?} with 0", b);
-		inserted = true;
-                SnailNumber::Num(0)
-            };
-            let ret = (
-                Some(SnailNumber::Pair(Box::new(new_left), Box::new(new_right))),
-                if new_x.is_some() || y.is_some() {
-                    Some((new_x, y))
-                } else {
-                    None
-                },
-		inserted
-            );
-            // println!("b returning {:?}", ret);
-            return ret;
-        } else {
-            let ret = (
-                Some(SnailNumber::Pair(
-                    Box::new(explode_a.0.unwrap()),
-                    Box::new(explode_b.0.unwrap()),
-                )),
-                None,
-		false
-            );
-            // println!("c returning {:?}", ret);
-            return ret;
-        }
+        return SnailNumber::Pair(
+            Box::new(do_explode(&(**a).clone(), depth + 1, exploded)),
+            Box::new(do_explode(&(**b).clone(), depth + 1, exploded)),
+        );
     }
-    (Some(number.clone()), None, false)
+    number.clone()
 }
 
 fn explode(number: &SnailNumber) -> SnailNumber {
-    let mut exploded = false;
+    let mut exploded = None;
     let r = do_explode(number, 0, &mut exploded);
-    let ret = r.0.unwrap();
-    println!("explode result: {}, {:?}", ret, r.1);
-    ret
+    if let Some((a, b)) = exploded {
+        let r_s = format!("{}", r);
+        let parts = aoc::split_str(&r_s, "-1");
+        println!("{:?}", parts);
+        let re1 = aoc::Regex::new(r"(^.*)(\d+)(.*?$)").unwrap();
+        let new_left = re1.replace(parts[0], |c: &aoc::Captures| {
+            format!("{}{}{}", &c[1], c[2].parse::<i64>().unwrap() + a, &c[3])
+        });
+        let re2 = aoc::Regex::new(r"(^[^\d]*)(\d+)(.*$)").unwrap();
+        let new_right = re2.replace(parts[1], |c: &aoc::Captures| {
+            format!("{}{}{}", &c[1], c[2].parse::<i64>().unwrap() + b, &c[3])
+        });
+        let n_s = format!("{}0{}", new_left, new_right);
+        println!(
+            "exploded: '{}', '{}', '{}', '{}', '{}', '{}'",
+            r_s, parts[0], parts[1], new_left, new_right, n_s
+        );
+        parse_line(&n_s.chars().collect::<Vec<char>>()).0
+    } else {
+        r
+    }
 }
 
 fn reduce(number: &SnailNumber) -> SnailNumber {

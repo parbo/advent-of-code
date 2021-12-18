@@ -32,7 +32,7 @@ pub use petgraph::graphmap::UnGraphMap;
 pub use petgraph::visit;
 pub use petgraph::Direction::Outgoing;
 pub use petgraph::*;
-pub use regex::Regex;
+pub use regex::*;
 pub use serde_scan::from_str;
 pub use serde_scan::scan;
 

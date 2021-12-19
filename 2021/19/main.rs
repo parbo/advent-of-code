@@ -9,7 +9,7 @@ type Answer = i64;
 
 fn make_matrices() -> Vec<Mat4> {
     let mut matrices = vec![];
-    for f in 0..4 {
+    for f in 0..8 {
         for x in 0..3 {
             for y in 0..3 {
                 for z in 0..3 {
@@ -17,9 +17,9 @@ fn make_matrices() -> Vec<Mat4> {
                         continue;
                     }
                     let rows = [
-                        [if f == 1 { -1 } else { 1 }, 0, 0, 0],
-                        [0, if f == 2 { -1 } else { 1 }, 0, 0],
-                        [0, 0, if f == 3 { -1 } else { 1 }, 0],
+                        [if f == 1 || f == 4 || f == 5 || f == 7 { -1 } else { 1 }, 0, 0, 0],
+                        [0, if f == 2 || f == 4 || f == 6 || f == 7 { -1 } else { 1 }, 0, 0],
+                        [0, 0, if f == 3 || f == 5 || f == 6 || f == 7 { -1 } else { 1 }, 0],
                     ];
                     let m = [rows[x], rows[y], rows[z], [0, 0, 0, 1]];
                     matrices.push(m);
@@ -27,15 +27,10 @@ fn make_matrices() -> Vec<Mat4> {
             }
         }
     }
-    // println!("num m: {}", matrices.len());
-    // for m in &matrices {
-    //     println!("{:?}", m);
-    // }
-    // assert_eq!(matrices.len(), 24);
     matrices
 }
 
-fn align(matrices: &[Mat4], s_i: &[Vec4], s_j: &[Vec4]) -> Option<(Mat4, HashSet<Vec4>)> {
+fn align(matrices: &[Mat4], s_i: &[Vec4], s_j: &[Vec4]) -> Option<(Mat4, Vec4, HashSet<Vec4>)> {
     let seti = s_i.iter().copied().collect::<HashSet<_>>();
     for m in matrices {
         // Rotate beacons
@@ -43,10 +38,6 @@ fn align(matrices: &[Mat4], s_i: &[Vec4], s_j: &[Vec4]) -> Option<(Mat4, HashSet
             .iter()
             .map(|bj| aoc::mat_transform(*m, *bj))
             .collect::<Vec<_>>();
-	println!("{:?}", s_i);
-	println!("{:?}", s_j);
-	println!("{:?}", rbj);
-	println!();
         for b1 in s_i {
             for b2 in &rbj {
                 let dist = aoc::vec4_sub(*b1, *b2);
@@ -56,17 +47,32 @@ fn align(matrices: &[Mat4], s_i: &[Vec4], s_j: &[Vec4]) -> Option<(Mat4, HashSet
                     .collect::<Vec<_>>();
                 let setj = tbj.iter().copied().collect::<HashSet<_>>();
                 let found = seti.intersection(&setj).copied().collect::<HashSet<_>>();
-                if found.len() > 3 {
-                    println!("{}, {:?}", found.len(), found);
-                    // println!("{:?}", s_i);
-                    // println!("{:?}", tbj);
-                    println!();
-                }
                 if found.len() >= 12 {
-                    return Some((*m, found));
+                    return Some((*m, dist, found));
                 }
             }
         }
+    }
+    None
+}
+
+fn transform(t: &HashMap<(usize, usize), (Mat4, Vec4, HashSet<Vec4>)>, i: usize, j: usize, c: &HashSet<Vec4>, d: usize) -> Option<HashSet<Vec4>> {
+    println!("t: {}, {}, {:?}", i, j, c);
+    if d > 10 {
+	panic!();
+    }
+    if i == 0 {
+	return Some(c.clone());
+    } else if let Some((m, dist, _)) = t.get(&(i, j)) {
+//	let inv_m = aoc::mat_inv(*m);
+	let new_c = c.iter().map(|x| aoc::vec4_add(aoc::mat_transform(*m, *x), *dist)).collect::<HashSet<_>>();
+	for (k, l) in t.keys() {
+	    if *l == i && *k != j {
+		if let Some(c) = transform(t, *k, i, &new_c, d + 1) {
+		    return Some(c);
+		}
+	    }
+	}
     }
     None
 }
@@ -79,21 +85,25 @@ fn part1(sensors: &[ParsedItem]) -> Answer {
             if i == j {
                 continue;
             }
-            if let Some((mt, common)) = align(&matrices, &sensors[i], &sensors[j]) {
+            if let Some((mt, dist, common)) = align(&matrices, &sensors[i], &sensors[j]) {
                 println!(
                     "found alignment of {:?}, {:?} with {:?}, common: {:?}",
-                    i, j, mt, common
+                    i, j, mt, common.len()
                 );
-                rots.insert((i, j), mt);
+                rots.insert((i, j), (mt, dist, common));
             }
         }
     }
     // Transform back to 0's coordinate system
-    // for b in sensors {}
-    for mt in rots {
+    let mut combined = HashSet::<Vec4>::new();
+    for ((i, j), (mt, dist, common)) in &rots {
         println!("mt: {:?}", mt);
+	if let Some(c) = transform(&rots, *i, *j, common, 0) {
+	    combined.extend(&c);
+	}
     }
-    0
+    println!("combined: {:?}", combined);
+    combined.len() as Answer
 }
 
 fn part2(_: &[ParsedItem]) -> Answer {
@@ -105,7 +115,7 @@ fn parse(lines: &[String]) -> Parsed {
     sections
         .iter()
         .map(|x| {
-            x[2..]
+            x[1..]
                 .iter()
                 .map(|x| {
                     let p = aoc::split_ch(*x, ',');
@@ -156,6 +166,6 @@ mod tests {
     #[test]
     fn test_part1() {
         let parsed = parse(&example());
-        assert_eq!(part1(&parsed[0..2]), 79);
+        assert_eq!(part1(&parsed), 79);
     }
 }

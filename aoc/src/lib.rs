@@ -49,6 +49,7 @@ pub type Mat3 = self::vecmath::Matrix3<i64>;
 pub use self::vecmath::mat3_id;
 pub use self::vecmath::mat3_inv;
 pub use self::vecmath::mat4_id as mat_identity;
+pub use self::vecmath::mat4_inv as mat_inv;
 pub use self::vecmath::mat4_transposed as mat_transpose;
 pub use self::vecmath::row_mat3_mul;
 pub use self::vecmath::row_mat3_transform_pos2;

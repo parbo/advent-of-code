@@ -1,4 +1,3 @@
-use aoc::Itertools;
 use aoc::{Mat4, Vec4};
 use std::collections::{HashMap, HashSet};
 use std::iter::*;
@@ -8,28 +7,7 @@ type ParsedItem = Vec<Vec4>;
 type Parsed = Vec<ParsedItem>;
 type Answer = i64;
 
-fn flip_x(m: &Mat4) -> Mat4 {
-    aoc::mat_mul(
-        *m,
-        [[-1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
-    )
-}
-
-fn flip_y(m: &Mat4) -> Mat4 {
-    aoc::mat_mul(
-        *m,
-        [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
-    )
-}
-
-fn flip_z(m: &Mat4) -> Mat4 {
-    aoc::mat_mul(
-        *m,
-        [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]],
-    )
-}
-
-fn part1(sensors: &[ParsedItem]) -> Answer {
+fn make_matrices() -> Vec<Mat4> {
     let mut matrices = vec![];
     for f in 0..4 {
         for x in 0..3 {
@@ -38,73 +16,79 @@ fn part1(sensors: &[ParsedItem]) -> Answer {
                     if x == y || x == z || y == z {
                         continue;
                     }
-		    let rows  = [
+                    let rows = [
                         [if f == 1 { -1 } else { 1 }, 0, 0, 0],
                         [0, if f == 2 { -1 } else { 1 }, 0, 0],
                         [0, 0, if f == 3 { -1 } else { 1 }, 0],
-		    ];
-		    let m = [
-			rows[x],
-			rows[y],
-			rows[z],
-                        [0, 0, 0, 1],
                     ];
+                    let m = [rows[x], rows[y], rows[z], [0, 0, 0, 1]];
                     matrices.push(m);
                 }
             }
         }
     }
-    println!("num m: {}", matrices.len());
-    for m in &matrices {
-        println!("{:?}", m);
-    }
+    // println!("num m: {}", matrices.len());
+    // for m in &matrices {
+    //     println!("{:?}", m);
+    // }
+    // assert_eq!(matrices.len(), 24);
+    matrices
+}
 
-    //    assert_eq!(matrices.len(), 24);
+fn align(matrices: &[Mat4], s_i: &[Vec4], s_j: &[Vec4]) -> Option<(Mat4, HashSet<Vec4>)> {
+    let seti = s_i.iter().copied().collect::<HashSet<_>>();
+    for m in matrices {
+        // Rotate beacons
+        let rbj = s_j
+            .iter()
+            .map(|bj| aoc::mat_transform(*m, *bj))
+            .collect::<Vec<_>>();
+	println!("{:?}", s_i);
+	println!("{:?}", s_j);
+	println!("{:?}", rbj);
+	println!();
+        for b1 in s_i {
+            for b2 in &rbj {
+                let dist = aoc::vec4_sub(*b1, *b2);
+                let tbj = rbj
+                    .iter()
+                    .map(|b| aoc::vec4_add(*b, dist))
+                    .collect::<Vec<_>>();
+                let setj = tbj.iter().copied().collect::<HashSet<_>>();
+                let found = seti.intersection(&setj).copied().collect::<HashSet<_>>();
+                if found.len() > 3 {
+                    println!("{}, {:?}", found.len(), found);
+                    // println!("{:?}", s_i);
+                    // println!("{:?}", tbj);
+                    println!();
+                }
+                if found.len() >= 12 {
+                    return Some((*m, found));
+                }
+            }
+        }
+    }
+    None
+}
+
+fn part1(sensors: &[ParsedItem]) -> Answer {
+    let matrices = make_matrices();
     let mut rots = HashMap::new();
     for i in 0..sensors.len() {
-        let seti = sensors[i].iter().copied().collect::<HashSet<Vec4>>();
         for j in 0..sensors.len() {
             if i == j {
                 continue;
             }
-            if rots.contains_key(&(i, j)) {
-                continue;
-            }
-            let mut mtij = None;
-            'outer: for m in &matrices {
-                // Rotate beacons
-                let rbj = sensors[j]
-                    .iter()
-                    .map(|bj| aoc::mat_transform(*m, *bj))
-                    .collect::<Vec<_>>();
-                for k in 0..sensors[i].len() {
-                    let b1 = sensors[i][k];
-                    for l in 0..sensors[j].len() {
-                        let b2 = rbj[l];
-                        let dist = aoc::vec4_sub(b1, b2);
-                        let tbj: Vec<Vec4> = rbj.iter().map(|b| aoc::vec4_add(*b, dist)).collect();
-                        let setj = tbj.iter().copied().collect::<HashSet<_>>();
-                        let found = seti.intersection(&setj).collect::<HashSet<_>>();
-                        if found.len() > 5 {
-                            println!("{}, {}, {}, {}, {}, {:?}", i, j, k, l, found.len(), found);
-                            println!("{}, {:?}", i, sensors[i]);
-                            println!("{}, {:?}", j, tbj);
-                            println!();
-                            if found.len() >= 12 {
-                                mtij = Some(m);
-                                break 'outer;
-                            }
-                        }
-                    }
-                }
-            }
-            if let Some(mt) = mtij {
-                println!("found alignment of {:?}, {:?} with {:?}", i, j, mt);
+            if let Some((mt, common)) = align(&matrices, &sensors[i], &sensors[j]) {
+                println!(
+                    "found alignment of {:?}, {:?} with {:?}, common: {:?}",
+                    i, j, mt, common
+                );
                 rots.insert((i, j), mt);
             }
         }
     }
-    // Rotate back to 0's coordinate system
+    // Transform back to 0's coordinate system
     // for b in sensors {}
     for mt in rots {
         println!("mt: {:?}", mt);
@@ -172,6 +156,6 @@ mod tests {
     #[test]
     fn test_part1() {
         let parsed = parse(&example());
-        assert_eq!(part1(&parsed[0..3]), 79);
+        assert_eq!(part1(&parsed[0..2]), 79);
     }
 }

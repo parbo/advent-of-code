@@ -73,6 +73,7 @@ pub use self::vecmath::vec3_square_len as vec_square_length;
 pub use self::vecmath::vec3_sub as vec_sub;
 pub use self::vecmath::vec4_add;
 pub use self::vecmath::vec4_sub;
+pub use self::vecmath::vec4_neg;
 
 pub fn length(v: FVec3) -> f64 {
     vec_square_length(v).sqrt()

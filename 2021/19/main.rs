@@ -100,6 +100,7 @@ fn part1(sensors: &[ParsedItem]) -> Answer {
     for ((i, j), (mt, dist, common)) in &rots {
         println!("mt: {:?}", mt);
 	if let Some(c) = transform(&rots, *i, *j, common, 0) {
+	    println!("transformed: {:?}", c);
 	    combined.extend(&c);
 	}
     }

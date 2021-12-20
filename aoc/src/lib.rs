@@ -1150,6 +1150,7 @@ where
     frame: usize,
     rect: Option<(Point, Point)>,
     bg: [u8; 3],
+    unset: Option<T>,
     image: Option<RgbImage>,
     phantom: PhantomData<T>,
     phantom_g: PhantomData<G>,
@@ -1182,6 +1183,7 @@ where
             basename: basename.into(),
             rect: None,
             bg: [255, 255, 255],
+            unset: None,
             image: None,
             phantom: PhantomData,
             phantom_g: PhantomData,
@@ -1194,6 +1196,10 @@ where
 
     pub fn set_bg(&mut self, bg: [u8; 3]) {
         self.bg = bg;
+    }
+
+    pub fn set_unset(&mut self, unset: T) {
+        self.unset = Some(unset);
     }
 
     pub fn save_image(&self) {
@@ -1235,7 +1241,12 @@ where
         let mut image = RgbImage::from_raw(pixelw as u32, pixelh as u32, buffer).unwrap();
         for y in min_y..=max_y {
             for x in min_x..=max_x {
-                if let Some(value) = area.get_value([x, y]) {
+                let val = if let Some(v) = area.get_value([x, y]) {
+                    Some(v)
+                } else {
+                    self.unset
+                };
+                if let Some(value) = val {
                     let sprite = self.to_sprite(value);
                     let mut yy = (y - min_y) * self.sprite_dimension.1;
                     let mut xx = (x - min_x) * self.sprite_dimension.0;

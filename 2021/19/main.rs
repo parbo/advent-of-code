@@ -58,25 +58,31 @@ fn make_matrices() -> Vec<Mat4> {
     matrices
 }
 
-fn align(matrices: &[Mat4], s_i: &[Vec4], s_j: &[Vec4]) -> Option<(Mat4, Vec4, BTreeSet<Vec4>)> {
-    let seti = s_i.iter().copied().collect::<BTreeSet<_>>();
-    for m in matrices {
-        // Rotate beacons
-        let rbj = s_j
-            .iter()
-            .map(|bj| aoc::mat_transform(*m, *bj))
-            .collect::<Vec<_>>();
+fn align(
+    matrices: &[Mat4],
+    seti: &BTreeSet<Vec4>,
+    s_i: &[Vec4],
+    rbjs: &[BTreeSet<Vec4>],
+) -> Option<(Mat4, Vec4)> {
+    for ix in 0..matrices.len() {
+        let m = matrices[ix];
+        let rbj = &rbjs[ix];
         for b1 in s_i {
-            for b2 in &rbj {
+            let tot = rbj.len();
+            for (i, b2) in rbj.iter().enumerate() {
                 let dist = aoc::vec4_sub(*b1, *b2);
-                let tbj = rbj
-                    .iter()
-                    .map(|b| aoc::vec4_add(*b, dist))
-                    .collect::<Vec<_>>();
-                let setj = tbj.iter().copied().collect::<BTreeSet<_>>();
-                let found = seti.intersection(&setj).copied().collect::<BTreeSet<_>>();
-                if found.len() >= 12 {
-                    return Some((*m, dist, found));
+                let mut found = 0;
+                for b in rbj {
+                    let bj = aoc::vec4_add(*b, dist);
+                    if seti.contains(&bj) {
+                        found += 1;
+                    }
+                    if found >= 12 {
+                        return Some((m, dist));
+                    }
+                    if tot - i + found < 12 {
+                        break;
+                    }
                 }
             }
         }
@@ -85,25 +91,25 @@ fn align(matrices: &[Mat4], s_i: &[Vec4], s_j: &[Vec4]) -> Option<(Mat4, Vec4, B
 }
 
 fn transform(
-    t: &BTreeMap<(usize, usize), (Mat4, Vec4, BTreeSet<Vec4>)>,
+    t: &BTreeMap<(usize, usize), (Mat4, Vec4)>,
     i: usize,
     c: &BTreeSet<Vec4>,
     v: &mut BTreeSet<usize>,
     d: usize,
 ) -> Option<BTreeSet<Vec4>> {
-    println!("t: {}, {:?}", i, c);
+    // println!("t: {}, {:?}", i, c);
     if v.contains(&i) {
         return None;
     }
     v.insert(i);
     if i == 0 {
-        println!("i == 0");
+        // println!("i == 0");
         return Some(c.clone());
     }
-    for ((k, l), (m, dist, _c)) in t {
-        println!("k: {}, l: {}, d: {:?}", k, l, dist);
+    for ((k, l), (m, dist)) in t {
+        // println!("k: {}, l: {}, d: {:?}", k, l, dist);
         if *k == i {
-            println!("alt 1");
+            // println!("alt 1");
             let new_c = c
                 .iter()
                 .map(|x| aoc::mat_transform(*m, aoc::vec4_sub(*x, *dist)))
@@ -112,7 +118,7 @@ fn transform(
                 return Some(c);
             }
         } else if *l == i {
-            println!("alt 2");
+            // println!("alt 2");
             let new_c = c
                 .iter()
                 .map(|x| aoc::vec4_add(aoc::mat_transform(*m, *x), *dist))
@@ -122,40 +128,59 @@ fn transform(
             }
         }
     }
-    println!("failed!");
+    // println!("failed!");
     None
 }
 
 fn solve(sensors: &[ParsedItem]) -> BTreeSet<Vec4> {
     let matrices = make_matrices();
+    let rbjs = sensors
+        .iter()
+        .map(|x| {
+            matrices
+                .iter()
+                .map(|m| {
+                    x.iter()
+                        .map(|bj| aoc::mat_transform(*m, *bj))
+                        .collect::<BTreeSet<Vec4>>()
+                })
+                .collect::<Vec<BTreeSet<Vec4>>>()
+        })
+        .collect::<Vec<Vec<BTreeSet<_>>>>();
     let mut rots = BTreeMap::new();
     for i in 0..sensors.len() {
+        let seti = sensors[i].iter().copied().collect::<BTreeSet<_>>();
         for j in 0..sensors.len() {
             if i == j {
                 continue;
             }
-            if let Some((mt, dist, common)) = align(&matrices, &sensors[i], &sensors[j]) {
+            if let Some((mt, dist)) = align(&matrices, &seti, &sensors[i], &rbjs[j]) {
                 println!(
-                    "found alignment of {:?}, {:?} with {:?}, dist: {:?}, common: {:?}",
-                    i, j, mt, dist, common
+                    "found alignment of {:?}, {:?} with {:?}, dist: {:?}",
+                    i, j, mt, dist
                 );
-                rots.insert((i, j), (mt, dist, common));
+                rots.insert((i, j), (mt, dist));
             }
         }
     }
     // Transform back to 0's coordinate system
     let mut combined = BTreeSet::<Vec4>::new();
     for (i, bi) in sensors.iter().enumerate() {
-	let s = bi.iter().copied().collect::<BTreeSet<_>>();
+        let s = bi.iter().copied().collect::<BTreeSet<_>>();
         let mut v = BTreeSet::new();
         if let Some(c) = transform(&rots, i, &s, &mut v, 0) {
             println!("transformed: {}, {:?}", i, c);
             combined.extend(&c);
         }
     }
-    println!("combined: {}, {:?}", combined.len(), combined.iter().sorted().collect::<Vec<_>>());
+    println!(
+        "combined: {}, {:?}",
+        combined.len(),
+        combined.iter().sorted().collect::<Vec<_>>()
+    );
     combined
 }
+
 fn part1(sensors: &[ParsedItem]) -> Answer {
     let combined = solve(sensors);
     combined.len() as Answer
@@ -221,29 +246,28 @@ mod tests {
     fn example_expected() -> BTreeSet<Vec4> {
         include_str!("sample_expected.txt")
             .lines()
-            .map(|x| 
-                 aoc::split_ch(x, ','))
+            .map(|x| aoc::split_ch(x, ','))
             .map(|x| {
-                    [
-                        x[0].parse::<i64>().unwrap(),
-                        x[1].parse::<i64>().unwrap(),
-                        x[2].parse::<i64>().unwrap(),
-                        1,
-                    ]
-                })
+                [
+                    x[0].parse::<i64>().unwrap(),
+                    x[1].parse::<i64>().unwrap(),
+                    x[2].parse::<i64>().unwrap(),
+                    1,
+                ]
+            })
             .collect()
     }
 
     #[test]
     fn test_part1() {
         let parsed = parse(&example());
-	let combined = solve(&parsed);
-	let expected = example_expected();
-	let diff = expected.difference(&combined);
-	for d in diff {
-	    println!("diff: {:?}", d);
-	}
-	assert_eq!(combined, expected);
+        let combined = solve(&parsed);
+        let expected = example_expected();
+        let diff = expected.difference(&combined);
+        for d in diff {
+            println!("diff: {:?}", d);
+        }
+        assert_eq!(combined, expected);
         assert_eq!(combined.len(), 79);
     }
 }

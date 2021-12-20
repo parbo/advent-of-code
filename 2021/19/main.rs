@@ -1,6 +1,6 @@
+use aoc::FxHashSet;
 use aoc::Itertools;
 use aoc::{Mat4, Vec4};
-use std::collections::HashSet;
 use std::iter::*;
 use std::time::Instant;
 
@@ -58,7 +58,11 @@ fn make_matrices() -> Vec<Mat4> {
     matrices
 }
 
-fn align(matrices: &[Mat4], seti: &HashSet<Vec4>, rbjs: &[HashSet<Vec4>]) -> Option<(Mat4, Vec4)> {
+fn align(
+    matrices: &[Mat4],
+    seti: &FxHashSet<Vec4>,
+    rbjs: &[FxHashSet<Vec4>],
+) -> Option<(Mat4, Vec4)> {
     for ix in 0..matrices.len() {
         let m = matrices[ix];
         let rbj = &rbjs[ix];
@@ -89,7 +93,7 @@ fn align(matrices: &[Mat4], seti: &HashSet<Vec4>, rbjs: &[HashSet<Vec4>]) -> Opt
     None
 }
 
-fn solve(sensors: &[ParsedItem]) -> (HashSet<Vec4>, Vec<Vec4>) {
+fn solve(sensors: &[ParsedItem]) -> (FxHashSet<Vec4>, Vec<Vec4>) {
     let matrices = make_matrices();
     let rbjs = sensors
         .iter()
@@ -99,29 +103,31 @@ fn solve(sensors: &[ParsedItem]) -> (HashSet<Vec4>, Vec<Vec4>) {
                 .map(|m| {
                     x.iter()
                         .map(|bj| aoc::mat_transform(*m, *bj))
-                        .collect::<HashSet<Vec4>>()
+                        .collect::<FxHashSet<Vec4>>()
                 })
-                .collect::<Vec<HashSet<Vec4>>>()
+                .collect::<Vec<FxHashSet<Vec4>>>()
         })
-        .collect::<Vec<Vec<HashSet<_>>>>();
-    let mut translated = sensors[0].iter().copied().collect::<HashSet<_>>();
+        .collect::<Vec<Vec<FxHashSet<_>>>>();
+    let mut translated = sensors[0].iter().copied().collect::<FxHashSet<_>>();
+    translated.reserve(sensors[0].len() * (sensors.len() + 1));
     let mut dists = vec![];
-    let mut ti = HashSet::new();
-    ti.insert(0);
-    while ti.len() < sensors.len() {
-        for j in 0..sensors.len() {
-            if ti.contains(&j) {
-                continue;
-            }
-            if let Some((mt, dist)) = align(&matrices, &translated, &rbjs[j]) {
+    dists.reserve(sensors.len());
+    let mut ti = (1..sensors.len()).collect::<FxHashSet<_>>();
+    while ti.len() > 0 {
+        let mut remove = vec![];
+        for j in &ti {
+            if let Some((mt, dist)) = align(&matrices, &translated, &rbjs[*j]) {
                 println!("found alignment of {:?} with {:?}, dist: {:?}", j, mt, dist);
-                for bj in &sensors[j] {
+                for bj in &sensors[*j] {
                     let tbj = aoc::mat_transform(mt, *bj);
                     translated.insert(tbj);
                 }
                 dists.push(dist);
-                ti.insert(j);
+                remove.push(*j);
             }
+        }
+        for i in remove {
+            ti.remove(&i);
         }
     }
     println!("{}, {:?}", translated.len(), translated);
@@ -196,7 +202,7 @@ mod tests {
             .collect()
     }
 
-    fn example_expected() -> HashSet<Vec4> {
+    fn example_expected() -> FxHashSet<Vec4> {
         include_str!("sample_expected.txt")
             .lines()
             .map(|x| aoc::split_ch(x, ','))

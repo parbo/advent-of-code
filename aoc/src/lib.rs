@@ -402,8 +402,12 @@ pub fn astar_graph<T: petgraph::EdgeType>(
     )
 }
 
-fn manhattan(n: Point, goal: Point) -> i64 {
+pub fn manhattan(n: Point, goal: Point) -> i64 {
     (goal[0] - n[0]).abs() + (goal[1] - n[1]).abs()
+}
+
+pub fn manhattan_vec4(n: Vec4, goal: Vec4) -> i64 {
+    (goal[0] - n[0]).abs() + (goal[1] - n[1]).abs() + (goal[2] - n[2]).abs()
 }
 
 pub fn astar_grid<T>(

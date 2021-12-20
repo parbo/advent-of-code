@@ -74,6 +74,7 @@ fn transform(t: &HashMap<(usize, usize), (Mat4, Vec4, HashSet<Vec4>)>, i: usize,
 	    }
 	}
     }
+    println!("failed!");
     None
 }
 

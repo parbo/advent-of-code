@@ -51,38 +51,36 @@ fn part1(players: &[ParsedItem]) -> Answer {
 fn run_game(mut p: i64, perms: &[i64]) -> Option<usize> {
     // Compute in which step each player wins for this step sequence
     let mut s = 0;
-    let mut pp = vec![p];
     for (j, d) in perms.iter().enumerate() {
-	p += d;
-	p = ((p - 1) % 10) + 1;
-	pp.push(p);
-	s += p;
-	if s >= 21 {
-	    return Some(j)
-	}
+        p += d;
+        p = ((p - 1) % 10) + 1;
+        s += p;
+        if s >= 21 {
+            return Some(j);
+        }
     }
     None
 }
 
 fn run_games(p: i64, draws: &[i64], wins: &mut HashMap<Vec<i64>, usize>) {
     if let Some(j) = run_game(p, draws) {
-	wins.insert(draws.to_owned(), j);
+        wins.insert(draws.to_owned(), j);
     } else {
-	// recurse
-	for i in 3..=9 {
-	    let mut d = draws.to_owned();
-	    d.push(i);
-	    run_games(p, &d, wins);
-	}
+        // recurse
+        for i in 3..=9 {
+            let mut d = draws.to_owned();
+            d.push(i);
+            run_games(p, &d, wins);
+        }
     }
 }
 
 fn part2(players: &[ParsedItem]) -> Answer {
     // Possible outcomes of three rolls
-    let mut steps : HashMap<i64, i64> = HashMap::new();
+    let mut steps: HashMap<i64, i64> = HashMap::new();
     for v in (0..3).map(|_| (1..=3)).multi_cartesian_product() {
-	let sum = v.iter().sum();
-	*steps.entry(sum).or_insert(0) += 1;
+        let sum = v.iter().sum();
+        *steps.entry(sum).or_insert(0) += 1;
     }
     println!("{:?}", steps);
     // All the possible winning games
@@ -90,56 +88,38 @@ fn part2(players: &[ParsedItem]) -> Answer {
     run_games(players[0], &[], &mut possible_games_0);
     let mut possible_games_1 = HashMap::new();
     run_games(players[1], &[], &mut possible_games_1);
-    let mut games_0 = HashMap::new();
-    for (perms, j) in possible_games_0 {
-	// The number of possible games with this step sequence
-	let c = perms.iter().map(|d| steps.get(d).unwrap()).product();
-	games_0.insert(perms.to_owned(), (j, c));
+    println!("games: {}", possible_games_0.len());
+    println!("games: {}", possible_games_1.len());
+    let mut games_0: HashMap<Vec<i64>, (usize, i64)> = HashMap::new();
+    for (draws, s) in &possible_games_0 {
+        games_0.insert(
+            draws.to_owned(),
+            (*s, draws
+                .iter()
+                .map(|d| steps.get(d).unwrap())
+                .product::<i64>()));
     }
-    let mut games_1 = HashMap::new();
-    for (perms, j) in possible_games_1 {
-	// The number of possible games with this step sequence
-	let c = perms.iter().map(|d| steps.get(d).unwrap()).product();
-	games_1.insert(perms.to_owned(), (j, c));
+    let mut games_1: HashMap<Vec<i64>, (usize, i64)> = HashMap::new();
+    for (draws, s) in &possible_games_1 {
+        games_1.insert(
+            draws.to_owned(),
+            (*s, draws
+                .iter()
+                .map(|d| steps.get(d).unwrap())
+                .product::<i64>()));
     }
-    println!("games: {}", games_0.len());
-    println!("games: {}", games_1.len());
-    // All winning games
-    let mut winning_games = HashMap::new();
-    for (p, (j, c)) in games_0 {
-	let (jj, cc) = winning_games.entry(p).or_insert((j, c));
-	if j < *jj {
-	    *jj = j;
-	    *cc = c;
-	}
-    }
-    for (p, (j, c)) in games_1 {
-	let (jj, cc) = winning_games.entry(p).or_insert((j, c));
-	if j < *jj {
-	    *jj = j;
-	    *cc = c;
-	}
-    }
-    // How many games end in x steps?
-    println!("games: {}", winning_games.len());
-    let mut game_steps : HashMap<usize, i64> = HashMap::new();
-    for (_draws, (steps, c)) in &winning_games {
-	*game_steps.entry(*steps).or_insert(0) += c;
-    }
-    println!("game_steps: {:?}", game_steps);
     // For all the combinations of games
     let mut wins: Vec<i64> = vec![0; players.len()];
-    let start = *game_steps.keys().min().unwrap();
-    let end = *game_steps.keys().max().unwrap();
-    for v in (0..2).map(|_| (start..=end)).multi_cartesian_product() {
-	println!("v: {:?}", v);
-	if v[0] <= v[1] {
-	    wins[0] += *game_steps.get(&v[0]).unwrap();
-	} else {
-	    wins[1] += *game_steps.get(&v[0]).unwrap();
-	}
-	println!("wins: {:?}", wins);
+    for (sa, ca) in games_0.values() {
+        for (sb, cb) in games_1.values() {
+            if sa <= sb {
+                wins[0] += ca;
+            } else {
+                wins[1] += cb;
+            }
+        }
     }
+    println!("wins: {:?}", wins);
     *wins.iter().max().unwrap()
 }
 

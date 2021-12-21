@@ -48,53 +48,74 @@ fn part1(players: &[ParsedItem]) -> Answer {
     rolls * s.iter().min().unwrap()
 }
 
-fn part2(players: &[ParsedItem]) -> Answer {
-    let mut steps = HashMap::new();
-    for a in 1..=3 {
-	for b in 1..=3 {
-	    for c in 1..=3 {
-		let sum = a + b + c;
-		*steps.entry(sum).or_insert(0) += 1;
-	    }
+fn run_game(mut p: i64, perms: &[i64]) -> Option<usize> {
+    // Compute in which step each player wins for this step sequence
+    let mut s = 0;
+    let mut pp = vec![p];
+    for (j, d) in perms.iter().enumerate() {
+	p += d;
+	p = ((p - 1) % 10) + 1;
+	pp.push(p);
+	s += p;
+	if s >= 21 {
+	    return Some(j)
 	}
+    }
+    None
+}
+
+fn run_games(p: i64, draws: &[i64], wins: &mut HashMap<Vec<i64>, usize>) {
+    if let Some(j) = run_game(p, draws) {
+	wins.insert(draws.to_owned(), j);
+    } else {
+	// recurse
+	for i in 3..=9 {
+	    let mut d = draws.to_owned();
+	    d.push(i);
+	    run_games(p, &d, wins);
+	}
+    }
+}
+
+fn part2(players: &[ParsedItem]) -> Answer {
+    // Possible outcomes of three rolls
+    let mut steps : HashMap<i64, i64> = HashMap::new();
+    for v in (0..3).map(|_| (1..=3)).multi_cartesian_product() {
+	let sum = v.iter().sum();
+	*steps.entry(sum).or_insert(0) += 1;
     }
     println!("{:?}", steps);
+    // All the possible winning games
+    let mut possible_games = HashMap::new();
+    for p in players {
+	run_games(*p, &[], &mut possible_games);
+    }
+    let mut games = HashMap::new();
+    for (perms, j) in possible_games {
+	// The number of possible games with this step sequence
+	let c = perms.iter().map(|d| steps.get(d).unwrap()).product();
+	games.insert(perms.to_owned(), (j, c));
+    }
+    // How many games end in x steps?
+    println!("games: {}", games.len());
+    let mut game_steps : HashMap<usize, i64> = HashMap::new();
+    for (_draws, (steps, c)) in &games {
+	*game_steps.entry(*steps).or_insert(0) += c;
+    }
+    println!("game_steps: {:?}", game_steps);
+    // For all the combinations of games
     let mut wins: Vec<i64> = vec![0; players.len()];
-    let mut games = vec![];
-    for combs in (3..=9).combinations_with_replacement(7) {
-        for perms in combs.iter().copied().permutations(7) {
-	    games.push(perms);
+    let start = *game_steps.keys().min().unwrap();
+    let end = *game_steps.keys().max().unwrap();
+    for v in (0..2).map(|_| (start..=end)).multi_cartesian_product() {
+	println!("v: {:?}", v);
+	if v[0] <= v[1] {
+	    wins[0] += *game_steps.get(&v[0]).unwrap();
+	} else {
+	    wins[1] += *game_steps.get(&v[0]).unwrap();
 	}
+	println!("wins: {:?}", wins);
     }
-    for draws in games.iter().combinations_with_replacement(2) {
-        let mut p = players.to_owned();
-        let mut s = vec![0; p.len()];
-        let mut any_win = false;
-	let mut w = vec![0; p.len()];
-	let mut ws = vec![1; p.len()];
-        for i in 0..2 {
-            'outer: for d in draws[i] {
-		ws[i] *= steps.get(d).unwrap();
-                p[i] += d;
-                p[i] = ((p[i] - 1) % 10) + 1;
-                s[i] += p[i];
-                if s[i] >= 21 {
-                    w[i] += 1;
-                    any_win = true;
-                    break 'outer;
-                }
-            }
-	}
-	for i in 0..wins.len() {
-	    wins[i] += w[i] * ws[i];
-	}
-	// println!("wins: {:?}, ws: {:?}", wins, ws);
-	// if !any_win {
-	//     println!("{:?}, {:?}, {:?}", perms, p, s);
-	// }
-        assert!(any_win);
-    }
-    println!("wins: {:?}", wins);
     *wins.iter().max().unwrap()
 }
 

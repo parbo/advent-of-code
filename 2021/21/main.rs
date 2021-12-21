@@ -86,20 +86,44 @@ fn part2(players: &[ParsedItem]) -> Answer {
     }
     println!("{:?}", steps);
     // All the possible winning games
-    let mut possible_games = HashMap::new();
-    for p in players {
-	run_games(*p, &[], &mut possible_games);
-    }
-    let mut games = HashMap::new();
-    for (perms, j) in possible_games {
+    let mut possible_games_0 = HashMap::new();
+    run_games(players[0], &[], &mut possible_games_0);
+    let mut possible_games_1 = HashMap::new();
+    run_games(players[1], &[], &mut possible_games_1);
+    let mut games_0 = HashMap::new();
+    for (perms, j) in possible_games_0 {
 	// The number of possible games with this step sequence
 	let c = perms.iter().map(|d| steps.get(d).unwrap()).product();
-	games.insert(perms.to_owned(), (j, c));
+	games_0.insert(perms.to_owned(), (j, c));
+    }
+    let mut games_1 = HashMap::new();
+    for (perms, j) in possible_games_1 {
+	// The number of possible games with this step sequence
+	let c = perms.iter().map(|d| steps.get(d).unwrap()).product();
+	games_1.insert(perms.to_owned(), (j, c));
+    }
+    println!("games: {}", games_0.len());
+    println!("games: {}", games_1.len());
+    // All winning games
+    let mut winning_games = HashMap::new();
+    for (p, (j, c)) in games_0 {
+	let (jj, cc) = winning_games.entry(p).or_insert((j, c));
+	if j < *jj {
+	    *jj = j;
+	    *cc = c;
+	}
+    }
+    for (p, (j, c)) in games_1 {
+	let (jj, cc) = winning_games.entry(p).or_insert((j, c));
+	if j < *jj {
+	    *jj = j;
+	    *cc = c;
+	}
     }
     // How many games end in x steps?
-    println!("games: {}", games.len());
+    println!("games: {}", winning_games.len());
     let mut game_steps : HashMap<usize, i64> = HashMap::new();
-    for (_draws, (steps, c)) in &games {
+    for (_draws, (steps, c)) in &winning_games {
 	*game_steps.entry(*steps).or_insert(0) += c;
     }
     println!("game_steps: {:?}", game_steps);

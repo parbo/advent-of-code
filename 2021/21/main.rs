@@ -85,12 +85,15 @@ fn part2(players: &[ParsedItem]) -> Answer {
     println!("{:?}", steps);
     // All the possible winning games
     let mut possible_games_0 = HashMap::new();
+    possible_games_0.reserve(90000);
     run_games(players[0], &[], &mut possible_games_0);
     let mut possible_games_1 = HashMap::new();
+    possible_games_1.reserve(90000);
     run_games(players[1], &[], &mut possible_games_1);
     println!("games: {}", possible_games_0.len());
     println!("games: {}", possible_games_1.len());
     let mut games_0: HashMap<Vec<i64>, (usize, i64)> = HashMap::new();
+    games_0.reserve(possible_games_0.len());
     for (draws, s) in &possible_games_0 {
         games_0.insert(
             draws.to_owned(),
@@ -100,6 +103,7 @@ fn part2(players: &[ParsedItem]) -> Answer {
                 .product::<i64>()));
     }
     let mut games_1: HashMap<Vec<i64>, (usize, i64)> = HashMap::new();
+    games_1.reserve(possible_games_1.len());
     for (draws, s) in &possible_games_1 {
         games_1.insert(
             draws.to_owned(),
@@ -113,9 +117,9 @@ fn part2(players: &[ParsedItem]) -> Answer {
     for (sa, ca) in games_0.values() {
         for (sb, cb) in games_1.values() {
             if sa <= sb {
-                wins[0] += ca;
+                wins[0] += ca * cb;
             } else {
-                wins[1] += cb;
+                wins[1] += ca * cb;
             }
         }
     }

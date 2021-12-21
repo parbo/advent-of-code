@@ -48,33 +48,6 @@ fn part1(players: &[ParsedItem]) -> Answer {
     rolls * s.iter().min().unwrap()
 }
 
-fn run_game(mut p: i64, perms: &[i64]) -> Option<usize> {
-    // Compute in which step each player wins for this step sequence
-    let mut s = 0;
-    for (j, d) in perms.iter().enumerate() {
-        p += d;
-        p = ((p - 1) % 10) + 1;
-        s += p;
-        if s >= 21 {
-            return Some(j);
-        }
-    }
-    None
-}
-
-fn run_games(p: i64, draws: &[i64], wins: &mut HashMap<Vec<i64>, usize>) {
-    if let Some(j) = run_game(p, draws) {
-        wins.insert(draws.to_owned(), j);
-    } else {
-        // recurse
-        for i in 3..=9 {
-            let mut d = draws.to_owned();
-            d.push(i);
-            run_games(p, &d, wins);
-        }
-    }
-}
-
 fn part2(players: &[ParsedItem]) -> Answer {
     // Possible outcomes of three rolls
     let mut steps: HashMap<i64, i64> = HashMap::new();
@@ -82,49 +55,50 @@ fn part2(players: &[ParsedItem]) -> Answer {
         let sum = v.iter().sum();
         *steps.entry(sum).or_insert(0) += 1;
     }
-    println!("{:?}", steps);
-    // All the possible winning games
-    let mut possible_games_0 = HashMap::new();
-    possible_games_0.reserve(90000);
-    run_games(players[0], &[], &mut possible_games_0);
-    let mut possible_games_1 = HashMap::new();
-    possible_games_1.reserve(90000);
-    run_games(players[1], &[], &mut possible_games_1);
-    println!("games: {}", possible_games_0.len());
-    println!("games: {}", possible_games_1.len());
-    let mut games_0: HashMap<Vec<i64>, (usize, i64)> = HashMap::new();
-    games_0.reserve(possible_games_0.len());
-    for (draws, s) in &possible_games_0 {
-        games_0.insert(
-            draws.to_owned(),
-            (*s, draws
-                .iter()
-                .map(|d| steps.get(d).unwrap())
-                .product::<i64>()));
+
+    let mut games = HashMap::new();
+    games.insert((players[0], players[1], 0, 0), 1);
+
+    loop {
+	let mut g = HashMap::new();
+
+	let mut done = 0;
+	for ((pa, pb, sa, sb), c) in &games {
+	    if *sa >= 21 || *sb >= 21 {
+		done += 1;
+		g.insert((*pa, *pb, *sa, *sb), *c);
+		continue;
+	    }
+	    for da in 3..=9 {
+		let na = steps.get(&da).unwrap();
+		let mut new_pa = pa + da;
+		new_pa = ((new_pa - 1) % 10) + 1;
+		let new_sa = sa + new_pa;
+		if new_sa >= 21 {
+		    let new_c = c * na;
+		    *g.entry((new_pa, *pb, new_sa, *sb)).or_insert(0) += new_c;
+		} else {
+		    for db in 3..=9 {
+			let nb = steps.get(&db).unwrap();
+			let mut new_pb = pb + db;
+			new_pb = ((new_pb - 1) % 10) + 1;
+			let new_sb = sb + new_pb;
+			let new_c = c * na * nb;
+			*g.entry((new_pa, new_pb, new_sa, new_sb)).or_insert(0) += new_c;
+		    }
+		}
+	    }
+	}
+	println!("g {:?}, {}", g.len(), done);
+	if done == g.len() {
+	    break;
+	}
+	games = g;
     }
-    let mut games_1: HashMap<Vec<i64>, (usize, i64)> = HashMap::new();
-    games_1.reserve(possible_games_1.len());
-    for (draws, s) in &possible_games_1 {
-        games_1.insert(
-            draws.to_owned(),
-            (*s, draws
-                .iter()
-                .map(|d| steps.get(d).unwrap())
-                .product::<i64>()));
-    }
-    // For all the combinations of games
-    let mut wins: Vec<i64> = vec![0; players.len()];
-    for (sa, ca) in games_0.values() {
-        for (sb, cb) in games_1.values() {
-            if sa <= sb {
-                wins[0] += ca * cb;
-            } else {
-                wins[1] += ca * cb;
-            }
-        }
-    }
-    println!("wins: {:?}", wins);
-    *wins.iter().max().unwrap()
+    let wina : i64 = games.iter().filter(|((_, _, sa, _), _)| *sa >= 21).map(|(_, c)| c).sum();
+    let winb : i64 = games.iter().filter(|((_, _, sa, sb), _)| *sa < 21 && *sb >= 21).map(|(_, c)| c).sum();
+    println!("wina: {}, winb: {}", wina, winb);
+    wina.max(winb)
 }
 
 fn parse(lines: &[String]) -> Parsed {

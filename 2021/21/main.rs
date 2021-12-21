@@ -50,21 +50,20 @@ fn part1(players: &[ParsedItem]) -> Answer {
 
 fn part2(players: &[ParsedItem]) -> Answer {
     let mut games = HashMap::new();
-    games.insert((players[0], players[1], 0, 0), (1, 0, 0));
+    games.insert((players[0], players[1], 0, 0), 1i64);
 
-    let mut tot_games = 0;
     loop {
         let mut g = HashMap::new();
 
         let mut done = 0;
-        for ((pa, pb, sa, sb), (c, winsa, winsb)) in &games {
-	    // Already done with this?
+        for ((pa, pb, sa, sb), c) in &games {
+            // Already done with this?
             if *sa >= 21 || *sb >= 21 {
                 done += 1;
-                g.insert((*pa, *pb, *sa, *sb), (*c, *winsa, *winsb));
+                g.insert((*pa, *pb, *sa, *sb), *c);
                 continue;
             }
-	    // Roll a
+            // Roll a
             for da1 in 1..=3 {
                 for da2 in 1..=3 {
                     for da3 in 1..=3 {
@@ -72,31 +71,18 @@ fn part2(players: &[ParsedItem]) -> Answer {
                         new_pa = ((new_pa - 1) % 10) + 1;
                         let new_sa = sa + new_pa;
                         if new_sa >= 21 {
-			    tot_games += 1;
                             // If a goes over 21, we don't roll any b
-                            let mut e = g
-                                .entry((new_pa, *pb, new_sa, *sb))
-                                .or_insert((*c, *winsa, *winsb));
-			    assert!(*sb < 21);
-			    e.0 += 1;
-                            e.1 += 1;
+                            *g.entry((new_pa, *pb, new_sa, *sb)).or_insert(0) += c;
                         } else {
-			    // Roll b
+                            // Roll b
                             for db1 in 1..=3 {
                                 for db2 in 1..=3 {
                                     for db3 in 1..=3 {
                                         let mut new_pb = pb + db1 + db2 + db3;
                                         new_pb = ((new_pb - 1) % 10) + 1;
                                         let new_sb = sb + new_pb;
-					tot_games += 1;
-                                        let mut e = g
-                                            .entry((new_pa, new_pb, new_sa, new_sb))
-                                            .or_insert((*c, *winsa, *winsb));
-					e.0 += 1;
-                                        if new_sb >= 21 {
-					    assert!(new_sa < 21);
-					    e.2 += 1;
-                                        }
+                                        *g.entry((new_pa, new_pb, new_sa, new_sb)).or_insert(0) +=
+                                            c;
                                     }
                                 }
                             }
@@ -105,16 +91,32 @@ fn part2(players: &[ParsedItem]) -> Answer {
                 }
             }
         }
-	let wina: i64 = g.values().map(|(_, x, _)| x).sum();
-	let winb: i64 = g.values().map(|(_, _, x)| x).sum();
-        println!("g {:?}, {}, {}, {}, {}", g.len(), done, wina, winb, tot_games);
+        let wina: i64 = g
+            .iter()
+            .filter(|((_, _, sa, _), _)| *sa >= 21)
+            .map(|(_, c)| c)
+            .sum();
+        let winb: i64 = g
+            .iter()
+            .filter(|((_, _, sa, sb), _)| *sa < 21 || *sb >= 21)
+            .map(|(_, c)| c)
+            .sum();
+        println!("g {:?}, {}, {}, {}", g.len(), done, wina, winb);
         if done == g.len() {
             break;
         }
         games = g;
     }
-    let wina: i64 = games.values().map(|(_, x, _)| x).sum();
-    let winb: i64 = games.values().map(|(_, _, x)| x).sum();
+    let wina: i64 = games
+        .iter()
+        .filter(|((_, _, sa, _), _)| *sa >= 21)
+        .map(|(_, c)| c)
+        .sum();
+    let winb: i64 = games
+        .iter()
+        .filter(|((_, _, sa, sb), _)| *sa < 21 || *sb >= 21)
+        .map(|(_, c)| c)
+        .sum();
     println!("wina: {}, winb: {}", wina, winb);
     wina.max(winb)
 }

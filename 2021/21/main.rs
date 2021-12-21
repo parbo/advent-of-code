@@ -1,17 +1,6 @@
-use aoc::Itertools;
 use std::collections::HashMap;
 use std::iter::*;
 use std::time::Instant;
-
-// #[derive(parse_display::Display, parse_display::FromStr, Debug, Clone, PartialEq, Eq, Hash)]
-// #[display("{thing}: {al}-{ah} or {bl}-{bh}")]
-// struct Rule {
-//     thing: String,
-//     al: i64,
-//     ah: i64,
-//     bl: i64,
-//     bh: i64,
-// }
 
 type ParsedItem = i64;
 type Parsed = Vec<ParsedItem>;
@@ -42,7 +31,6 @@ fn part1(players: &[ParsedItem]) -> Answer {
             if s[i] >= 1000 {
                 break 'outer;
             }
-            println!("{}, {}, {}, {}", die, p[i], s[i], rolls);
         }
     }
     rolls * s.iter().min().unwrap()
@@ -53,14 +41,13 @@ fn part2(players: &[ParsedItem]) -> Answer {
     games.insert((players[0], players[1], 0, 0), 1i64);
 
     loop {
-        let mut g = HashMap::new();
-
+        let mut updates = vec![];
         let mut done = 0;
         for ((pa, pb, sa, sb), c) in &games {
             // Already done with this?
             if *sa >= 21 || *sb >= 21 {
                 done += 1;
-                g.insert((*pa, *pb, *sa, *sb), *c);
+                updates.push(((*pa, *pb, *sa, *sb), c));
                 continue;
             }
             // Roll a
@@ -72,7 +59,7 @@ fn part2(players: &[ParsedItem]) -> Answer {
                         let new_sa = sa + new_pa;
                         if new_sa >= 21 {
                             // If a goes over 21, we don't roll any b
-                            *g.entry((new_pa, *pb, new_sa, *sb)).or_insert(0) += c;
+                            updates.push(((new_pa, *pb, new_sa, *sb), c));
                         } else {
                             // Roll b
                             for db1 in 1..=3 {
@@ -81,8 +68,7 @@ fn part2(players: &[ParsedItem]) -> Answer {
                                         let mut new_pb = pb + db1 + db2 + db3;
                                         new_pb = ((new_pb - 1) % 10) + 1;
                                         let new_sb = sb + new_pb;
-                                        *g.entry((new_pa, new_pb, new_sa, new_sb)).or_insert(0) +=
-                                            c;
+                                        updates.push(((new_pa, new_pb, new_sa, new_sb), c));
                                     }
                                 }
                             }
@@ -91,21 +77,14 @@ fn part2(players: &[ParsedItem]) -> Answer {
                 }
             }
         }
-        let wina: i64 = g
-            .iter()
-            .filter(|((_, _, sa, _), _)| *sa >= 21)
-            .map(|(_, c)| c)
-            .sum();
-        let winb: i64 = g
-            .iter()
-            .filter(|((_, _, sa, sb), _)| *sa < 21 && *sb >= 21)
-            .map(|(_, c)| c)
-            .sum();
-        println!("g {:?}, {}, {}, {}", g.len(), done, wina, winb);
-        if done == g.len() {
-            break;
+        let mut g = HashMap::new();
+        for (k, c) in updates {
+            *g.entry(k).or_insert(0) += c;
         }
         games = g;
+        if done == games.len() {
+            break;
+        }
     }
     let wina: i64 = games
         .iter()
@@ -117,7 +96,6 @@ fn part2(players: &[ParsedItem]) -> Answer {
         .filter(|((_, _, sa, sb), _)| *sa < 21 && *sb >= 21)
         .map(|(_, c)| c)
         .sum();
-    println!("wina: {}, winb: {}", wina, winb);
     wina.max(winb)
 }
 

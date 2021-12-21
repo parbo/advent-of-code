@@ -98,7 +98,7 @@ fn part2(players: &[ParsedItem]) -> Answer {
             .sum();
         let winb: i64 = g
             .iter()
-            .filter(|((_, _, sa, sb), _)| *sa < 21 || *sb >= 21)
+            .filter(|((_, _, sa, sb), _)| *sa < 21 && *sb >= 21)
             .map(|(_, c)| c)
             .sum();
         println!("g {:?}, {}, {}, {}", g.len(), done, wina, winb);
@@ -114,7 +114,7 @@ fn part2(players: &[ParsedItem]) -> Answer {
         .sum();
     let winb: i64 = games
         .iter()
-        .filter(|((_, _, sa, sb), _)| *sa < 21 || *sb >= 21)
+        .filter(|((_, _, sa, sb), _)| *sa < 21 && *sb >= 21)
         .map(|(_, c)| c)
         .sum();
     println!("wina: {}, winb: {}", wina, winb);

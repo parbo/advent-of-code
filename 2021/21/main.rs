@@ -60,39 +60,40 @@ fn part2(players: &[ParsedItem]) -> Answer {
     }
     println!("{:?}", steps);
     let mut wins: Vec<i64> = vec![0; players.len()];
-    let mut unis = 0;
+    let mut games = vec![];
     for combs in (3..=9).combinations_with_replacement(7) {
         for perms in combs.iter().copied().permutations(7) {
-            let mut p = players.to_owned();
-            let mut s = vec![0; p.len()];
-            let mut any_win = false;
-	    let mut w = vec![0; p.len()];
-	    let mut ws = 1;
-            'outer: for d in &perms {
-		ws *= steps.get(d).unwrap();
-                for i in 0..2 {
-                    p[i] += d;
-                    p[i] = ((p[i] - 1) % 10) + 1;
-                    s[i] += p[i];
-                    if s[i] >= 21 {
-                        w[i] += 1;
-                        any_win = true;
-                        break 'outer;
-                    }
+	    games.push(perms);
+	}
+    }
+    for draws in games.iter().combinations_with_replacement(2) {
+        let mut p = players.to_owned();
+        let mut s = vec![0; p.len()];
+        let mut any_win = false;
+	let mut w = vec![0; p.len()];
+	let mut ws = vec![1; p.len()];
+        for i in 0..2 {
+            'outer: for d in draws[i] {
+		ws[i] *= steps.get(d).unwrap();
+                p[i] += d;
+                p[i] = ((p[i] - 1) % 10) + 1;
+                s[i] += p[i];
+                if s[i] >= 21 {
+                    w[i] += 1;
+                    any_win = true;
+                    break 'outer;
                 }
             }
-	    unis += ws;
-	    for i in 0..wins.len() {
-		wins[i] += w[i] * ws;
-	    }
-	    // println!("wins: {:?}, ws: {:?}", wins, ws);
-	    if !any_win {
-		println!("{:?}, {:?}, {:?}", perms, p, s);
-	    }
-            assert!(any_win);
-        }
+	}
+	for i in 0..wins.len() {
+	    wins[i] += w[i] * ws[i];
+	}
+	// println!("wins: {:?}, ws: {:?}", wins, ws);
+	// if !any_win {
+	//     println!("{:?}, {:?}, {:?}", perms, p, s);
+	// }
+        assert!(any_win);
     }
-    println!("unis: {:?}", unis);
     println!("wins: {:?}", wins);
     *wins.iter().max().unwrap()
 }

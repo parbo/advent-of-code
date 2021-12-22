@@ -48,7 +48,7 @@ fn part1(cuboids: &[ParsedItem]) -> Answer {
     cubes.values().filter(|x| **x).count() as Answer
 }
 
-fn split(cbi: Cuboid, cbj: Cuboid, adjacent: bool) -> Vec<Cuboid> {
+fn split(cbi: Cuboid, cbj: Cuboid) -> (Vec<Cuboid>, Vec<Cuboid>) {
     let minx = cbi.minx.min(cbj.minx);
     let midx1 = cbi.minx.max(cbj.minx).min(cbi.maxx.min(cbj.maxx));
     let midx2 = cbi.maxx.min(cbj.maxx).max(cbi.minx.max(cbj.minx));
@@ -66,15 +66,18 @@ fn split(cbi: Cuboid, cbj: Cuboid, adjacent: bool) -> Vec<Cuboid> {
     let yy = [(miny, midy1 - 1), (midy1, midy2 - 1), (midy2, maxy)];
     let zz = [(minz, midz1 - 1), (midz1, midz2 - 1), (midz2, maxz)];
 
-    let mut only_i = vec![];
-    let mut both = vec![];
-    let mut only_j = vec![];
-    for xxx in xx {
-        for yyy in yy {
-            for zzz in zz {
-                let (minx, maxx) = xxx;
-                let (miny, maxy) = yyy;
-                let (minz, maxz) = zzz;
+    println!("xx: {:?}", xx);
+    println!("yy: {:?}", yy);
+    println!("zz: {:?}", zz);
+
+    let mut fromi = vec![];
+    let mut fromj = vec![];
+    for xi in 0..3 {
+        for yi in 0..3 {
+            for zi in 0..3 {
+                let (minx, maxx) = xx[xi];
+                let (miny, maxy) = yy[yi];
+                let (minz, maxz) = zz[zi];
                 let ini = minx >= cbi.minx
                     && minx <= cbi.maxx
                     && miny >= cbi.miny
@@ -87,46 +90,33 @@ fn split(cbi: Cuboid, cbj: Cuboid, adjacent: bool) -> Vec<Cuboid> {
                     && miny <= cbj.maxy
                     && minz >= cbj.minz
                     && minz <= cbj.maxz;
-		if ini && !inj {
+                if ini && !inj {
                     let c = Cuboid {
-			state: cbi.state,
-			minx,
-			maxx,
-			miny,
-			maxy,
-			minz,
-			maxz,
+                        state: cbi.state,
+                        minx,
+                        maxx,
+                        miny,
+                        maxy,
+                        minz,
+                        maxz,
                     };
-                    only_i.push(c);
-		} else if ini && inj {
+                    fromi.push(c);
+                } else if inj {
                     let c = Cuboid {
-			state: cbi.state,
-			minx,
-			maxx,
-			miny,
-			maxy,
-			minz,
-			maxz,
+                        state: cbj.state,
+                        minx,
+                        maxx,
+                        miny,
+                        maxy,
+                        minz,
+                        maxz,
                     };
-                    both.push(c);
-		} else if adjacent {
-                    let c = Cuboid {
-			state: cbi.state,
-			minx,
-			maxx,
-			miny,
-			maxy,
-			minz,
-			maxz,
-                    };
-                    only_j.push(c);
-		}
+                    fromj.push(c);
+                }
             }
         }
     }
-    only_i.extend(both);
-    only_i.extend(only_j);
-    only_i
+    (fromi, fromj)
 }
 
 fn part2(cuboids: &[ParsedItem]) -> Answer {
@@ -136,41 +126,58 @@ fn part2(cuboids: &[ParsedItem]) -> Answer {
     let mut start = 0;
     loop {
         // Find overlapping pairs, split first cuboid
-        let mut remove = None;
-        let mut add = vec![];
+        let mut replace = None;
         'outer: for i in start..(cb.len() - 1) {
             let cbi = cb[i];
-            for j in i..cb.len() {
-		let cbj = cb[j];
-		if (cbj.minx >= cbi.minx && cbj.minx <= cbi.maxx
+            for j in (i + 1)..cb.len() {
+                let cbj = cb[j];
+                if (cbj.minx >= cbi.minx && cbj.minx <= cbi.maxx
                     || cbj.maxx >= cbi.minx && cbj.maxx <= cbi.maxx)
                     && (cbj.miny >= cbi.miny && cbj.miny <= cbi.maxy
-			|| cbj.maxy >= cbi.miny && cbj.maxy <= cbi.maxy)
+                        || cbj.maxy >= cbi.miny && cbj.maxy <= cbi.maxy)
                     && (cbj.minz >= cbi.minz && cbj.minz <= cbi.maxz
-			|| cbj.maxz >= cbi.minz && cbj.maxz <= cbi.maxz)
-		{
+                        || cbj.maxz >= cbi.minz && cbj.maxz <= cbi.maxz)
+                {
+		    println!("i: {}, cbi: {}", i, cbi);
+		    println!("j: {}, cbj: {}", j, cbj);
                     // We have overlap. Split into new cuboids.
-		    let adjacent = true;
-                    remove = Some((i, if adjacent { j } else { i }));
-		    add = split(cbi, cbj, adjacent);
-		    break 'outer;
-		}
-	    }
-	}
+                    let (first, last) = split(cbi, cbj);
+		    for a in &first {
+			println!("1: {}", a);
+		    }
+		    for a in &last {
+			println!("2: {}", a);
+		    }
+                    replace = Some(((i, first), (j, last)));
+                    break 'outer;
+                }
+            }
+        }
 
-        if let Some((i, j)) = remove {
-            println!("overlap: {},{}, num cuboids: {}", i, j, cb.len());
-            let mut new_cb = if i > 0 {
-                cb[0..i].to_owned()
-            } else {
-                vec![]
-            };
-            new_cb.extend_from_slice(&add);
+        if let Some(((i, first), (j, last))) = replace {
+            println!(
+                "overlap: {},{}, num cuboids: {}, adding: {}, {}",
+                i,
+                j,
+                cb.len(),
+                first.len(),
+                last.len()
+            );
+            let mut new_cb = if i > 0 { cb[0..i].to_owned() } else { vec![] };
+            new_cb.extend_from_slice(&first);
+            if i + 1 < j {
+                new_cb.extend_from_slice(&cb[(i + 1)..j]);
+            }
+            new_cb.extend_from_slice(&last);
             new_cb.extend_from_slice(&cb[(j + 1)..]);
-	    start = i;
+            start = i;
+	    ctr += 1;
+	    if ctr > 10 {
+		return 0;
+	    }
             cb = new_cb;
         } else {
-	    break;
+            break;
         }
     }
     // Now we have only non-overlapping cubes

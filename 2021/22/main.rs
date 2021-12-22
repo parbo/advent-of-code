@@ -57,7 +57,7 @@ fn part1(cuboids: &[ParsedItem]) -> Answer {
         {
             continue;
         }
-        let v = if let State::On = c.state { true } else { false };
+        let v = matches!(c.state, State::On);
         for x in c.minx..=c.maxx {
             for y in c.miny..=c.maxy {
                 for z in c.minz..=c.maxz {
@@ -74,7 +74,6 @@ fn merge(cbs: &[Cuboid]) -> Vec<Cuboid> {
     if ncb.is_empty() {
         return ncb;
     }
-    let mut merged_count = 0;
     loop {
         let mut new_cb = vec![];
         let mut any_merged = false;
@@ -102,20 +101,17 @@ fn merge(cbs: &[Cuboid]) -> Vec<Cuboid> {
                     // println!("merged: {}, {} -> {}", ncb[i], ncb[j], merged);
                     new_cb.push(merged);
                     any_merged = true;
-                    merged_count += 1;
                 } else if samex && !samey && samez && overlapy {
                     merged.miny = ncb[i].miny.min(ncb[j].miny);
                     merged.maxy = ncb[i].maxy.max(ncb[j].maxy);
                     // println!("merged: {}, {} -> {}", ncb[i], ncb[j], merged);
                     new_cb.push(merged);
-                    merged_count += 1;
                     any_merged = true;
                 } else if samex && samey && !samez && overlapz {
                     merged.minz = ncb[i].minz.min(ncb[j].minz);
                     merged.maxz = ncb[i].maxz.max(ncb[j].maxz);
                     // println!("merged: {}, {} -> {}", ncb[i], ncb[j], merged);
                     new_cb.push(merged);
-                    merged_count += 1;
                     any_merged = true;
                 } else {
                     new_cb.push(ncb[i]);
@@ -134,31 +130,31 @@ fn merge(cbs: &[Cuboid]) -> Vec<Cuboid> {
             break;
         }
     }
-    if merged_count > 0 {
-        println!("merged: {:?}, {:?}", cbs.len(), ncb.len());
-    }
+    // if merged_count > 0 {
+    //     println!("merged: {:?}, {:?}", cbs.len(), ncb.len());
+    // }
     ncb
 }
 
 fn split(cbi: &Cuboid, cbj: &Cuboid) -> (Vec<Cuboid>, Vec<Cuboid>) {
     // If fully contained, return later
-    if cbj.contains(&cbi) {
+    if cbj.contains(cbi) {
         return (vec![], vec![*cbj]);
     }
     // Use exclusive coords here
     let nminx = cbi.minx.min(cbj.minx);
-    let mut nmidx1 = cbi.minx.max(cbj.minx);
-    let mut nmidx2 = (cbi.maxx + 1).min(cbj.maxx + 1);
+    let nmidx1 = cbi.minx.max(cbj.minx);
+    let nmidx2 = (cbi.maxx + 1).min(cbj.maxx + 1);
     let nmaxx = (cbi.maxx + 1).max(cbj.maxx + 1);
 
     let nminy = cbi.miny.min(cbj.miny);
-    let mut nmidy1 = cbi.miny.max(cbj.miny);
-    let mut nmidy2 = (cbi.maxy + 1).min(cbj.maxy + 1);
+    let nmidy1 = cbi.miny.max(cbj.miny);
+    let nmidy2 = (cbi.maxy + 1).min(cbj.maxy + 1);
     let nmaxy = (cbi.maxy - 1).max(cbj.maxy - 1);
 
     let nminz = cbi.minz.min(cbj.minz);
-    let mut nmidz1 = cbi.minz.max(cbj.minz);
-    let mut nmidz2 = (cbi.maxz + 1).min(cbj.maxz + 1);
+    let nmidz1 = cbi.minz.max(cbj.minz);
+    let nmidz2 = (cbi.maxz + 1).min(cbj.maxz + 1);
     let nmaxz = (cbi.maxz + 1).max(cbj.maxz + 1);
 
     // And back to inclusive
@@ -181,12 +177,12 @@ fn split(cbi: &Cuboid, cbj: &Cuboid) -> (Vec<Cuboid>, Vec<Cuboid>) {
     // Order needs to be maintained
     let mut fromi = vec![];
     let mut fromj = vec![];
-    for xi in 0..3 {
-        for yi in 0..3 {
-            for zi in 0..3 {
-                let (minx, maxx) = xx[xi];
-                let (miny, maxy) = yy[yi];
-                let (minz, maxz) = zz[zi];
+    for xxx in xx {
+        for yyy in yy {
+            for zzz in zz {
+                let (minx, maxx) = xxx;
+                let (miny, maxy) = yyy;
+                let (minz, maxz) = zzz;
                 let mut c = Cuboid {
                     state: State::Off,
                     minx,
@@ -218,9 +214,7 @@ fn part2(cuboids: &[ParsedItem]) -> Answer {
     // Split to non-overlapping cuboids
     let mut cb = cuboids.to_owned();
     let mut ctr = 0;
-    let mut start = 0;
     loop {
-        println!("1");
         // Find overlapping pairs, split first cuboid
         let mut replace = None;
         'outer: for i in 0..(cb.len() - 1) {
@@ -228,45 +222,41 @@ fn part2(cuboids: &[ParsedItem]) -> Answer {
             for j in (i + 1)..cb.len() {
                 let cbj = cb[j];
                 if cbi.overlaps(&cbj) {
-                    println!("i: {}, cbi: {}", i, cbi);
-                    println!("j: {}, cbj: {}", j, cbj);
+                    // println!("i: {}, cbi: {}", i, cbi);
+                    // println!("j: {}, cbj: {}", j, cbj);
                     // We have overlap. Split into new cuboids.
-                    println!("pslit");
                     let (first, last) = split(&cbi, &cbj);
-                    for a in &first {
-                        println!("1: {}", a);
-                    }
-                    for a in &last {
-                        println!("2: {}", a);
-                    }
+                    // for a in &first {
+                    //     println!("1: {}", a);
+                    // }
+                    // for a in &last {
+                    //     println!("2: {}", a);
+                    // }
                     replace = Some(((i, first), (j, last)));
                     break 'outer;
                 }
             }
         }
 
-        println!("2");
         if let Some(((i, first), (j, last))) = replace {
             ctr += 1;
-            //	    if ctr % 1000 == 0 {
-            println!(
-                "overlap: {},{}, num cuboids: {}, adding: {}, {}, {}",
-                i,
-                j,
-                cb.len(),
-                first.len(),
-                last.len(),
-                ctr
-            );
-            //	    }
+            if ctr % 1000 == 0 {
+		println!(
+                    "overlap: {},{}, num cuboids: {}, adding: {}, {}, {}",
+                    i,
+                    j,
+                    cb.len(),
+                    first.len(),
+                    last.len(),
+                    ctr
+		);
+            }
             let new_j = j - 1 + first.len();
             cb.splice(i..(i + 1), first);
             cb.splice(new_j..(new_j + 1), last);
         } else {
-            println!("3");
             break;
         }
-        println!("4");
     }
     // Merge
     println!("merging cb: {}", cb.len());

@@ -210,6 +210,7 @@ fn split(cbi: &Cuboid, cbj: &Cuboid) -> Vec<Cuboid> {
             }
         }
     }
+    //    fromi
     merge(&fromi)
 }
 
@@ -223,70 +224,111 @@ fn draw(cuboids_a: &[Cuboid], cuboids_b: &[Cuboid]) {
     let eye = kiss3d::nalgebra::Point3::new(40.0f32, 0.0, 80.0);
     let at = kiss3d::nalgebra::Point3::origin();
     let mut camera = kiss3d::camera::ArcBall::new(eye, at);
-    let mut frame = 0;
     println!("add cubes");
+    let mut ix = 0;
     for cb in cuboids_a {
-        let mut c = window.add_cube(
-            ((cb.maxx - cb.minx) / 10000) as f32,
-            ((cb.maxy - cb.miny) / 10000) as f32,
-            ((cb.maxz - cb.minz) / 10000) as f32,
-        );
+        println!("a: {}", cb);
+        let cminx = cb.minx as f32 / 10000.0;
+        let cmaxx = (cb.maxx + 1) as f32 / 10000.0;
+        let cminy = cb.miny as f32 / 10000.0;
+        let cmaxy = (cb.maxy + 1) as f32 / 10000.0;
+        let cminz = cb.minz as f32 / 10000.0;
+        let cmaxz = (cb.maxz + 1) as f32 / 10000.0;
+        let mut c = window.add_cube(cmaxx - cminx, cmaxy - cminy, cmaxz - cminz);
         c.append_translation(&kiss3d::nalgebra::Translation3::new(
-            (cb.minx / 10000) as f32,
-            ((cb.miny / 10000) - 10) as f32,
-            (cb.minz / 10000) as f32,
+            cminx + (cmaxx - cminx) / 2.0,
+            cminy + (cmaxy - cminy) / 2.0 - 15.0,
+            cminz + (cmaxz - cminz) / 2.0,
         ));
+        let colors1 = [
+            [0.0, 0.0, 1.0],
+            [0.0, 1.0, 1.0],
+            [1.0, 0.0, 1.0],
+            [1.0, 1.0, 1.0],
+        ];
+        let colors2 = [
+            [0.0, 1.0, 0.0],
+            [0.0, 1.0, 1.0],
+            [1.0, 0.0, 1.0],
+            [1.0, 1.0, 0.0],
+        ];
         if cb.state == State::On {
-            c.set_color(0.0, 1.0, 0.0);
+            c.set_color(
+                colors1[ix % colors1.len()][0],
+                colors1[ix % colors1.len()][1],
+                colors1[ix % colors1.len()][2],
+            );
         } else {
-            c.set_color(1.0, 0.0, 0.0);
+            c.set_color(
+                colors2[ix % colors2.len()][0],
+                colors2[ix % colors2.len()][1],
+                colors2[ix % colors2.len()][2],
+            );
         }
     }
+    ix = 0;
     for cb in cuboids_b {
-        let mut c = window.add_cube(
-            ((cb.maxx - cb.minx) / 10000) as f32,
-            ((cb.maxy - cb.miny) / 10000) as f32,
-            ((cb.maxz - cb.minz) / 10000) as f32,
-        );
+        println!("b: {}", cb);
+        let cminx = cb.minx as f32 / 10000.0;
+        let cmaxx = (cb.maxx + 1) as f32 / 10000.0;
+        let cminy = cb.miny as f32 / 10000.0;
+        let cmaxy = (cb.maxy + 1) as f32 / 10000.0;
+        let cminz = cb.minz as f32 / 10000.0;
+        let cmaxz = (cb.maxz + 1) as f32 / 10000.0;
+        let mut c = window.add_cube(cmaxx - cminx, cmaxy - cminy, cmaxz - cminz);
         c.append_translation(&kiss3d::nalgebra::Translation3::new(
-            (cb.minx / 10000) as f32,
-            ((cb.miny / 10000) + 10) as f32,
-            (cb.minz / 10000) as f32,
+            cminx + (cmaxx - cminx) / 2.0,
+            cminy + (cmaxy - cminy) / 2.0 + 15.0,
+            cminz + (cmaxz - cminz) / 2.0,
         ));
+        let colors1 = [
+            [0.0, 0.0, 1.0],
+            [0.0, 1.0, 1.0],
+            [1.0, 0.0, 1.0],
+            [1.0, 1.0, 1.0],
+        ];
+        let colors2 = [
+            [0.0, 1.0, 0.0],
+            [0.0, 1.0, 1.0],
+            [1.0, 0.0, 1.0],
+            [1.0, 1.0, 0.0],
+        ];
         if cb.state == State::On {
-            c.set_color(0.0, 1.0, 0.0);
+            c.set_color(
+                colors1[ix % colors1.len()][0],
+                colors1[ix % colors1.len()][1],
+                colors1[ix % colors1.len()][2],
+            );
         } else {
-            c.set_color(1.0, 0.0, 0.0);
+            c.set_color(
+                colors2[ix % colors2.len()][0],
+                colors2[ix % colors2.len()][1],
+                colors2[ix % colors2.len()][2],
+            );
         }
+        ix += 1;
     }
     println!("start rendering");
     while window.render_with_camera(&mut camera) {
         // rotate the arc-ball camera.
         let curr_yaw = camera.yaw();
         camera.set_yaw(curr_yaw + 0.05);
-        frame += 1;
     }
 }
 
 fn solve(cuboids: &[ParsedItem], d: bool) -> Answer {
     // Split to non-overlapping cuboids
     let mut cb = cuboids.to_owned();
-    let mut ctr = 0;
+    let mut start = 0;
     loop {
         // Find overlapping pairs, split first cuboid
         let mut replace = None;
-        'outer: for i in 0..(cb.len() - 1) {
+        'outer: for i in start..(cb.len() - 1) {
             let cbi = cb[i];
             for j in (i + 1)..cb.len() {
                 let cbj = cb[j];
                 if cbi.overlaps(&cbj) {
-                    // println!("i: {}, cbi: {}", i, cbi);
-                    // println!("j: {}, cbj: {}", j, cbj);
-                    // We have overlap. Split into new cuboids.
                     let first = split(&cbi, &cbj);
-                    // for a in &first {
-                    //     println!("1: {}", a);
-                    // }
                     replace = Some((i, first));
                     break 'outer;
                 }
@@ -294,27 +336,9 @@ fn solve(cuboids: &[ParsedItem], d: bool) -> Answer {
         }
 
         if let Some((i, first)) = replace {
-            ctr += 1;
-            if ctr % 1000 == 0 {
-                println!(
-                    "overlap: {}, num cuboids: {}, adding: {}, {}",
-                    i,
-                    cb.len(),
-                    first.len(),
-                    ctr
-                );
-            }
+            start = i;
             cb.splice(i..(i + 1), first);
         } else {
-            break;
-        }
-    }
-    // Merge
-    println!("merging cb: {}", cb.len());
-    loop {
-        let lb = cb.len();
-        cb = merge(&cb);
-        if lb == cb.len() {
             break;
         }
     }
@@ -322,18 +346,10 @@ fn solve(cuboids: &[ParsedItem], d: bool) -> Answer {
         draw(cuboids, &cb);
     }
     // Now we have only non-overlapping cubes
-    let mut num: i64 = 0;
-    for c in cb {
-        let area = (c.maxx + 1 - c.minx) * (c.maxy + 1 - c.miny) * (c.maxz + 1 - c.minz);
-        println!("{}, area: {}", c, area);
-        if c.state == State::On {
-            num += area;
-        } else {
-            // Can't go to negative reactors on
-            num -= area.min(num);
-        }
-    }
-    num
+    cb.iter()
+        .filter(|x| x.state == State::On)
+        .map(|c| (c.maxx + 1 - c.minx) * (c.maxy + 1 - c.miny) * (c.maxz + 1 - c.minz))
+        .sum::<i64>()
 }
 
 fn part2(cuboids: &[ParsedItem]) -> Answer {

@@ -85,7 +85,7 @@ fn merge(cbs: &[Cuboid]) -> Vec<Cuboid> {
                 i += 1;
             } else if ncb[i].state == ncb[j].state {
                 let mut merged = ncb[i];
-                // Merge if only different in one dimension and not disjoint
+                // Merge if exactly the same or only different in one dimension and not disjoint
                 let samex = ncb[i].minx == ncb[j].minx && ncb[i].maxx == ncb[j].maxx;
                 let samey = ncb[i].miny == ncb[j].miny && ncb[i].maxy == ncb[j].maxy;
                 let samez = ncb[i].minz == ncb[j].minz && ncb[i].maxz == ncb[j].maxz;
@@ -95,7 +95,10 @@ fn merge(cbs: &[Cuboid]) -> Vec<Cuboid> {
                     ncb[i].miny.max(ncb[j].miny) <= (ncb[i].maxy + 1).min(ncb[j].maxy + 1);
                 let overlapz =
                     ncb[i].minz.max(ncb[j].minz) <= (ncb[i].maxz + 1).min(ncb[j].maxz + 1);
-                if !samex && samey && samez && overlapx {
+                if samex && samey && samez {
+                    new_cb.push(merged);
+                    any_merged = true;
+                } else if !samex && samey && samez && overlapx {
                     merged.minx = ncb[i].minx.min(ncb[j].minx);
                     merged.maxx = ncb[i].maxx.max(ncb[j].maxx);
                     // println!("merged: {}, {} -> {}", ncb[i], ncb[j], merged);
@@ -136,10 +139,10 @@ fn merge(cbs: &[Cuboid]) -> Vec<Cuboid> {
     ncb
 }
 
-fn split(cbi: &Cuboid, cbj: &Cuboid) -> (Vec<Cuboid>, Vec<Cuboid>) {
+fn split(cbi: &Cuboid, cbj: &Cuboid) -> Vec<Cuboid> {
     // If fully contained, return later
     if cbj.contains(cbi) {
-        return (vec![], vec![*cbj]);
+        return vec![];
     }
     // Use exclusive coords here
     let nminx = cbi.minx.min(cbj.minx);
@@ -150,7 +153,7 @@ fn split(cbi: &Cuboid, cbj: &Cuboid) -> (Vec<Cuboid>, Vec<Cuboid>) {
     let nminy = cbi.miny.min(cbj.miny);
     let nmidy1 = cbi.miny.max(cbj.miny);
     let nmidy2 = (cbi.maxy + 1).min(cbj.maxy + 1);
-    let nmaxy = (cbi.maxy - 1).max(cbj.maxy - 1);
+    let nmaxy = (cbi.maxy + 1).max(cbj.maxy + 1);
 
     let nminz = cbi.minz.min(cbj.minz);
     let nmidz1 = cbi.minz.max(cbj.minz);
@@ -174,9 +177,12 @@ fn split(cbi: &Cuboid, cbj: &Cuboid) -> (Vec<Cuboid>, Vec<Cuboid>) {
         (nmidz2, nmaxz - 1),
     ];
 
-    // Order needs to be maintained
+    // println!("{}, {}", cbi, cbj);
+    // println!("{:?}", xx);
+    // println!("{:?}", yy);
+    // println!("{:?}", zz);
+
     let mut fromi = vec![];
-    let mut fromj = vec![];
     for xxx in xx {
         for yyy in yy {
             for zzz in zz {
@@ -200,17 +206,69 @@ fn split(cbi: &Cuboid, cbj: &Cuboid) -> (Vec<Cuboid>, Vec<Cuboid>) {
                 if ini && !inj {
                     c.state = cbi.state;
                     fromi.push(c);
-                } else if inj {
-                    c.state = cbj.state;
-                    fromj.push(c);
                 }
             }
         }
     }
-    (merge(&fromi), merge(&fromj))
+    merge(&fromi)
 }
 
-fn part2(cuboids: &[ParsedItem]) -> Answer {
+#[cfg(test)]
+fn draw(_: &[Cuboid], _: &[Cuboid]) {}
+
+#[cfg(not(test))]
+fn draw(cuboids_a: &[Cuboid], cuboids_b: &[Cuboid]) {
+    let mut window = kiss3d::window::Window::new_with_size("Day 22", 800, 1000);
+    window.set_light(kiss3d::light::Light::StickToCamera);
+    let eye = kiss3d::nalgebra::Point3::new(40.0f32, 0.0, 80.0);
+    let at = kiss3d::nalgebra::Point3::origin();
+    let mut camera = kiss3d::camera::ArcBall::new(eye, at);
+    let mut frame = 0;
+    println!("add cubes");
+    for cb in cuboids_a {
+        let mut c = window.add_cube(
+            ((cb.maxx - cb.minx) / 10000) as f32,
+            ((cb.maxy - cb.miny) / 10000) as f32,
+            ((cb.maxz - cb.minz) / 10000) as f32,
+        );
+        c.append_translation(&kiss3d::nalgebra::Translation3::new(
+            (cb.minx / 10000) as f32,
+            ((cb.miny / 10000) - 10) as f32,
+            (cb.minz / 10000) as f32,
+        ));
+        if cb.state == State::On {
+            c.set_color(0.0, 1.0, 0.0);
+        } else {
+            c.set_color(1.0, 0.0, 0.0);
+        }
+    }
+    for cb in cuboids_b {
+        let mut c = window.add_cube(
+            ((cb.maxx - cb.minx) / 10000) as f32,
+            ((cb.maxy - cb.miny) / 10000) as f32,
+            ((cb.maxz - cb.minz) / 10000) as f32,
+        );
+        c.append_translation(&kiss3d::nalgebra::Translation3::new(
+            (cb.minx / 10000) as f32,
+            ((cb.miny / 10000) + 10) as f32,
+            (cb.minz / 10000) as f32,
+        ));
+        if cb.state == State::On {
+            c.set_color(0.0, 1.0, 0.0);
+        } else {
+            c.set_color(1.0, 0.0, 0.0);
+        }
+    }
+    println!("start rendering");
+    while window.render_with_camera(&mut camera) {
+        // rotate the arc-ball camera.
+        let curr_yaw = camera.yaw();
+        camera.set_yaw(curr_yaw + 0.05);
+        frame += 1;
+    }
+}
+
+fn solve(cuboids: &[ParsedItem], d: bool) -> Answer {
     // Split to non-overlapping cuboids
     let mut cb = cuboids.to_owned();
     let mut ctr = 0;
@@ -225,35 +283,28 @@ fn part2(cuboids: &[ParsedItem]) -> Answer {
                     // println!("i: {}, cbi: {}", i, cbi);
                     // println!("j: {}, cbj: {}", j, cbj);
                     // We have overlap. Split into new cuboids.
-                    let (first, last) = split(&cbi, &cbj);
+                    let first = split(&cbi, &cbj);
                     // for a in &first {
                     //     println!("1: {}", a);
                     // }
-                    // for a in &last {
-                    //     println!("2: {}", a);
-                    // }
-                    replace = Some(((i, first), (j, last)));
+                    replace = Some((i, first));
                     break 'outer;
                 }
             }
         }
 
-        if let Some(((i, first), (j, last))) = replace {
+        if let Some((i, first)) = replace {
             ctr += 1;
             if ctr % 1000 == 0 {
-		println!(
-                    "overlap: {},{}, num cuboids: {}, adding: {}, {}, {}",
+                println!(
+                    "overlap: {}, num cuboids: {}, adding: {}, {}",
                     i,
-                    j,
                     cb.len(),
                     first.len(),
-                    last.len(),
                     ctr
-		);
+                );
             }
-            let new_j = j - 1 + first.len();
             cb.splice(i..(i + 1), first);
-            cb.splice(new_j..(new_j + 1), last);
         } else {
             break;
         }
@@ -266,6 +317,9 @@ fn part2(cuboids: &[ParsedItem]) -> Answer {
         if lb == cb.len() {
             break;
         }
+    }
+    if d {
+        draw(cuboids, &cb);
     }
     // Now we have only non-overlapping cubes
     let mut num: i64 = 0;
@@ -282,6 +336,10 @@ fn part2(cuboids: &[ParsedItem]) -> Answer {
     num
 }
 
+fn part2(cuboids: &[ParsedItem]) -> Answer {
+    solve(cuboids, false)
+}
+
 fn parse(lines: &[String]) -> Parsed {
     lines.iter().map(|x| x.parse().unwrap()).collect()
 }
@@ -294,8 +352,10 @@ fn main() {
     let parse_time = Instant::now();
     let result = if part == 1 {
         part1(&parsed)
-    } else {
+    } else if part == 2 {
         part2(&parsed)
+    } else {
+        solve(&parsed, true)
     };
     let done_time = Instant::now();
     println!(
@@ -321,5 +381,371 @@ mod tests {
     #[test]
     fn test_part2() {
         assert_eq!(part2(&parse(&example())), 2758514936282235);
+    }
+
+    #[test]
+    fn test_merge_1() {
+        let c = [
+            Cuboid {
+                state: State::On,
+                minx: -10,
+                maxx: 8,
+                miny: -5,
+                maxy: 5,
+                minz: 14,
+                maxz: 20,
+            },
+            Cuboid {
+                state: State::On,
+                minx: 9,
+                maxx: 12,
+                miny: -5,
+                maxy: 5,
+                minz: 14,
+                maxz: 20,
+            },
+        ];
+        let expected = Cuboid {
+            state: State::On,
+            minx: -10,
+            maxx: 12,
+            miny: -5,
+            maxy: 5,
+            minz: 14,
+            maxz: 20,
+        };
+        assert_eq!(merge(&c), vec![expected]);
+    }
+
+    #[test]
+    fn test_merge_2() {
+        let c = [
+            Cuboid {
+                state: State::On,
+                minx: -10,
+                maxx: 7,
+                miny: -5,
+                maxy: 5,
+                minz: 14,
+                maxz: 20,
+            },
+            Cuboid {
+                state: State::On,
+                minx: 9,
+                maxx: 12,
+                miny: -5,
+                maxy: 5,
+                minz: 14,
+                maxz: 20,
+            },
+        ];
+        assert_eq!(merge(&c), c.to_owned());
+    }
+
+    #[test]
+    fn test_merge_3() {
+        let c = [
+            Cuboid {
+                state: State::On,
+                minx: -10,
+                maxx: 14,
+                miny: -5,
+                maxy: 5,
+                minz: 14,
+                maxz: 20,
+            },
+            Cuboid {
+                state: State::On,
+                minx: 9,
+                maxx: 12,
+                miny: -5,
+                maxy: 5,
+                minz: 14,
+                maxz: 20,
+            },
+        ];
+        let expected = Cuboid {
+            state: State::On,
+            minx: -10,
+            maxx: 14,
+            miny: -5,
+            maxy: 5,
+            minz: 14,
+            maxz: 20,
+        };
+        assert_eq!(merge(&c), vec![expected]);
+    }
+
+    #[test]
+    fn test_merge_4() {
+        let c = [
+            Cuboid {
+                state: State::On,
+                minx: -10,
+                maxx: 14,
+                miny: -5,
+                maxy: 5,
+                minz: 14,
+                maxz: 20,
+            },
+            Cuboid {
+                state: State::On,
+                minx: -10,
+                maxx: 14,
+                miny: -5,
+                maxy: 5,
+                minz: 14,
+                maxz: 20,
+            },
+        ];
+        let expected = Cuboid {
+            state: State::On,
+            minx: -10,
+            maxx: 14,
+            miny: -5,
+            maxy: 5,
+            minz: 14,
+            maxz: 20,
+        };
+        assert_eq!(merge(&c), vec![expected]);
+    }
+
+    #[test]
+    fn test_split_disjoint() {
+        let c = [
+            Cuboid {
+                state: State::On,
+                minx: -10,
+                maxx: 7,
+                miny: -5,
+                maxy: 5,
+                minz: 14,
+                maxz: 20,
+            },
+            Cuboid {
+                state: State::Off,
+                minx: 8,
+                maxx: 14,
+                miny: -5,
+                maxy: 5,
+                minz: 14,
+                maxz: 20,
+            },
+        ];
+        assert_eq!(split(&c[0], &c[1]), vec![c[0]]);
+    }
+
+    #[test]
+    fn test_split_same_but_different() {
+        let c = [
+            Cuboid {
+                state: State::On,
+                minx: -10,
+                maxx: 7,
+                miny: -5,
+                maxy: 5,
+                minz: 14,
+                maxz: 20,
+            },
+            Cuboid {
+                state: State::Off,
+                minx: -10,
+                maxx: 7,
+                miny: -5,
+                maxy: 5,
+                minz: 14,
+                maxz: 20,
+            },
+        ];
+        assert_eq!(split(&c[0], &c[1]), vec![]);
+    }
+
+    #[test]
+    fn test_split_same() {
+        let c = [
+            Cuboid {
+                state: State::On,
+                minx: -10,
+                maxx: 7,
+                miny: -5,
+                maxy: 5,
+                minz: 14,
+                maxz: 20,
+            },
+            Cuboid {
+                state: State::On,
+                minx: -10,
+                maxx: 7,
+                miny: -5,
+                maxy: 5,
+                minz: 14,
+                maxz: 20,
+            },
+        ];
+        assert_eq!(split(&c[0], &c[1]), vec![]);
+    }
+
+    #[test]
+    fn test_split_overlap_1() {
+        let c = [
+            Cuboid {
+                state: State::On,
+                minx: -10,
+                maxx: 9,
+                miny: -5,
+                maxy: 5,
+                minz: 14,
+                maxz: 20,
+            },
+            Cuboid {
+                state: State::Off,
+                minx: 5,
+                maxx: 12,
+                miny: -5,
+                maxy: 5,
+                minz: 14,
+                maxz: 20,
+            },
+        ];
+        assert_eq!(
+            split(&c[0], &c[1]),
+            vec![Cuboid {
+                state: State::On,
+                minx: -10,
+                maxx: 4,
+                miny: -5,
+                maxy: 5,
+                minz: 14,
+                maxz: 20,
+            },],
+        );
+    }
+
+    #[test]
+    fn test_split_overlap_2() {
+        let c = [
+            Cuboid {
+                state: State::Off,
+                minx: 5,
+                maxx: 12,
+                miny: -5,
+                maxy: 5,
+                minz: 14,
+                maxz: 20,
+            },
+            Cuboid {
+                state: State::On,
+                minx: -10,
+                maxx: 9,
+                miny: -5,
+                maxy: 5,
+                minz: 14,
+                maxz: 20,
+            },
+        ];
+        assert_eq!(
+            split(&c[0], &c[1]),
+            vec![Cuboid {
+                state: State::Off,
+                minx: 10,
+                maxx: 12,
+                miny: -5,
+                maxy: 5,
+                minz: 14,
+                maxz: 20,
+            },],
+        );
+    }
+
+    #[test]
+    fn test_split_overlap_3() {
+        let c = [
+            Cuboid {
+                state: State::Off,
+                minx: 5,
+                maxx: 12,
+                miny: -7,
+                maxy: 3,
+                minz: 16,
+                maxz: 22,
+            },
+            Cuboid {
+                state: State::On,
+                minx: -10,
+                maxx: 9,
+                miny: -5,
+                maxy: 5,
+                minz: 14,
+                maxz: 20,
+            },
+        ];
+        assert_eq!(
+            split(&c[0], &c[1]),
+            vec![
+                Cuboid {
+                    state: State::Off,
+                    minx: 5,
+                    maxx: 9,
+                    miny: -7,
+                    maxy: -6,
+                    minz: 16,
+                    maxz: 22
+                },
+                Cuboid {
+                    state: State::Off,
+                    minx: 5,
+                    maxx: 9,
+                    miny: -5,
+                    maxy: 3,
+                    minz: 21,
+                    maxz: 22
+                },
+                Cuboid {
+                    state: State::Off,
+                    minx: 10,
+                    maxx: 12,
+                    miny: -7,
+                    maxy: 3,
+                    minz: 16,
+                    maxz: 22
+                }
+            ],
+        );
+    }
+
+    #[test]
+    fn test_split_overlap_4() {
+        let c = [
+            Cuboid {
+                state: State::On,
+                minx: -10,
+                maxx: 7,
+                miny: -5,
+                maxy: 5,
+                minz: 14,
+                maxz: 20,
+            },
+            Cuboid {
+                state: State::Off,
+                minx: -10,
+                maxx: 7,
+                miny: -6,
+                maxy: 4,
+                minz: 14,
+                maxz: 20,
+            },
+        ];
+        assert_eq!(
+            split(&c[0], &c[1]),
+            vec![Cuboid {
+                state: State::On,
+                minx: -10,
+                maxx: 7,
+                miny: 5,
+                maxy: 5,
+                minz: 14,
+                maxz: 20,
+            },],
+        );
     }
 }

@@ -177,11 +177,6 @@ fn split(cbi: &Cuboid, cbj: &Cuboid) -> Vec<Cuboid> {
         (nmidz2, nmaxz - 1),
     ];
 
-    // println!("{}, {}", cbi, cbj);
-    // println!("{:?}", xx);
-    // println!("{:?}", yy);
-    // println!("{:?}", zz);
-
     let mut fromi = vec![];
     for xxx in xx {
         for yyy in yy {
@@ -210,7 +205,6 @@ fn split(cbi: &Cuboid, cbj: &Cuboid) -> Vec<Cuboid> {
             }
         }
     }
-    //    fromi
     merge(&fromi)
 }
 

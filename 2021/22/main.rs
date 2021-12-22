@@ -622,6 +622,78 @@ mod tests {
     }
 
     #[test]
+    fn test_split_overlap_1_2() {
+        let c = [
+            Cuboid {
+                state: State::On,
+                minx: -5,
+                maxx: 5,
+                miny: -10,
+                maxy: 9,
+                minz: 14,
+                maxz: 20,
+            },
+            Cuboid {
+                state: State::Off,
+                minx: -5,
+                maxx: 5,
+                miny: 5,
+                maxy: 12,
+                minz: 14,
+                maxz: 20,
+            },
+        ];
+        assert_eq!(
+            split(&c[0], &c[1]),
+            vec![Cuboid {
+                state: State::On,
+                minx: -5,
+                maxx: 5,
+                miny: -10,
+                maxy: 4,
+                minz: 14,
+                maxz: 20,
+            },],
+        );
+    }
+
+    #[test]
+    fn test_split_overlap_1_3() {
+        let c = [
+            Cuboid {
+                state: State::On,
+                minx: -5,
+                maxx: 5,
+                miny: 14,
+                maxy: 20,
+                minz: -10,
+                maxz: 9,
+            },
+            Cuboid {
+                state: State::Off,
+                minx: -5,
+                maxx: 5,
+                miny: 14,
+                maxy: 20,
+                minz: 5,
+                maxz: 12,
+            },
+        ];
+        assert_eq!(
+            split(&c[0], &c[1]),
+            vec![Cuboid {
+                state: State::On,
+                minx: -5,
+                maxx: 5,
+                miny: 14,
+                maxy: 20,
+                minz: -10,
+                maxz: 4,
+            },],
+        );
+    }
+
+    #[test]
     fn test_split_overlap_2() {
         let c = [
             Cuboid {

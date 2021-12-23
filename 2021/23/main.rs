@@ -44,19 +44,42 @@ fn is_in_hallway(p: aoc::Point) -> bool {
     p[0] > 0 && p[0] < 12 && p[1] == 1
 }
 
-fn is_empty(grid: &BTreeMap<aoc::Point, char>, _num: i64, p: aoc::Point) -> bool {
-    p[1] == 3 && *grid.get(&[p[0], 2]).unwrap() == '.'
+fn is_empty(grid: &BTreeMap<aoc::Point, char>, num: i64, p: aoc::Point) -> bool {
+    for y in 2..(2 + num) {
+        if *grid.get(&[p[0], y]).unwrap() != '.' {
+            return false;
+        }
+    }
+    true
 }
 
-fn is_same(grid: &BTreeMap<aoc::Point, char>, _num: i64, p: aoc::Point, a: char) -> bool {
-    p[1] == 2 && *grid.get(&[p[0], 3]).unwrap() == a
+fn is_same(grid: &BTreeMap<aoc::Point, char>, num: i64, p: aoc::Point, a: char) -> bool {
+    let start = p[1] + 1;
+    for y in start..(2 + num) {
+        if *grid.get(&[p[0], y]).unwrap() != a {
+            return false;
+        }
+    }
+    true
 }
 
-fn is_blocking(grid: &BTreeMap<aoc::Point, char>, _num: i64, p: aoc::Point, a: char) -> bool {
-    p[1] == 2 && *grid.get(&[p[0], 3]).unwrap() != a
+fn is_blocking(grid: &BTreeMap<aoc::Point, char>, num: i64, p: aoc::Point, a: char) -> bool {
+    !is_same(grid, num, p, a)
 }
 
-fn solve(grid: &BTreeMap<aoc::Point, char>, num: i64) -> Option<i64> {
+fn solve(parsed_grid: &Vec<Vec<char>>, num: i64) -> Option<i64> {
+    let mut gd = aoc::PrintGridDrawer::new(|c| c);
+    gd.draw(parsed_grid);
+    // Make a sparse grid with only amphipods and empty positions
+    let mut start = BTreeMap::new();
+    for p in parsed_grid.points() {
+        match parsed_grid.get_value(p) {
+            Some('#') | Some(' ') | None => (),
+            Some(x) => {
+                start.insert(p, x);
+            }
+        }
+    }
     let mut goals = HashMap::new();
     for (c, x) in [('A', 3), ('B', 5), ('C', 7), ('D', 9)] {
         let mut v = vec![];
@@ -71,7 +94,7 @@ fn solve(grid: &BTreeMap<aoc::Point, char>, num: i64) -> Option<i64> {
     }
     // Pre-compute the shortest paths
     let mut paths = HashMap::new();
-    let empty_g = grid
+    let empty_g = start
         .iter()
         .map(|(p, c)| {
             if c.is_ascii_alphabetic() {
@@ -84,14 +107,13 @@ fn solve(grid: &BTreeMap<aoc::Point, char>, num: i64) -> Option<i64> {
     for combo in possible_moves.iter().copied().permutations(2) {
         paths.insert((combo[0], combo[1]), get_path(&empty_g, combo[0], combo[1]));
     }
-    // println!("possible: {:?}, {}", possible_moves, paths.len());
-    let mut todo = BinaryHeap::new();
-    todo.push(Reverse((0, grid.clone())));
-
     let mut gscore = HashMap::new();
     let mut fscore = HashMap::new();
 
-    gscore.insert(grid.clone(), 0);
+    gscore.insert(start.clone(), 0);
+
+    let mut todo = BinaryHeap::new();
+    todo.push(Reverse((0, start)));
 
     let mut ctr = 0;
     while let Some(Reverse((est, pos))) = todo.pop() {
@@ -202,23 +224,19 @@ fn solve(grid: &BTreeMap<aoc::Point, char>, num: i64) -> Option<i64> {
 }
 
 fn part1(grid: &Parsed) -> Answer {
-    let mut gd = aoc::PrintGridDrawer::new(|c| c);
-    gd.draw(grid);
-    // Make a sparse grid with only amphipods and empty positions
-    let mut start = BTreeMap::new();
-    for p in grid.points() {
-        match grid.get_value(p) {
-            Some('#') | Some(' ') | None => (),
-            Some(x) => {
-                start.insert(p, x);
-            }
-        }
-    }
-    solve(&start, 2).unwrap()
+    solve(&grid, 2).unwrap()
 }
 
-fn part2(_: &Parsed) -> Answer {
-    0
+fn part2(grid: &Parsed) -> Answer {
+    let mut g = grid.to_owned();
+    g.splice(
+        3..3,
+        vec![
+            "  #D#C#B#A#  ".chars().collect::<Vec<char>>(),
+            "  #D#B#A#C#  ".chars().collect::<Vec<char>>(),
+        ],
+    );
+    solve(&g, 4).unwrap()
 }
 
 fn parse(lines: &[String]) -> Parsed {
@@ -260,5 +278,10 @@ mod tests {
     #[test]
     fn test_part1() {
         assert_eq!(part1(&parse(&example())), 12521);
+    }
+
+    #[test]
+    fn test_part2() {
+        assert_eq!(part2(&parse(&example())), 44169);
     }
 }

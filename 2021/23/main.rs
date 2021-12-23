@@ -4,17 +4,17 @@ use std::collections::{BinaryHeap};
 use aoc::FxHashMap;
 use std::time::Instant;
 
-type Parsed = Vec<Vec<char>>;
+type Parsed = Vec<Vec<u8>>;
 type Answer = i64;
 
 fn get_path(
-    grid: &FxHashMap<aoc::Point, char>,
+    grid: &FxHashMap<aoc::Point, u8>,
     s: aoc::Point,
     g: aoc::Point,
 ) -> (i64, Vec<aoc::Point>) {
     aoc::dijkstra_grid(
         grid,
-        |_p: &aoc::Point, c: &char| *c == '.',
+        |_p: &aoc::Point, c: &u8| *c == '.' as u8,
         |_pa, _va, _pb, _pv| Some(1),
         s,
         g,
@@ -32,7 +32,7 @@ fn ix2p(ix: usize) -> aoc::Point {
 
 fn is_reachable(
     paths: &FxHashMap<(aoc::Point, aoc::Point), (i64, Vec<aoc::Point>)>,
-    grid: &[char],
+    grid: &[u8],
     s: aoc::Point,
     g: aoc::Point,
 ) -> Option<i64> {
@@ -41,7 +41,7 @@ fn is_reachable(
             .iter()
             .skip(1)
             .map(|p| grid[p2ix(*p)])
-            .all(|c| c == '.')
+            .all(|c| c == '.' as u8)
         {
             return Some(*e);
         }
@@ -53,16 +53,16 @@ fn is_in_hallway(p: aoc::Point) -> bool {
     p[0] > 0 && p[0] < 12 && p[1] == 1
 }
 
-fn is_empty(grid: &[char], num: i64, p: aoc::Point) -> bool {
+fn is_empty(grid: &[u8], num: i64, p: aoc::Point) -> bool {
     for y in 2..(2 + num) {
-        if grid[p2ix([p[0], y])] != '.' {
+        if grid[p2ix([p[0], y])] != '.' as u8 {
             return false;
         }
     }
     true
 }
 
-fn is_same(grid: &[char], num: i64, p: aoc::Point, a: char) -> bool {
+fn is_same(grid: &[u8], num: i64, p: aoc::Point, a: u8) -> bool {
     let start = p[1] + 1;
     for y in start..(2 + num) {
         if grid[p2ix([p[0], y])] != a {
@@ -72,18 +72,19 @@ fn is_same(grid: &[char], num: i64, p: aoc::Point, a: char) -> bool {
     true
 }
 
-fn is_blocking(grid: &[char], num: i64, p: aoc::Point, a: char) -> bool {
+fn is_blocking(grid: &[u8], num: i64, p: aoc::Point, a: u8) -> bool {
     !is_same(grid, num, p, a)
 }
 
-fn solve(parsed_grid: &Vec<Vec<char>>, num: i64) -> Option<i64> {
+fn solve(parsed_grid: &Vec<Vec<u8>>, num: i64) -> Option<i64> {
     // Make a flat grid with only amphipods and empty positions
     let mut start = vec![];
+    start.reserve(parsed_grid.len()*parsed_grid[0].len());
     for p in parsed_grid.points() {
         start.push(parsed_grid.get_value(p).unwrap());
     }
     let mut goals = FxHashMap::default();
-    for (c, x) in [('A', 3), ('B', 5), ('C', 7), ('D', 9)] {
+    for (c, x) in [('A' as u8, 3), ('B' as u8, 5), ('C' as u8, 7), ('D' as u8, 9)] {
         let mut v = vec![];
         for y in 2..(2 + num) {
             v.push([x, y]);
@@ -101,7 +102,7 @@ fn solve(parsed_grid: &Vec<Vec<char>>, num: i64) -> Option<i64> {
     for (ix, c) in start.iter().enumerate() {
         let p = ix2p(ix);
         if c.is_ascii_alphabetic() {
-            empty_g.insert(p, '.');
+            empty_g.insert(p, '.' as u8);
         } else {
             empty_g.insert(p, *c);
         }
@@ -125,7 +126,7 @@ fn solve(parsed_grid: &Vec<Vec<char>>, num: i64) -> Option<i64> {
         let mut ok = true;
         for (ix, a) in pos.iter().enumerate() {
             let from = ix2p(ix);
-            if !a.is_ascii_alphabetic() {
+            if !(*a as char).is_ascii_alphabetic() {
                 continue;
             }
             if !goals.get(a).unwrap().contains(&from) {
@@ -161,7 +162,7 @@ fn solve(parsed_grid: &Vec<Vec<char>>, num: i64) -> Option<i64> {
             // Try all possible moves
             for to in &possible_moves {
                 // Don't move to self or non-empty
-                if *to == from || pos[p2ix(*to)] != '.' {
+                if *to == from || pos[p2ix(*to)] != '.' as u8 {
                     continue;
                 }
                 // Don't move from hallway to hallway
@@ -185,9 +186,9 @@ fn solve(parsed_grid: &Vec<Vec<char>>, num: i64) -> Option<i64> {
             }
             for (mv, n) in moves {
                 let mut new_pos = pos.clone();
-                new_pos[p2ix(from)] = '.';
+                new_pos[p2ix(from)] = '.' as u8;
                 new_pos[p2ix(mv)] = *a;
-                let e = match a {
+                let e = match *a as char {
                     'A' => 1,
                     'B' => 10,
                     'C' => 100,
@@ -228,19 +229,19 @@ fn part2(grid: &Parsed) -> Answer {
     g.splice(
         3..3,
         vec![
-            "  #D#C#B#A#  ".chars().collect::<Vec<char>>(),
-            "  #D#B#A#C#  ".chars().collect::<Vec<char>>(),
+            "  #D#C#B#A#  ".as_bytes().to_owned(),
+            "  #D#B#A#C#  ".as_bytes().to_owned(),
         ],
     );
     solve(&g, 4).unwrap()
 }
 
 fn parse(lines: &[String]) -> Parsed {
-    let mut g = aoc::parse_grid(lines);
+    let mut g = aoc::parse_grid_to(lines, |c| c as u8);
     let w = g.iter().map(|x| x.len()).max().unwrap();
     for line in g.iter_mut() {
         while line.len() < w {
-            line.push(' ')
+            line.push(' ' as u8)
         }
     }
     g

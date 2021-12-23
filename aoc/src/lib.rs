@@ -1,6 +1,6 @@
 use image::{GenericImageView, Rgb, RgbImage};
 use std::cmp::Reverse;
-use std::collections::{BinaryHeap, HashMap, HashSet};
+use std::collections::{BinaryHeap, BTreeMap, HashMap, HashSet};
 use std::env;
 use std::error;
 use std::fmt;
@@ -492,7 +492,7 @@ where
                 curr = came_from[&curr];
                 path.push(curr)
             }
-            return Some((score, path));
+            return Some((score, path.into_iter().rev().collect()));
         }
         let curr_val = grid.get_value(current).unwrap();
         for nb in neighbors(current) {
@@ -834,6 +834,59 @@ where
 }
 
 impl<S: ::std::hash::BuildHasher, T> Grid<T> for HashMap<Point, T, S>
+where
+    T: Clone + Copy + Default + PartialEq,
+{
+    fn get_value(&self, pos: Point) -> Option<T> {
+        self.get(&pos).copied()
+    }
+    fn set_value(&mut self, pos: Point, value: T) {
+        *self.entry(pos).or_insert(value) = value;
+    }
+    fn extents(&self) -> (Point, Point) {
+        let min_x = self.iter().map(|(p, _v)| p[0]).min().unwrap_or(0);
+        let min_y = self.iter().map(|(p, _v)| p[1]).min().unwrap_or(0);
+        let max_x = self.iter().map(|(p, _v)| p[0]).max().unwrap_or(0);
+        let max_y = self.iter().map(|(p, _v)| p[1]).max().unwrap_or(0);
+        ([min_x, min_y], [max_x, max_y])
+    }
+    fn flip_horizontal(&mut self) {
+        let ([min_x, _min_y], [max_x, _max_y]) = self.extents();
+        let mut new_grid = HashMap::new();
+        for ([x, y], v) in self.iter() {
+            let new_x = max_x - (x - min_x);
+            new_grid.insert([new_x, *y], *v);
+        }
+        self.clear();
+        for (k, v) in new_grid {
+            self.insert(k, v);
+        }
+    }
+    fn flip_vertical(&mut self) {
+        let ([_min_x, min_y], [_max_x, max_y]) = self.extents();
+        let mut new_grid = HashMap::new();
+        for ([x, y], v) in self.iter() {
+            let new_y = max_y - (y - min_y);
+            new_grid.insert([*x, new_y], *v);
+        }
+        self.clear();
+        for (k, v) in new_grid {
+            self.insert(k, v);
+        }
+    }
+    fn transpose(&mut self) {
+        let mut new_grid = HashMap::new();
+        for ([x, y], v) in self.iter() {
+            new_grid.insert([*y, *x], *v);
+        }
+        self.clear();
+        for (k, v) in new_grid {
+            self.insert(k, v);
+        }
+    }
+}
+
+impl<T> Grid<T> for BTreeMap<Point, T>
 where
     T: Clone + Copy + Default + PartialEq,
 {

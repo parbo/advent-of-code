@@ -1,13 +1,13 @@
-use aoc::{Grid, GridDrawer, Itertools};
+use aoc::{Grid, Itertools};
 use std::cmp::Reverse;
-use std::collections::{BTreeMap, BinaryHeap, HashMap};
+use std::collections::{BinaryHeap, HashMap};
 use std::time::Instant;
 
 type Parsed = Vec<Vec<char>>;
 type Answer = i64;
 
 fn get_path(
-    grid: &BTreeMap<aoc::Point, char>,
+    grid: &HashMap<aoc::Point, char>,
     s: aoc::Point,
     g: aoc::Point,
 ) -> (i64, Vec<aoc::Point>) {
@@ -21,9 +21,17 @@ fn get_path(
     .unwrap()
 }
 
+fn p2ix(p: aoc::Point) -> usize {
+    (p[1] * 13 + p[0]) as usize
+}
+
+fn ix2p(ix: usize) -> aoc::Point {
+    [(ix % 13) as i64, (ix / 13) as i64]
+}
+
 fn is_reachable(
     paths: &HashMap<(aoc::Point, aoc::Point), (i64, Vec<aoc::Point>)>,
-    grid: &BTreeMap<aoc::Point, char>,
+    grid: &[char],
     s: aoc::Point,
     g: aoc::Point,
 ) -> Option<i64> {
@@ -31,7 +39,7 @@ fn is_reachable(
         if path
             .iter()
             .skip(1)
-            .map(|p| grid.get_value(*p).unwrap())
+            .map(|p| grid[p2ix(*p)])
             .all(|c| c == '.')
         {
             return Some(*e);
@@ -44,41 +52,34 @@ fn is_in_hallway(p: aoc::Point) -> bool {
     p[0] > 0 && p[0] < 12 && p[1] == 1
 }
 
-fn is_empty(grid: &BTreeMap<aoc::Point, char>, num: i64, p: aoc::Point) -> bool {
+fn is_empty(grid: &[char], num: i64, p: aoc::Point) -> bool {
     for y in 2..(2 + num) {
-        if *grid.get(&[p[0], y]).unwrap() != '.' {
+        if grid[p2ix([p[0], y])] != '.' {
             return false;
         }
     }
     true
 }
 
-fn is_same(grid: &BTreeMap<aoc::Point, char>, num: i64, p: aoc::Point, a: char) -> bool {
+fn is_same(grid: &[char], num: i64, p: aoc::Point, a: char) -> bool {
     let start = p[1] + 1;
     for y in start..(2 + num) {
-        if *grid.get(&[p[0], y]).unwrap() != a {
+        if grid[p2ix([p[0], y])] != a {
             return false;
         }
     }
     true
 }
 
-fn is_blocking(grid: &BTreeMap<aoc::Point, char>, num: i64, p: aoc::Point, a: char) -> bool {
+fn is_blocking(grid: &[char], num: i64, p: aoc::Point, a: char) -> bool {
     !is_same(grid, num, p, a)
 }
 
 fn solve(parsed_grid: &Vec<Vec<char>>, num: i64) -> Option<i64> {
-    let mut gd = aoc::PrintGridDrawer::new(|c| c);
-    gd.draw(parsed_grid);
-    // Make a sparse grid with only amphipods and empty positions
-    let mut start = BTreeMap::new();
+    // Make a flat grid with only amphipods and empty positions
+    let mut start = vec![];
     for p in parsed_grid.points() {
-        match parsed_grid.get_value(p) {
-            Some('#') | Some(' ') | None => (),
-            Some(x) => {
-                start.insert(p, x);
-            }
-        }
+        start.push(parsed_grid.get_value(p).unwrap());
     }
     let mut goals = HashMap::new();
     for (c, x) in [('A', 3), ('B', 5), ('C', 7), ('D', 9)] {
@@ -94,16 +95,15 @@ fn solve(parsed_grid: &Vec<Vec<char>>, num: i64) -> Option<i64> {
     }
     // Pre-compute the shortest paths
     let mut paths = HashMap::new();
-    let empty_g = start
-        .iter()
-        .map(|(p, c)| {
-            if c.is_ascii_alphabetic() {
-                (*p, '.')
-            } else {
-                (*p, *c)
-            }
-        })
-        .collect::<BTreeMap<aoc::Point, char>>();
+    let mut empty_g = HashMap::new();
+    for (ix, c) in start.iter().enumerate() {
+        let p = ix2p(ix);
+        if c.is_ascii_alphabetic() {
+            empty_g.insert(p, '.');
+        } else {
+            empty_g.insert(p, *c);
+        }
+    }
     for combo in possible_moves.iter().copied().permutations(2) {
         paths.insert((combo[0], combo[1]), get_path(&empty_g, combo[0], combo[1]));
     }
@@ -115,20 +115,15 @@ fn solve(parsed_grid: &Vec<Vec<char>>, num: i64) -> Option<i64> {
     let mut todo = BinaryHeap::new();
     todo.push(Reverse((0, start)));
 
-    let mut ctr = 0;
     while let Some(Reverse((est, pos))) = todo.pop() {
-        ctr += 1;
-        if ctr % 10000 == 0 {
-            println!("{:?}, {:?}, {:?}", est, pos, todo.len());
-        }
-
         // Are all in goals?
         let mut ok = true;
-        for (from, a) in &pos {
+        for (ix, a) in pos.iter().enumerate() {
+            let from = ix2p(ix);
             if !a.is_ascii_alphabetic() {
                 continue;
             }
-            if !goals.get(a).unwrap().contains(from) {
+            if !goals.get(a).unwrap().contains(&from) {
                 ok = false;
                 break;
             }
@@ -144,15 +139,16 @@ fn solve(parsed_grid: &Vec<Vec<char>>, num: i64) -> Option<i64> {
         }
 
         // Nope, find moves
-        for (from, a) in &pos {
+        for (ix, a) in pos.iter().enumerate() {
+            let from = ix2p(ix);
             // We're only moving the amphipods
             if !a.is_ascii_alphabetic() {
                 continue;
             }
             // Already in the right place?
             // Need to move if not in goal, or blocking other not in goal
-            let should_move = !goals.get(a).unwrap().contains(from) // Not in my goal
-                || is_blocking(&pos, num, *from, *a); // Blocking
+            let should_move = !goals.get(a).unwrap().contains(&from) // Not in my goal
+                || is_blocking(&pos, num, from, *a); // Blocking
             if !should_move {
                 continue;
             }
@@ -160,11 +156,11 @@ fn solve(parsed_grid: &Vec<Vec<char>>, num: i64) -> Option<i64> {
             // Try all possible moves
             for to in &possible_moves {
                 // Don't move to self or non-empty
-                if *to == *from || *pos.get(to).unwrap() != '.' {
+                if *to == from || pos[p2ix(*to)] != '.' {
                     continue;
                 }
                 // Don't move from hallway to hallway
-                if is_in_hallway(*from) && is_in_hallway(*to) {
+                if is_in_hallway(from) && is_in_hallway(*to) {
                     continue;
                 }
                 // Move to hallway or my goal
@@ -178,19 +174,14 @@ fn solve(parsed_grid: &Vec<Vec<char>>, num: i64) -> Option<i64> {
                     continue;
                 }
                 // This is a legit point to move to from this position, is it reachable?
-                if let Some(e) = is_reachable(&paths, &pos, *from, *to) {
+                if let Some(e) = is_reachable(&paths, &pos, from, *to) {
                     moves.push((*to, e));
                 }
             }
-            // if moves.is_empty() {
-            //     println!("NO MOVES!");
-            // }
             for (mv, n) in moves {
                 let mut new_pos = pos.clone();
-                new_pos.insert(*from, '.');
-                new_pos.insert(mv, *a);
-                // println!("old-pos: {:?}", pos);
-                // println!("new-pos: {:?}", new_pos);
+                new_pos[p2ix(from)] = '.';
+                new_pos[p2ix(mv)] = *a;
                 let e = match a {
                     'A' => 1,
                     'B' => 10,
@@ -198,20 +189,20 @@ fn solve(parsed_grid: &Vec<Vec<char>>, num: i64) -> Option<i64> {
                     'D' => 1000,
                     _ => panic!(),
                 };
-                // let mut gd = aoc::PrintGridDrawer::new(|c| c);
-                // println!("===============================");
-                // println!("{:?}, {:?}", pos.extents(), new_pos.extents());
-                // gd.draw(&pos);
-                // gd.draw(&new_pos);
                 let new_g = g + e * n;
                 let nb_g = gscore.entry(new_pos.clone()).or_insert(i64::MAX);
                 if new_g < *nb_g {
                     *nb_g = new_g;
                     let mut min_dist = 0;
-                    for (p, c) in new_pos.iter().filter(|(_p, c)| **c != '.') {
+                    for (ix, c) in new_pos
+                        .iter()
+                        .enumerate()
+                        .filter(|(_p, c)| c.is_ascii_alphabetic())
+                    {
                         let first_goal = goals.get(c).unwrap()[0];
-                        if *p != first_goal {
-                            min_dist += paths.get(&(*p, first_goal)).unwrap().0;
+                        let p = ix2p(ix);
+                        if p != first_goal {
+                            min_dist += paths.get(&(p, first_goal)).unwrap().0;
                         }
                     }
                     let new_f = new_g + min_dist;
@@ -240,7 +231,14 @@ fn part2(grid: &Parsed) -> Answer {
 }
 
 fn parse(lines: &[String]) -> Parsed {
-    aoc::parse_grid(lines)
+    let mut g = aoc::parse_grid(lines);
+    let w = g.iter().map(|x| x.len()).max().unwrap();
+    for line in g.iter_mut() {
+        while line.len() < w {
+            line.push(' ')
+        }
+    }
+    g
 }
 
 fn main() {
@@ -283,5 +281,16 @@ mod tests {
     #[test]
     fn test_part2() {
         assert_eq!(part2(&parse(&example())), 44169);
+    }
+
+    #[test]
+    fn test_p2ix() {
+        for y in 0..7 {
+            for x in 0..13 {
+                let p = [x, y];
+                let ix = p2ix(p);
+                assert_eq!(ix2p(ix), p);
+            }
+        }
     }
 }

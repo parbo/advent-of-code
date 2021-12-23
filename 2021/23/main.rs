@@ -44,15 +44,28 @@ fn is_in_hallway(p: aoc::Point) -> bool {
     p[0] > 0 && p[0] < 12 && p[1] == 1
 }
 
-fn solve(grid: &BTreeMap<aoc::Point, char>) -> Option<i64> {
-    // Hardcoded goals
-    let goals = HashMap::from([
-        ('A', vec![[3, 2], [3, 3]]),
-        ('B', vec![[5, 2], [5, 3]]),
-        ('C', vec![[7, 2], [7, 3]]),
-        ('D', vec![[9, 2], [9, 3]]),
-    ]);
-    let mut possible_moves = vec![[1, 1], [2, 1], [4, 1], [6, 1], [8, 1], [10, 1], [11, 1]];
+fn is_empty(grid: &BTreeMap<aoc::Point, char>, _num: i64, p: aoc::Point) -> bool {
+    p[1] == 3 && *grid.get(&[p[0], 2]).unwrap() == '.'
+}
+
+fn is_same(grid: &BTreeMap<aoc::Point, char>, _num: i64, p: aoc::Point, a: char) -> bool {
+    p[1] == 2 && *grid.get(&[p[0], 3]).unwrap() == a
+}
+
+fn is_blocking(grid: &BTreeMap<aoc::Point, char>, _num: i64, p: aoc::Point, a: char) -> bool {
+    p[1] == 2 && *grid.get(&[p[0], 3]).unwrap() != a
+}
+
+fn solve(grid: &BTreeMap<aoc::Point, char>, num: i64) -> Option<i64> {
+    let mut goals = HashMap::new();
+    for (c, x) in [('A', 3), ('B', 5), ('C', 7), ('D', 9)] {
+        let mut v = vec![];
+        for y in 2..(2 + num) {
+            v.push([x, y]);
+        }
+        goals.insert(c, v);
+    }
+    let mut possible_moves = vec![[1i64, 1], [2, 1], [4, 1], [6, 1], [8, 1], [10, 1], [11, 1]];
     for ps in goals.values() {
         possible_moves.extend_from_slice(ps);
     }
@@ -73,19 +86,20 @@ fn solve(grid: &BTreeMap<aoc::Point, char>) -> Option<i64> {
     }
     // println!("possible: {:?}, {}", possible_moves, paths.len());
     let mut todo = BinaryHeap::new();
-    todo.push(Reverse(((0, 0), grid.clone())));
-    let mut visited = HashMap::new();
+    todo.push(Reverse((0, grid.clone())));
+
+    let mut gscore = HashMap::new();
+    let mut fscore = HashMap::new();
+
+    gscore.insert(grid.clone(), 0);
+
     let mut ctr = 0;
-    while let Some(Reverse((energy, pos))) = todo.pop() {
+    while let Some(Reverse((est, pos))) = todo.pop() {
         ctr += 1;
         if ctr % 10000 == 0 {
-            println!("{:?}, {:?}, {:?}", energy, pos, todo.len());
+            println!("{:?}, {:?}, {:?}", est, pos, todo.len());
         }
-        if let Some(old_e) = visited.get(&pos) {
-            if *old_e < energy {
-                continue;
-            }
-        }
+
         // Are all in goals?
         let mut ok = true;
         for (from, a) in &pos {
@@ -98,8 +112,15 @@ fn solve(grid: &BTreeMap<aoc::Point, char>) -> Option<i64> {
             }
         }
         if ok {
-            return Some(energy.1);
+            return Some(*gscore.get(&pos).unwrap());
         }
+
+        let g = *gscore.entry(pos.clone()).or_insert(i64::MAX);
+        let f = fscore.entry(pos.clone()).or_insert(i64::MAX);
+        if *f <= est {
+            continue;
+        }
+
         // Nope, find moves
         for (from, a) in &pos {
             // We're only moving the amphipods
@@ -109,7 +130,7 @@ fn solve(grid: &BTreeMap<aoc::Point, char>) -> Option<i64> {
             // Already in the right place?
             // Need to move if not in goal, or blocking other not in goal
             let should_move = !goals.get(a).unwrap().contains(from) // Not in my goal
-                || (from[1] == 2 && *pos.get(&[from[0], 3]).unwrap() != *a); // Blocking
+                || is_blocking(&pos, num, *from, *a); // Blocking
             if !should_move {
                 continue;
             }
@@ -129,8 +150,8 @@ fn solve(grid: &BTreeMap<aoc::Point, char>) -> Option<i64> {
                 // if it only contains other Amber amphipods."
                 let ok = is_in_hallway(*to)
                     || (goals.get(a).unwrap().contains(to) && // is goal
-			(to[1] == 3 && *pos.get(&[to[0], 2]).unwrap() == '.') // is empty
-			|| (to[1] == 2 && *pos.get(&[to[0], 3]).unwrap() == *a)); // is same
+			(is_empty(&pos, num, *to)
+			|| is_same(&pos, num, *to, *a)));
                 if !ok {
                     continue;
                 }
@@ -142,7 +163,7 @@ fn solve(grid: &BTreeMap<aoc::Point, char>) -> Option<i64> {
             // if moves.is_empty() {
             //     println!("NO MOVES!");
             // }
-            for (mv, num) in moves {
+            for (mv, n) in moves {
                 let mut new_pos = pos.clone();
                 new_pos.insert(*from, '.');
                 new_pos.insert(mv, *a);
@@ -160,21 +181,19 @@ fn solve(grid: &BTreeMap<aoc::Point, char>) -> Option<i64> {
                 // println!("{:?}, {:?}", pos.extents(), new_pos.extents());
                 // gd.draw(&pos);
                 // gd.draw(&new_pos);
-		let mut min_dist = 0;
-		for (p, c) in new_pos.iter().filter(|(_p, c)| **c != '.') {
-		    let first_goal = goals.get(c).unwrap()[0];
-		    if *p != first_goal {
-			min_dist += paths.get(&(*p, first_goal)).unwrap().0;
-		    }
-		}
-		let new_energy = energy.1 + e * num;
-                let new_e = ((min_dist + 1) * new_energy, new_energy);
-                if let Some(old_e) = visited.insert(new_pos.clone(), new_e) {
-                    if new_e < old_e {
-                        todo.push(Reverse((new_e, new_pos)));
+                let new_g = g + e * n;
+                let nb_g = gscore.entry(new_pos.clone()).or_insert(i64::MAX);
+                if new_g < *nb_g {
+                    *nb_g = new_g;
+                    let mut min_dist = 0;
+                    for (p, c) in new_pos.iter().filter(|(_p, c)| **c != '.') {
+                        let first_goal = goals.get(c).unwrap()[0];
+                        if *p != first_goal {
+                            min_dist += paths.get(&(*p, first_goal)).unwrap().0;
+                        }
                     }
-                } else {
-                    todo.push(Reverse((new_e, new_pos)));
+                    let new_f = new_g + min_dist;
+                    todo.push(Reverse((new_f, new_pos)));
                 }
             }
         }
@@ -195,7 +214,7 @@ fn part1(grid: &Parsed) -> Answer {
             }
         }
     }
-    solve(&start).unwrap()
+    solve(&start, 2).unwrap()
 }
 
 fn part2(_: &Parsed) -> Answer {

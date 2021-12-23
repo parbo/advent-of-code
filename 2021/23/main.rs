@@ -1,104 +1,151 @@
-use aoc::{Grid, GridDrawer};
+use aoc::{Grid, GridDrawer, Itertools};
 use std::cmp::Reverse;
-use std::collections::{BTreeMap, BinaryHeap, HashSet};
+use std::collections::{BTreeMap, BinaryHeap, HashMap};
 use std::time::Instant;
 
-type ParsedItem = Vec<char>;
-type Parsed = Vec<ParsedItem>;
+type Parsed = Vec<Vec<char>>;
 type Answer = i64;
 
-fn is_reachable(
-    grid: &Parsed,
-    pos: &BTreeMap<aoc::Point, char>,
+fn get_path(
+    grid: &BTreeMap<aoc::Point, char>,
     s: aoc::Point,
     g: aoc::Point,
-) -> bool {
+) -> (i64, Vec<aoc::Point>) {
     aoc::dijkstra_grid(
         grid,
-        &|p: &aoc::Point, c: &char| {
-            if let Some(_) = pos.get(p) {
-                false
-            } else {
-                *c != '#'
-            }
-        },
+        |_p: &aoc::Point, c: &char| *c == '.',
         |_pa, _va, _pb, _pv| Some(1),
         s,
         g,
     )
-    .is_some()
+    .unwrap()
 }
 
-fn solve(
-    grid: &Parsed,
-    goals: &BTreeMap<char, Vec<aoc::Point>>,
-    init_pos: &BTreeMap<aoc::Point, char>,
+fn is_reachable(
+    paths: &HashMap<(aoc::Point, aoc::Point), (i64, Vec<aoc::Point>)>,
+    grid: &BTreeMap<aoc::Point, char>,
+    s: aoc::Point,
+    g: aoc::Point,
 ) -> Option<i64> {
-    let mut todo = BinaryHeap::new();
-    todo.push(Reverse((0, init_pos.clone())));
-    let mut visited = HashSet::new();
-    while let Some(Reverse((energy, pos))) = todo.pop() {
-        println!("{}, {:?}", energy, pos);
-        if visited.contains(&pos) {
-            continue;
+    if let Some((e, path)) = paths.get(&(s, g)) {
+        if path
+            .iter()
+            .skip(1)
+            .map(|p| grid.get_value(*p).unwrap())
+            .all(|c| c == '.')
+        {
+            return Some(*e);
         }
-        visited.insert(pos.clone());
+    }
+    None
+}
+
+fn is_in_hallway(p: aoc::Point) -> bool {
+    p[0] > 0 && p[0] < 12 && p[1] == 1
+}
+
+fn solve(grid: &BTreeMap<aoc::Point, char>) -> Option<i64> {
+    // Hardcoded goals
+    let goals = HashMap::from([
+        ('A', vec![[3, 2], [3, 3]]),
+        ('B', vec![[5, 2], [5, 3]]),
+        ('C', vec![[7, 2], [7, 3]]),
+        ('D', vec![[9, 2], [9, 3]]),
+    ]);
+    let mut possible_moves = vec![[1, 1], [2, 1], [4, 1], [6, 1], [8, 1], [10, 1], [11, 1]];
+    for ps in goals.values() {
+        possible_moves.extend_from_slice(ps);
+    }
+    // Pre-compute the shortest paths
+    let mut paths = HashMap::new();
+    let empty_g = grid
+        .iter()
+        .map(|(p, c)| {
+            if c.is_ascii_alphabetic() {
+                (*p, '.')
+            } else {
+                (*p, *c)
+            }
+        })
+        .collect::<BTreeMap<aoc::Point, char>>();
+    for combo in possible_moves.iter().copied().permutations(2) {
+        paths.insert((combo[0], combo[1]), get_path(&empty_g, combo[0], combo[1]));
+    }
+    // println!("possible: {:?}, {}", possible_moves, paths.len());
+    let mut todo = BinaryHeap::new();
+    todo.push(Reverse(((0, 0), grid.clone())));
+    let mut visited = HashMap::new();
+    let mut ctr = 0;
+    while let Some(Reverse((energy, pos))) = todo.pop() {
+        ctr += 1;
+        if ctr % 10000 == 0 {
+            println!("{:?}, {:?}, {:?}", energy, pos, todo.len());
+        }
+        if let Some(old_e) = visited.get(&pos) {
+            if *old_e < energy {
+                continue;
+            }
+        }
         // Are all in goals?
         let mut ok = true;
-        for (p, a) in &pos {
-            if goals.get(a).unwrap().contains(p) {
+        for (from, a) in &pos {
+            if !a.is_ascii_alphabetic() {
+                continue;
+            }
+            if !goals.get(a).unwrap().contains(from) {
                 ok = false;
                 break;
             }
         }
         if ok {
-            return Some(energy);
+            return Some(energy.1);
         }
         // Nope, find moves
-        for (p, a) in &pos {
-            let mut moves: Vec<aoc::Point> = vec![];
-            if goals.get(a).unwrap().contains(p) {
-                // Already in the right spot
+        for (from, a) in &pos {
+            // We're only moving the amphipods
+            if !a.is_ascii_alphabetic() {
                 continue;
             }
-            // Are we in the hallway?
-            if p[0] > 0 && p[0] < 12 && p[1] == 1 {
-                // Find paths to goal
-                if let Some(agoals) = goals.get(a) {
-                    for g in agoals {
-                        let ok = if g[1] == 3 {
-                            // goal empty and same underneath
-                            *pos.get(g).unwrap_or(&'.') == '.'
-                                && *pos.get(&[g[0], g[1] + 1]).unwrap_or(&'.') == *a
-                        } else {
-                            // goal empty
-                            *pos.get(g).unwrap_or(&'.') == '.'
-                        };
-                        if ok && is_reachable(grid, &pos, *p, *g) {
-                            // goal reached, move there
-                            // println!("move to goal");
-                            moves.push(*g);
-                        }
-                    }
+            // Already in the right place?
+            // Need to move if not in goal, or blocking other not in goal
+            let should_move = !goals.get(a).unwrap().contains(from) // Not in my goal
+                || (from[1] == 2 && *pos.get(&[from[0], 3]).unwrap() != *a); // Blocking
+            if !should_move {
+                continue;
+            }
+            let mut moves = vec![];
+            // Try all possible moves
+            for to in &possible_moves {
+                // Don't move to self or non-empty
+                if *to == *from || *pos.get(to).unwrap() != '.' {
+                    continue;
                 }
-            } else {
-                // Try all possible moves out
-                for x in [1, 2, 4, 6, 8, 10, 11] {
-                    let hp = [x, 1];
-                    if is_reachable(grid, &pos, *p, hp) {
-                        // hallway reached, move there
-                        // println!("move to hallway");
-                        moves.push(hp);
-                    }
+                // Don't move from hallway to hallway
+                if is_in_hallway(*from) && is_in_hallway(*to) {
+                    continue;
+                }
+                // Move to hallway or my goal
+                // "and will only move into the leftmost room if that room is empty or
+                // if it only contains other Amber amphipods."
+                let ok = is_in_hallway(*to)
+                    || (goals.get(a).unwrap().contains(to) && // is goal
+			(to[1] == 3 && *pos.get(&[to[0], 2]).unwrap() == '.') // is empty
+			|| (to[1] == 2 && *pos.get(&[to[0], 3]).unwrap() == *a)); // is same
+                if !ok {
+                    continue;
+                }
+                // This is a legit point to move to from this position, is it reachable?
+                if let Some(e) = is_reachable(&paths, &pos, *from, *to) {
+                    moves.push((*to, e));
                 }
             }
             // if moves.is_empty() {
-            // 	println!("NO MOVES!");
+            //     println!("NO MOVES!");
             // }
-            for mv in moves {
+            for (mv, num) in moves {
                 let mut new_pos = pos.clone();
-                new_pos.remove(p);
-                new_pos.insert(*p, *a);
+                new_pos.insert(*from, '.');
+                new_pos.insert(mv, *a);
                 // println!("old-pos: {:?}", pos);
                 // println!("new-pos: {:?}", new_pos);
                 let e = match a {
@@ -108,7 +155,27 @@ fn solve(
                     'D' => 1000,
                     _ => panic!(),
                 };
-                todo.push(Reverse((energy + e * aoc::manhattan(*p, mv), new_pos)));
+                // let mut gd = aoc::PrintGridDrawer::new(|c| c);
+                // println!("===============================");
+                // println!("{:?}, {:?}", pos.extents(), new_pos.extents());
+                // gd.draw(&pos);
+                // gd.draw(&new_pos);
+		let mut min_dist = 0;
+		for (p, c) in new_pos.iter().filter(|(_p, c)| **c != '.') {
+		    let first_goal = goals.get(c).unwrap()[0];
+		    if *p != first_goal {
+			min_dist += paths.get(&(*p, first_goal)).unwrap().0;
+		    }
+		}
+		let new_energy = energy.1 + e * num;
+                let new_e = ((min_dist + 1) * new_energy, new_energy);
+                if let Some(old_e) = visited.insert(new_pos.clone(), new_e) {
+                    if new_e < old_e {
+                        todo.push(Reverse((new_e, new_pos)));
+                    }
+                } else {
+                    todo.push(Reverse((new_e, new_pos)));
+                }
             }
         }
     }
@@ -118,26 +185,20 @@ fn solve(
 fn part1(grid: &Parsed) -> Answer {
     let mut gd = aoc::PrintGridDrawer::new(|c| c);
     gd.draw(grid);
-    // Hardcoded goals
-    let goals = BTreeMap::from([
-        ('A', vec![[3, 2], [3, 3]]),
-        ('B', vec![[5, 2], [5, 3]]),
-        ('C', vec![[7, 2], [7, 3]]),
-        ('D', vec![[9, 2], [9, 3]]),
-    ]);
-    // Starting positions
+    // Make a sparse grid with only amphipods and empty positions
     let mut start = BTreeMap::new();
     for p in grid.points() {
-        if let Some(x) = grid.get_value(p) {
-            if x.is_ascii_alphabetic() {
+        match grid.get_value(p) {
+            Some('#') | Some(' ') | None => (),
+            Some(x) => {
                 start.insert(p, x);
             }
         }
     }
-    solve(grid, &goals, &start).unwrap()
+    solve(&start).unwrap()
 }
 
-fn part2(_: &[ParsedItem]) -> Answer {
+fn part2(_: &Parsed) -> Answer {
     0
 }
 
@@ -168,16 +229,17 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    // use super::*;
+    use super::*;
 
-    // fn example() -> Vec<String> {
-    // 	   vec![
-    //         "0".into()
-    //     ]
-    // }
+    fn example() -> Vec<String> {
+        include_str!("sample.txt")
+            .lines()
+            .map(|x| x.into())
+            .collect()
+    }
 
-    // #[test]
-    // fn test_part1() {
-    //     assert_eq!(part1(&parse(&example())), 0);
-    // }
+    #[test]
+    fn test_part1() {
+        assert_eq!(part1(&parse(&example())), 12521);
+    }
 }

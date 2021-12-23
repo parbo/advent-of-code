@@ -1,14 +1,32 @@
 use aoc::{Grid, GridDrawer};
 use std::cmp::Reverse;
-use std::collections::{BinaryHeap, BTreeMap, HashSet};
+use std::collections::{BTreeMap, BinaryHeap, HashSet};
 use std::time::Instant;
 
 type ParsedItem = Vec<char>;
 type Parsed = Vec<ParsedItem>;
 type Answer = i64;
 
-fn get_path(grid: &Parsed, s: aoc::Point, g: aoc::Point) -> Option<(i64, Vec<aoc::Point>)> {
-    aoc::dijkstra_grid(grid, |_p, c| *c == '.', |_pa, _va, _pb, _pv| Some(1), s, g)
+fn is_reachable(
+    grid: &Parsed,
+    pos: &BTreeMap<aoc::Point, char>,
+    s: aoc::Point,
+    g: aoc::Point,
+) -> bool {
+    aoc::dijkstra_grid(
+        grid,
+        &|p: &aoc::Point, c: &char| {
+            if let Some(_) = pos.get(p) {
+                false
+            } else {
+                *c != '#'
+            }
+        },
+        |_pa, _va, _pb, _pv| Some(1),
+        s,
+        g,
+    )
+    .is_some()
 }
 
 fn solve(
@@ -24,7 +42,7 @@ fn solve(
         if visited.contains(&pos) {
             continue;
         }
-	visited.insert(pos.clone());
+        visited.insert(pos.clone());
         // Are all in goals?
         let mut ok = true;
         for (p, a) in &pos {
@@ -49,27 +67,25 @@ fn solve(
                 if let Some(agoals) = goals.get(a) {
                     for g in agoals {
                         let ok = if g[1] == 3 {
-			    // goal empty and same underneath
+                            // goal empty and same underneath
                             *pos.get(g).unwrap_or(&'.') == '.'
                                 && *pos.get(&[g[0], g[1] + 1]).unwrap_or(&'.') == *a
                         } else {
-			    // goal empty
+                            // goal empty
                             *pos.get(g).unwrap_or(&'.') == '.'
                         };
-			if ok {
-                            if let Some((_, _)) = get_path(grid, *p, *g) {
-				// goal reached, move there
-				// println!("move to goal");
-				moves.push(*g);
-                            }
-			}
+                        if ok && is_reachable(grid, &pos, *p, *g) {
+                            // goal reached, move there
+                            // println!("move to goal");
+                            moves.push(*g);
+                        }
                     }
                 }
             } else {
                 // Try all possible moves out
                 for x in [1, 2, 4, 6, 8, 10, 11] {
                     let hp = [x, 1];
-                    if let Some((_, _)) = get_path(grid, *p, hp) {
+                    if is_reachable(grid, &pos, *p, hp) {
                         // hallway reached, move there
                         // println!("move to hallway");
                         moves.push(hp);
@@ -81,8 +97,8 @@ fn solve(
             // }
             for mv in moves {
                 let mut new_pos = pos.clone();
-		new_pos.remove(p);
-		new_pos.insert(*p, *a);
+                new_pos.remove(p);
+                new_pos.insert(*p, *a);
                 // println!("old-pos: {:?}", pos);
                 // println!("new-pos: {:?}", new_pos);
                 let e = match a {

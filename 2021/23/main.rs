@@ -1,13 +1,14 @@
 use aoc::{Grid, Itertools};
 use std::cmp::Reverse;
-use std::collections::{BinaryHeap, HashMap};
+use std::collections::{BinaryHeap};
+use aoc::FxHashMap;
 use std::time::Instant;
 
 type Parsed = Vec<Vec<char>>;
 type Answer = i64;
 
 fn get_path(
-    grid: &HashMap<aoc::Point, char>,
+    grid: &FxHashMap<aoc::Point, char>,
     s: aoc::Point,
     g: aoc::Point,
 ) -> (i64, Vec<aoc::Point>) {
@@ -30,7 +31,7 @@ fn ix2p(ix: usize) -> aoc::Point {
 }
 
 fn is_reachable(
-    paths: &HashMap<(aoc::Point, aoc::Point), (i64, Vec<aoc::Point>)>,
+    paths: &FxHashMap<(aoc::Point, aoc::Point), (i64, Vec<aoc::Point>)>,
     grid: &[char],
     s: aoc::Point,
     g: aoc::Point,
@@ -81,7 +82,7 @@ fn solve(parsed_grid: &Vec<Vec<char>>, num: i64) -> Option<i64> {
     for p in parsed_grid.points() {
         start.push(parsed_grid.get_value(p).unwrap());
     }
-    let mut goals = HashMap::new();
+    let mut goals = FxHashMap::default();
     for (c, x) in [('A', 3), ('B', 5), ('C', 7), ('D', 9)] {
         let mut v = vec![];
         for y in 2..(2 + num) {
@@ -94,8 +95,8 @@ fn solve(parsed_grid: &Vec<Vec<char>>, num: i64) -> Option<i64> {
         possible_moves.extend_from_slice(ps);
     }
     // Pre-compute the shortest paths
-    let mut paths = HashMap::new();
-    let mut empty_g = HashMap::new();
+    let mut paths = FxHashMap::default();
+    let mut empty_g = FxHashMap::default();
     for (ix, c) in start.iter().enumerate() {
         let p = ix2p(ix);
         if c.is_ascii_alphabetic() {
@@ -107,8 +108,8 @@ fn solve(parsed_grid: &Vec<Vec<char>>, num: i64) -> Option<i64> {
     for combo in possible_moves.iter().copied().permutations(2) {
         paths.insert((combo[0], combo[1]), get_path(&empty_g, combo[0], combo[1]));
     }
-    let mut gscore = HashMap::new();
-    let mut fscore = HashMap::new();
+    let mut gscore = FxHashMap::default();
+    let mut fscore = FxHashMap::default();
 
     gscore.insert(start.clone(), 0);
 

@@ -96,6 +96,7 @@ fn solve(parsed_grid: &Vec<Vec<char>>, num: i64) -> Option<i64> {
     }
     // Pre-compute the shortest paths
     let mut paths = FxHashMap::default();
+    paths.reserve(220);
     let mut empty_g = FxHashMap::default();
     for (ix, c) in start.iter().enumerate() {
         let p = ix2p(ix);
@@ -109,11 +110,14 @@ fn solve(parsed_grid: &Vec<Vec<char>>, num: i64) -> Option<i64> {
         paths.insert((combo[0], combo[1]), get_path(&empty_g, combo[0], combo[1]));
     }
     let mut gscore = FxHashMap::default();
+    gscore.reserve(100000);
     let mut fscore = FxHashMap::default();
+    gscore.reserve(100000);
 
     gscore.insert(start.clone(), 0);
 
     let mut todo = BinaryHeap::new();
+    todo.reserve(100000);
     todo.push(Reverse((0, start)));
 
     while let Some(Reverse((est, pos))) = todo.pop() {

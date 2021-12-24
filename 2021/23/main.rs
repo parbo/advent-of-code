@@ -131,7 +131,7 @@ fn solve(parsed_grid: &Vec<Vec<u8>>, num: i64) -> Option<i64> {
     todo.reserve(100000);
     todo.push(Reverse((0, start)));
 
-    while let Some(Reverse((est, pos))) = todo.pop() {
+    while let Some(Reverse((_est, pos))) = todo.pop() {
         // Are all in goals?
         let mut ok = true;
         for (ix, a) in pos.iter().enumerate() {
@@ -149,10 +149,6 @@ fn solve(parsed_grid: &Vec<Vec<u8>>, num: i64) -> Option<i64> {
         }
 
         let g = *gscore.entry(pos.clone()).or_insert(i64::MAX);
-        let f = fscore.entry(pos.clone()).or_insert(i64::MAX);
-        if *f <= est {
-            continue;
-        }
 
         // Nope, find moves
         for (ix, a) in pos.iter().enumerate() {
@@ -216,6 +212,7 @@ fn solve(parsed_grid: &Vec<Vec<u8>>, num: i64) -> Option<i64> {
                         }
                     }
                     let new_f = new_g + min_dist;
+		    *fscore.entry(new_pos.clone()).or_insert(i64::MAX) = new_f;
                     todo.push(Reverse((new_f, new_pos)));
                 }
             }

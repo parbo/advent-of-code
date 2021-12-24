@@ -7,6 +7,16 @@ use std::time::Instant;
 type Parsed = Vec<Vec<u8>>;
 type Answer = i64;
 
+fn score(c: u8) -> i64 {
+    match c as char {
+        'A' => 1,
+        'B' => 10,
+        'C' => 100,
+        'D' => 1000,
+        _ => panic!(),
+    }
+}
+
 fn get_path(
     grid: &FxHashMap<aoc::Point, u8>,
     s: aoc::Point,
@@ -188,13 +198,7 @@ fn solve(parsed_grid: &Vec<Vec<u8>>, num: i64) -> Option<i64> {
                 let mut new_pos = pos.clone();
                 new_pos[p2ix(from)] = '.' as u8;
                 new_pos[p2ix(mv)] = *a;
-                let e = match *a as char {
-                    'A' => 1,
-                    'B' => 10,
-                    'C' => 100,
-                    'D' => 1000,
-                    _ => panic!(),
-                };
+                let e = score(*a);
                 let new_g = g + e * n;
                 let nb_g = gscore.entry(new_pos.clone()).or_insert(i64::MAX);
                 if new_g < *nb_g {
@@ -208,7 +212,7 @@ fn solve(parsed_grid: &Vec<Vec<u8>>, num: i64) -> Option<i64> {
                         let first_goal = goals.get(c).unwrap()[0];
                         let p = ix2p(ix);
                         if p != first_goal {
-                            min_dist += paths.get(&(p, first_goal)).unwrap().0;
+                            min_dist += score(*c) * paths.get(&(p, first_goal)).unwrap().0;
                         }
                     }
                     let new_f = new_g + min_dist;

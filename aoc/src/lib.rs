@@ -430,8 +430,9 @@ where
     let mut gscore = HashMap::new();
     let mut fscore = HashMap::new();
     gscore.insert(start, 0);
+    fscore.insert(start, manhattan(start, goal));
     frontier.push(Reverse((manhattan(start, goal), start)));
-    while let Some(Reverse((est, current))) = frontier.pop() {
+    while let Some(Reverse((_est, current))) = frontier.pop() {
         if current == goal {
             let mut path = vec![goal];
             let mut curr = goal;
@@ -442,10 +443,6 @@ where
             return Some((gscore.get_value(goal).unwrap(), path));
         }
         let g = *gscore.entry(current).or_insert(i64::MAX);
-        let f = fscore.entry(current).or_insert(i64::MAX);
-        if *f <= est {
-            continue;
-        }
         let curr_val = grid.get_value(current).unwrap();
         for nb in neighbors(current) {
             if let Some(value) = grid.get_value(nb) {
@@ -456,7 +453,8 @@ where
                         if new_g < *nb_g {
                             came_from.insert(nb, current);
                             *nb_g = new_g;
-                            let new_f = new_g + manhattan(current, nb);
+                            let new_f = new_g + manhattan(goal, nb);
+			    *fscore.entry(nb).or_insert(i64::MAX) = new_f;
                             frontier.push(Reverse((new_f, nb)));
                         }
                     }

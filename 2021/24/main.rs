@@ -139,10 +139,27 @@ impl Alu {
 }
 
 fn part1(program: &[ParsedItem]) -> Answer {
-    for p in program {
-        println!("{}", p);
+    let mut max = 0;
+    'outer: for m in 11111111111111..=99999999999999 {
+	let mut alu = Alu::new();
+	let mut n = m;
+	for i in (0..14).rev() {
+	    let i = n / 10_i64.pow(i);
+	    if i == 0 {
+		continue 'outer;
+	    }
+	    alu.add_input(i);
+	    n /= 10;
+	}
+	for p in program {
+	    alu.step(*p);
+	}
+	if alu.z == 0 {
+	    println!("{} is valid", m);
+	    max = max.max(m);
+	}
     }
-    0
+    max
 }
 
 fn part2(_: &[ParsedItem]) -> Answer {

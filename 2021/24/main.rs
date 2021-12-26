@@ -220,15 +220,13 @@ fn check_monad_reversed(m: i64) -> (i64, i64, i64, i64) {
     ];
     println!("alu: {}", alu);
     let mut digs = vec![];
-    for i in 0..14 {
-        let dig = 13 - i;
-        let id = n / 10_i64.pow(dig);
+    for i in (0..14).rev() {
+        let id = n / 10_i64.pow(i);
         if id == 0 {
             panic!();
         }
-	let ix = i as usize;
 	digs.push(id);
-        n -= id * 10_i64.pow(dig);
+        n -= id * 10_i64.pow(i);
     }
     for (ix, d) in digs.iter().enumerate() {
         alu.w = *d;

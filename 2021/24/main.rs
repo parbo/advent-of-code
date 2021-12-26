@@ -243,18 +243,18 @@ fn check_monad_reversed(m: i64) -> (i64, i64, i64, i64) {
 
 fn part1(program: &[ParsedItem]) -> Answer {
     let mut max = 0;
-    let poss = [
-        11111111111111,
-        11122112112222,
-        11133113113333,
-        11144114114444,
-        11155115115555,
-        11166116116666,
-        11177117117777,
-        11188118118888,
-        11199119119999,
-    ];
-    'outer: for m in poss {
+    // let poss = [
+    //     11111111111111,
+    //     11122112112222,
+    //     11133113113333,
+    //     11144114114444,
+    //     11155115115555,
+    //     11166116116666,
+    //     11177117117777,
+    //     11188118118888,
+    //     11199119119999,
+    // ];
+    'outer: for m in 11111111111111..99999999999999 {
         let mut alu = Alu::new();
         let mut n = m;
         for i in (0..14).rev() {
@@ -268,8 +268,8 @@ fn part1(program: &[ParsedItem]) -> Answer {
         for p in program {
             alu.step(*p);
         }
-        println!("alu: {}", alu);
         if alu.z == 0 {
+            println!("alu: {}", alu);
             println!("{} is valid", m);
             max = max.max(m);
         }

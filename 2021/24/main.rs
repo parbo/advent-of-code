@@ -231,51 +231,82 @@ fn check_monad_reversed(m: i64) -> (i64, i64, i64, i64) {
     for (ix, d) in digs.iter().enumerate() {
         alu.w = *d;
 	let (a, b, c) = vals[ix];
-        if alu.z % 26 != alu.w - b {
-            alu.z = 26 * (alu.z / a) + alu.w + c;
-        } else {
+        if alu.z % 26 == alu.w - b {
 	    alu.z /= a;
+        } else {
+            alu.z = alu.w + c + 26 * (alu.z / a);
 	}
-        println!("alu: {}, {}", ix, alu);
+        println!("alu: {}, {}, {}, {}, {}, {}", ix, a, b,  c, d, alu);
     }
     println!("alu: {}", alu);
     (alu.w, alu.x, alu.y, alu.z)
 }
 
-fn part1(program: &[ParsedItem]) -> Answer {
-    let mut max = 0;
-    // let poss = [
-    //     11111111111111,
-    //     11122112112222,
-    //     11133113113333,
-    //     11144114114444,
-    //     11155115115555,
-    //     11166116116666,
-    //     11177117117777,
-    //     11188118118888,
-    //     11199119119999,
-    // ];
-    'outer: for m in 11111111111111..99999999999999 {
-        let mut alu = Alu::new();
-        let mut n = m;
-        for i in (0..14).rev() {
-            let id = n / 10_i64.pow(i);
-            if id == 0 {
-                continue 'outer;
-            }
-            alu.add_input(id);
-            n -= id * 10_i64.pow(i);
-        }
-        for p in program {
-            alu.step(*p);
-        }
+fn gen_nums(ix: usize, digs: &[i64]) {
+    let poss = [
+	1..=9,
+	1..=9,
+	1..=9,
+	5..=9,
+	3..=9,
+	1..=9,
+	1..=9,
+	1..=9,
+	1..=9,
+	1..=9,
+	7..=9,
+	1..=9,
+	6..=9,
+	1..=9,
+    ];
+    if ix == 13 {
+	let mut alu = Alu::new();
+	for (ix, d) in digs.iter().enumerate() {
+            alu.w = *d;
+	    let (a, b, c) = vals[ix];
+            if alu.z % 26 == alu.w - b {
+		alu.z /= a;
+            } else {
+		alu.z = alu.w + c + 26 * (alu.z / a);
+	    }
+	}
+//	if ctr % 10000 == 0 {
+	    println!("{:?}, z: {}", digs, alu.z);
+//	}
         if alu.z == 0 {
             println!("alu: {}", alu);
-            println!("{} is valid", m);
-            max = max.max(m);
+            println!("{:?} is valid", digs);
+//            max = max.max(m);
         }
+	return;
     }
+    for r in poss[ix].clone() {
+	let mut d = digs.to_owned();
+	d.push(r);
+	gen_nums(ix + 1, &d);
+    }
+}
 
+fn part1(program: &[ParsedItem]) -> Answer {
+    let mut max = 0;
+    let vals = [
+        (1, 11, 16),
+        (1, 12, 11),
+        (1, 13, 12),
+        (26, -5, 12),
+        (26, -3, 12),
+        (1, 14, 2),
+        (1, 15, 11),
+        (26, -16, 4),
+        (1, 14, 12),
+        (1, 15, 9),
+        (26, -7, 10),
+        (26, -11, 11),
+        (26, -6, 6),
+        (26, -11, 15),
+    ];
+    let mut digss = vec![];
+    gen_nums(0, &[], &mut digss);
     max
 }
 

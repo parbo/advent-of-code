@@ -231,10 +231,10 @@ fn check_monad_reversed(m: i64) -> (i64, i64, i64, i64) {
     for (ix, d) in digs.iter().enumerate() {
         alu.w = *d;
 	let (a, b, c) = vals[ix];
-        if alu.z % 26 + b != alu.w {
-            alu.z = alu.w + c + (alu.z / a) * 26;
+        if alu.z % 26 != alu.w - b {
+            alu.z = 26 * (alu.z / a) + alu.w + c;
         } else {
-	    alu.z /= vals[ix].0;
+	    alu.z /= a;
 	}
         println!("alu: {}, {}", ix, alu);
     }

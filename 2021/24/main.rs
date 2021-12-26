@@ -1,6 +1,6 @@
+use std::fmt;
 use std::iter::*;
 use std::time::Instant;
-use std::fmt;
 
 #[derive(
     parse_display::Display, parse_display::FromStr, Debug, Copy, Clone, PartialEq, Eq, Hash,
@@ -50,18 +50,29 @@ struct Alu {
 
 fn as_char(c: i64) -> char {
     if c >= 0 && c < 256 {
-	let cc = c as u8;
-	let ccc = cc as char;
-	if !ccc.is_control() {
-	    return ccc;
-	}
+        let cc = c as u8;
+        let ccc = cc as char;
+        if !ccc.is_control() {
+            return ccc;
+        }
     }
     '-'
 }
 
 impl fmt::Display for Alu {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "w: {}, {}, x: {}, {}, y: {}, {}, z: {}, {}", self.w, as_char(self.w), self.x, as_char(self.x), self.y, as_char(self.y), self.z, as_char(self.z))
+        write!(
+            f,
+            "w: {}, {}, x: {}, {}, y: {}, {}, z: {}, {}",
+            self.w,
+            as_char(self.w),
+            self.x,
+            as_char(self.x),
+            self.y,
+            as_char(self.y),
+            self.z,
+            as_char(self.z)
+        )
     }
 }
 
@@ -176,12 +187,12 @@ fn check_monad_alu(m: i64) -> (i64, i64, i64, i64) {
     let mut c = 0;
     for p in program {
         alu.step(p);
-	if let Ops::Inp(_) = p {
-	    c+=1;
-//	    if c == 2 {break;}
-//	}
-	    println!("alu: {}", alu);
-	}
+        if let Ops::Inp(_) = p {
+            c += 1;
+            //	    if c == 2 {break;}
+            //	}
+            println!("alu: {}", alu);
+        }
     }
     (alu.w, alu.x, alu.y, alu.z)
 }
@@ -206,31 +217,31 @@ fn check_monad_reversed(m: i64) -> (i64, i64, i64, i64) {
         (26, -11, 15),
     ];
     for i in 0..14 {
-	let dig = 13 - i;
+        let dig = 13 - i;
         let id = n / 10_i64.pow(dig);
         if id == 0 {
             panic!();
         }
-//	println!("vals: {}, {:?}", i, vals[i as usize]);
+        //	println!("vals: {}, {:?}", i, vals[i as usize]);
         alu.w = id;
-	alu.x = 0;
-	alu.y = 0;
+        alu.x = 0;
+        alu.y = 0;
         alu.x = alu.z % 26;
- //	println!("1 rev: {}", alu);
-       alu.z /= vals[i as usize].0;
-//	println!("2 rev: {}", alu);
+        //	println!("1 rev: {}", alu);
+        alu.z /= vals[i as usize].0;
+        //	println!("2 rev: {}", alu);
         alu.x += vals[i as usize].1;
-	//	println!("3 rev: {}", alu);
-	alu.x = (alu.x != alu.w) as i64;
+        //	println!("3 rev: {}", alu);
+        alu.x = (alu.x != alu.w) as i64;
         if alu.x == 1 {
             alu.z *= 26;
             alu.y = alu.w + vals[i as usize].2;
-	}
-//	println!("rev: {}", alu);
+        }
+        //	println!("rev: {}", alu);
         alu.z += alu.y;
-	println!("rev: {}", alu);
+        println!("rev: {}", alu);
         n /= 10;
-//	break;
+        //	break;
     }
     (alu.w, alu.x, alu.y, alu.z)
 }
@@ -238,35 +249,36 @@ fn check_monad_reversed(m: i64) -> (i64, i64, i64, i64) {
 fn part1(program: &[ParsedItem]) -> Answer {
     let mut max = 0;
     let poss = [
-	11111111111111,
-	11122112112222,
-	11133113113333,
-	11144114114444,
-	11155115115555,
-	11166116116666,
-	11177117117777,
-	11188118118888,
-	11199119119999];
-     'outer: for m in poss {
-    	let mut alu = Alu::new();
-    	let mut n = m;
-     	for i in (0..14).rev() {
-     	    let id = n / 10_i64.pow(i);
-     	    if id == 0 {
-     		continue 'outer;
-     	    }
-     	    alu.add_input(id);
-    	    n /= 10;
-     	}
-    	for p in program {
-     	    alu.step(*p);
-     	}
-	 println!("alu: {}", alu);
-     	if alu.z == 0 {
-    	    println!("{} is valid", m);
-    	    max = max.max(m);
-    	}
-   }
+        11111111111111,
+        11122112112222,
+        11133113113333,
+        11144114114444,
+        11155115115555,
+        11166116116666,
+        11177117117777,
+        11188118118888,
+        11199119119999,
+    ];
+    'outer: for m in poss {
+        let mut alu = Alu::new();
+        let mut n = m;
+        for i in (0..14).rev() {
+            let id = n / 10_i64.pow(i);
+            if id == 0 {
+                continue 'outer;
+            }
+            alu.add_input(id);
+            n /= 10;
+        }
+        for p in program {
+            alu.step(*p);
+        }
+        println!("alu: {}", alu);
+        if alu.z == 0 {
+            println!("{} is valid", m);
+            max = max.max(m);
+        }
+    }
 
     max
 }
@@ -374,6 +386,6 @@ mod tests {
             check_monad_alu(13579246899999),
             check_monad_reversed(13579246899999)
         );
-	assert!(false);
+        assert!(false);
     }
 }

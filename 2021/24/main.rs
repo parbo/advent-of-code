@@ -182,18 +182,20 @@ fn check_monad_alu(m: i64) -> (i64, i64, i64, i64) {
             panic!();
         }
         alu.add_input(id);
-        n /= 10;
+        n -= id * 10_i64.pow(i);
     }
     let mut c = 0;
+    println!("alu: {}", alu);
     for p in program {
         alu.step(p);
         if let Ops::Inp(_) = p {
+            println!("alu: {}, {}", c, alu);
             c += 1;
             //	    if c == 2 {break;}
             //	}
-            println!("alu: {}", alu);
         }
     }
+    println!("alu: {}", alu);
     (alu.w, alu.x, alu.y, alu.z)
 }
 
@@ -216,33 +218,26 @@ fn check_monad_reversed(m: i64) -> (i64, i64, i64, i64) {
         (26, -6, 6),
         (26, -11, 15),
     ];
+    println!("alu: {}", alu);
     for i in 0..14 {
         let dig = 13 - i;
         let id = n / 10_i64.pow(dig);
         if id == 0 {
             panic!();
         }
+	let ix = i as usize;
         //	println!("vals: {}, {:?}", i, vals[i as usize]);
         alu.w = id;
-        alu.x = 0;
-        alu.y = 0;
-        alu.x = alu.z % 26;
-        //	println!("1 rev: {}", alu);
-        alu.z /= vals[i as usize].0;
-        //	println!("2 rev: {}", alu);
-        alu.x += vals[i as usize].1;
-        //	println!("3 rev: {}", alu);
-        alu.x = (alu.x != alu.w) as i64;
-        if alu.x == 1 {
-            alu.z *= 26;
-            alu.y = alu.w + vals[i as usize].2;
-        }
-        //	println!("rev: {}", alu);
-        alu.z += alu.y;
-        println!("rev: {}", alu);
-        n /= 10;
+        if alu.z % 26 + vals[ix].1 != alu.w {
+            alu.z = alu.w + vals[i as usize].2 + (alu.z / vals[ix].0) * 26;
+        } else {
+	    alu.z /= vals[ix].0;
+	}
+            println!("alu: {}, {}", i, alu);
+        n -= id * 10_i64.pow(dig);
         //	break;
     }
+    println!("alu: {}", alu);
     (alu.w, alu.x, alu.y, alu.z)
 }
 
@@ -268,7 +263,7 @@ fn part1(program: &[ParsedItem]) -> Answer {
                 continue 'outer;
             }
             alu.add_input(id);
-            n /= 10;
+            n -= id * 10_i64.pow(i);
         }
         for p in program {
             alu.step(*p);

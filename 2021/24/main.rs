@@ -219,6 +219,7 @@ fn check_monad_reversed(m: i64) -> (i64, i64, i64, i64) {
         (26, -11, 15),
     ];
     println!("alu: {}", alu);
+    let mut digs = vec![];
     for i in 0..14 {
         let dig = 13 - i;
         let id = n / 10_i64.pow(dig);
@@ -226,16 +227,18 @@ fn check_monad_reversed(m: i64) -> (i64, i64, i64, i64) {
             panic!();
         }
 	let ix = i as usize;
-        //	println!("vals: {}, {:?}", i, vals[i as usize]);
-        alu.w = id;
-        if alu.z % 26 + vals[ix].1 != alu.w {
-            alu.z = alu.w + vals[i as usize].2 + (alu.z / vals[ix].0) * 26;
+	digs.push(id);
+        n -= id * 10_i64.pow(dig);
+    }
+    for (ix, d) in digs.iter().enumerate() {
+        alu.w = *d;
+	let (a, b, c) = vals[ix];
+        if alu.z % 26 + b != alu.w {
+            alu.z = alu.w + c + (alu.z / a) * 26;
         } else {
 	    alu.z /= vals[ix].0;
 	}
-            println!("alu: {}, {}", i, alu);
-        n -= id * 10_i64.pow(dig);
-        //	break;
+        println!("alu: {}, {}", i, alu);
     }
     println!("alu: {}", alu);
     (alu.w, alu.x, alu.y, alu.z)

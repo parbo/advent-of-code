@@ -236,7 +236,7 @@ fn check_monad_reversed(m: i64) -> (i64, i64, i64, i64) {
         } else {
 	    alu.z /= vals[ix].0;
 	}
-        println!("alu: {}, {}", i, alu);
+        println!("alu: {}, {}", ix, alu);
     }
     println!("alu: {}", alu);
     (alu.w, alu.x, alu.y, alu.z)

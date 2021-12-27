@@ -171,8 +171,6 @@ fn gen_nums(program: &[ParsedItem], ix: usize, digs: &[i64], max: &mut i64, min:
 	    alu.step(*p);
 	}
         if alu.z == 0 {
-            // println!("alu: {}", alu);
-            // println!("{:?} is valid", digs);
             *max = (*max).max(m);
             *min = (*min).min(m);
         }

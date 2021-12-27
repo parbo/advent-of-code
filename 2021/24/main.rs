@@ -51,11 +51,11 @@ struct Alu {
 fn as_stack(mut c: i64) -> Vec<i64> {
     let mut chrs = vec![];
     loop {
-	chrs.push(c % 26);
-	if c <= 26 {
-	    break;
-	}
-	c /= 26;
+        chrs.push(c % 26);
+        if c <= 26 {
+            break;
+        }
+        c /= 26;
     }
     chrs.into_iter().rev().collect()
 }
@@ -156,92 +156,68 @@ impl Alu {
     pub fn add_input(&mut self, input: i64) {
         self.inputs.push(input);
     }
-
-    pub fn peek(&self) -> i64 {
-	self.z % 26
-    }
-
-    pub fn push(&mut self, c: i64) {
-	self.z = self.z * 26 + c;
-    }
-
-    pub fn pop(&mut self) {
-	self.z /= 26;
-    }
-
-    // pub fn add_inputs(&mut self, inputs: &[i64]) {
-    //     self.inputs.extend(inputs);
-    // }
-
-    // pub fn input_len(&self) -> usize {
-    // 	self.inputs.len() - self.curr_input
-    // }
 }
 
-fn gen_nums(ix: usize, digs: &[i64], max: &mut i64) {
-    let vals = [
-        (1, 11, 16, 0), // push
-        (1, 12, 11, 0), // push
-        (1, 13, 12, 0), // push
-        (26, -5, 12, 2), // pop
-        (26, -3, 12, 1), // pop
-        (1, 14, 2, 0), // push
-        (1, 15, 11, 0), // push
-        (26, -16, 4, 6), // pop
-        (1, 14, 12, 0), // push
-        (1, 15, 9, 0), // push
-        (26, -7, 10, 9), // pop
-        (26, -11, 11, 8), // pop
-        (26, -6, 6, 5), // pop
-        (26, -11, 15, 0), // pop
-    ];
-    let (_a, b, _c, row) = vals[ix];
-    if b < 0 {
-	if digs[row] + vals[row].2 != digs[ix-1] - b {
-	    // println!("failed check, {}-{}: {} + {} != {} + {}", ix, row, digs[row], vals[row].2, r, b);
-	    return;
-	} else {
-	    println!("passed check {}", ix);
-	}
-    }
-    if ix == 13 {
-	let mut alu = Alu::new();
-	let mut m = 0;
-	for (i, d) in digs.iter().enumerate() {
-	    m += 10_i64.pow((13 - i) as u32);
-            alu.w = *d;
-	    let (a, b, c, _) = vals[i];
-	    let v = alu.peek();
-	    if a == 26 {
-		alu.pop();
-	    }
-            if v != alu.w - b {
-		alu.push(alu.w + c);
-	    }
-	}
-        println!("alu: {}", alu);
-        if alu.z == 0 {
-            println!("alu: {}", alu);
-            println!("{:?} is valid", digs);
-            *max = (*max).max(m);
+fn gen_nums(program: &[ParsedItem], ix: usize, digs: &[i64], max: &mut i64, min: &mut i64) {
+    if ix == 14 {
+        let mut alu = Alu::new();
+        let mut m = 0;
+        assert!(digs.len() == 14, "{:?}", digs);
+        for (i, d) in digs.iter().enumerate() {
+            m += *d * 10_i64.pow((13 - i) as u32);
+	    alu.add_input(*d);
         }
-	return;
+	for p in program {
+	    alu.step(*p);
+	}
+        if alu.z == 0 {
+            // println!("alu: {}", alu);
+            // println!("{:?} is valid", digs);
+            *max = (*max).max(m);
+            *min = (*min).min(m);
+        }
+        return;
     }
+    // Reverse engineered program constraints
+    let vals = [
+        (1, 11, 16, 0),   // 0, push
+        (1, 12, 11, 0),   // 1, push
+        (1, 13, 12, 0),   // 2, push
+        (26, -5, 12, 2),  // 3, pop
+        (26, -3, 12, 1),  // 4, pop
+        (1, 14, 2, 0),    // 5, push
+        (1, 15, 11, 0),   // 6, push
+        (26, -16, 4, 6),  // 7, pop
+        (1, 14, 12, 0),   // 8, push
+        (1, 15, 9, 0),    // 9, push
+        (26, -7, 10, 9),  // 10, pop
+        (26, -11, 11, 8), // 11, pop
+        (26, -6, 6, 5),   // 12, pop
+        (26, -11, 15, 0), // 13, pop
+    ];
     for r in 1..=9 {
-	let mut d = digs.to_owned();
-	d.push(r);
-	gen_nums(ix + 1, &d, max);
+        let mut d = digs.to_owned();
+        d.push(r);
+        let (_a, b, _c, row) = vals[ix];
+        if b < 0 && d[row] + vals[row].2 != d[ix] - b {
+            continue;
+        }
+        gen_nums(program, ix + 1, &d, max, min);
     }
 }
 
 fn part1(program: &[ParsedItem]) -> Answer {
     let mut max = 0;
-    gen_nums(0, &[], &mut max);
+    let mut min = 0;
+    gen_nums(program, 0, &[], &mut max, &mut min);
     max
 }
 
-fn part2(_: &[ParsedItem]) -> Answer {
-    0
+fn part2(program: &[ParsedItem]) -> Answer {
+    let mut max = 0;
+    let mut min = i64::MAX;
+    gen_nums(program, 0, &[], &mut max, &mut min);
+    min
 }
 
 fn parse(lines: &[String]) -> Parsed {

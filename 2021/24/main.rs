@@ -48,30 +48,28 @@ struct Alu {
     inputs: Vec<i64>,
 }
 
-fn as_char(c: i64) -> char {
-    if c >= 0 && c < 256 {
-        let cc = c as u8;
-        let ccc = cc as char;
-        if !ccc.is_control() {
-            return ccc;
-        }
+fn as_stack(mut c: i64) -> Vec<i64> {
+    let mut chrs = vec![];
+    loop {
+	chrs.push(c % 26);
+	if c <= 26 {
+	    break;
+	}
+	c /= 26;
     }
-    '-'
+    chrs.into_iter().rev().collect()
 }
 
 impl fmt::Display for Alu {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "w: {}, {}, x: {}, {}, y: {}, {}, z: {}, {}",
+            "w: {}, x: {}, y: {}, z: {}, {:?}",
             self.w,
-            as_char(self.w),
             self.x,
-            as_char(self.x),
             self.y,
-            as_char(self.y),
             self.z,
-            as_char(self.z)
+            as_stack(self.z)
         )
     }
 }
@@ -159,6 +157,18 @@ impl Alu {
         self.inputs.push(input);
     }
 
+    pub fn peek(&self) -> i64 {
+	self.z % 26
+    }
+
+    pub fn push(&mut self, c: i64) {
+	self.z = self.z * 26 + c;
+    }
+
+    pub fn pop(&mut self) {
+	self.z /= 26;
+    }
+
     // pub fn add_inputs(&mut self, inputs: &[i64]) {
     //     self.inputs.extend(inputs);
     // }
@@ -231,12 +241,14 @@ fn check_monad_reversed(m: i64) -> (i64, i64, i64, i64) {
     for (ix, d) in digs.iter().enumerate() {
         alu.w = *d;
 	let (a, b, c) = vals[ix];
-        if alu.z % 26 == alu.w - b {
-	    alu.z /= a;
-        } else {
-            alu.z = alu.w + c + 26 * (alu.z / a);
+	let v = alu.peek();
+	if a == 26 {
+	    alu.pop();
 	}
-        println!("alu: {}, {}, {}, {}, {}, {}", ix, a, b,  c, d, alu);
+        if v != alu.w - b {
+	    alu.push(alu.w + c);
+	}
+        println!("alu: {}, {}, {}, {}, {}, {}", ix, a, b, c, d, alu);
     }
     println!("alu: {}", alu);
     (alu.w, alu.x, alu.y, alu.z)
@@ -247,48 +259,18 @@ fn gen_nums(ix: usize, digs: &[i64]) {
 	1..=9,
 	1..=9,
 	1..=9,
-	5..=9,
-	3..=9,
+	5..=5,
+	3..=3,
 	1..=9,
 	1..=9,
 	1..=9,
 	1..=9,
 	1..=9,
-	7..=9,
+	7..=7,
 	1..=9,
-	6..=9,
+	6..=6,
 	1..=9,
     ];
-    if ix == 13 {
-	let mut alu = Alu::new();
-	for (ix, d) in digs.iter().enumerate() {
-            alu.w = *d;
-	    let (a, b, c) = vals[ix];
-            if alu.z % 26 == alu.w - b {
-		alu.z /= a;
-            } else {
-		alu.z = alu.w + c + 26 * (alu.z / a);
-	    }
-	}
-//	if ctr % 10000 == 0 {
-	    println!("{:?}, z: {}", digs, alu.z);
-//	}
-        if alu.z == 0 {
-            println!("alu: {}", alu);
-            println!("{:?} is valid", digs);
-//            max = max.max(m);
-        }
-	return;
-    }
-    for r in poss[ix].clone() {
-	let mut d = digs.to_owned();
-	d.push(r);
-	gen_nums(ix + 1, &d);
-    }
-}
-
-fn part1(program: &[ParsedItem]) -> Answer {
-    let mut max = 0;
     let vals = [
         (1, 11, 16),
         (1, 12, 11),
@@ -305,9 +287,83 @@ fn part1(program: &[ParsedItem]) -> Answer {
         (26, -6, 6),
         (26, -11, 15),
     ];
-    let mut digss = vec![];
-    gen_nums(0, &[], &mut digss);
-    max
+    if ix == 13 {
+	let mut alu = Alu::new();
+	for (ix, d) in digs.iter().enumerate() {
+            alu.w = *d;
+	    let (a, b, c) = vals[ix];
+            if alu.z % 26 == alu.w - b {
+		alu.z /= a;
+            } else {
+		alu.z = alu.w + c + 26 * (alu.z / a);
+	    }
+	}
+//	if ctr % 10000 == 0 {
+//	    println!("{:?}, z: {}", digs, alu.z);
+//	}
+        if alu.z == 0 {
+            println!("alu: {}", alu);
+            println!("{:?} is valid", digs);
+//            max = max.max(m);
+        }
+	return;
+    }
+    for r in poss[ix].clone() {
+	let mut d = digs.to_owned();
+	d.push(r);
+	gen_nums(ix + 1, &d);
+    }
+}
+
+fn part1(program: &[ParsedItem]) -> Answer {
+    let vals = [
+        (1, 11, 16),
+        (1, 12, 11),
+        (1, 13, 12),
+        (26, -5, 12),
+        (26, -3, 12),
+        (1, 14, 2),
+        (1, 15, 11),
+        (26, -16, 4),
+        (1, 14, 12),
+        (1, 15, 9),
+        (26, -7, 10),
+        (26, -11, 11),
+        (26, -6, 6),
+        (26, -11, 15),
+    ];
+    let mut ctr = 0;
+    'outer: for m in (11111111111111..99999999999999).rev() {
+	let mut digs = vec![];
+	let mut n = m;
+	for i in (0..14).rev() {
+            let id = n / 10_i64.pow(i);
+            if id == 0 {
+		continue 'outer;
+            }
+	    digs.push(id);
+            n -= id * 10_i64.pow(i);
+	}
+	let mut alu = Alu::new();
+	for (i , d) in digs.iter().enumerate() {
+            alu.w = *d;
+	    let (a,b,c) = vals[i];
+            if alu.z % 26 == alu.w - b {
+		alu.z /= a;
+            } else {
+		alu.z = alu.w + c + 26 * (alu.z / a);
+	    }
+	    ctr += 1;
+	    if ctr % 100000 == 0 {
+		println!("m: {}", m);
+	    }
+	    if alu.z == 0 {
+		println!("{} is valid", m);
+		return m;
+	    }
+	}
+    }
+    0
 }
 
 fn part2(_: &[ParsedItem]) -> Answer {

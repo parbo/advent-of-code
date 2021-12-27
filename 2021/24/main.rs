@@ -254,23 +254,26 @@ fn check_monad_reversed(m: i64) -> (i64, i64, i64, i64) {
     (alu.w, alu.x, alu.y, alu.z)
 }
 
-fn gen_nums(ix: usize, digs: &[i64]) {
-    let poss = [
-	1..=9,
-	1..=9,
-	1..=9,
-	5..=5,
-	3..=3,
-	1..=9,
-	1..=9,
-	1..=9,
-	1..=9,
-	1..=9,
-	7..=7,
-	1..=9,
-	6..=6,
-	1..=9,
-    ];
+// i13 - b13 == i12 + c12
+
+// i13 - i12 == c12 + b13
+
+// 0, : --
+// 1, 16 + 12: --
+// 2, 11 + 13: --
+// 3, 12 - 5: 7
+// 4, 12 - 3: 9
+// 5, 12 + 14: --
+// 6, 2 + 15: --
+// 7, 11 - 16: -5
+// 8, 4 + 14: --
+// 9, 12 + 15: --
+// 10, 9 - 7: 2
+// 11, 10 - 11: -1
+// 12, 11 - 6: 5
+// 13, 6 - 11: -5
+
+fn gen_nums(ix: usize, digs: &[i64], max: &mut i64) {
     let vals = [
         (1, 11, 16),
         (1, 12, 11),
@@ -292,26 +295,25 @@ fn gen_nums(ix: usize, digs: &[i64]) {
 	for (ix, d) in digs.iter().enumerate() {
             alu.w = *d;
 	    let (a, b, c) = vals[ix];
-            if alu.z % 26 == alu.w - b {
-		alu.z /= a;
-            } else {
-		alu.z = alu.w + c + 26 * (alu.z / a);
+	    let v = alu.peek();
+	    if a == 26 {
+		alu.pop();
+	    }
+            if v != alu.w - b {
+		alu.push(alu.w + c);
 	    }
 	}
-//	if ctr % 10000 == 0 {
-//	    println!("{:?}, z: {}", digs, alu.z);
-//	}
         if alu.z == 0 {
             println!("alu: {}", alu);
             println!("{:?} is valid", digs);
-//            max = max.max(m);
+            max = max.max(m);
         }
 	return;
     }
     for r in poss[ix].clone() {
 	let mut d = digs.to_owned();
 	d.push(r);
-	gen_nums(ix + 1, &d);
+	gen_nums(ix + 1, &d, max);
     }
 }
 

@@ -1,3 +1,5 @@
+#![allow(clippy::ptr_arg)]
+
 use aoc::{Grid, GridDrawer};
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
@@ -89,7 +91,7 @@ fn part2(m: &Parsed, draw: bool) -> Answer {
         }
     });
     d.draw(&map);
-    basins.sort();
+    basins.sort_unstable();
     basins.iter().rev().take(3).product()
 }
 

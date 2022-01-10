@@ -310,6 +310,7 @@ fn draw(cuboids_a: &[Cuboid], cuboids_b: &[Cuboid]) {
     }
 }
 
+#[allow(clippy::needless_range_loop)]
 fn solve(cuboids: &[ParsedItem], d: bool) -> Answer {
     // Split to non-overlapping cuboids
     let mut cb = cuboids.to_owned();

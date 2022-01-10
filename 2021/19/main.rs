@@ -113,7 +113,7 @@ fn solve(sensors: &[ParsedItem]) -> (FxHashSet<Vec4>, Vec<Vec4>) {
     let mut dists = vec![];
     dists.reserve(sensors.len());
     let mut ti = (1..sensors.len()).collect::<FxHashSet<_>>();
-    while ti.len() > 0 {
+    while !ti.is_empty() {
         let mut remove = vec![];
         for j in &ti {
             if let Some((mt, dist)) = align(&matrices, &translated, &rbjs[*j]) {

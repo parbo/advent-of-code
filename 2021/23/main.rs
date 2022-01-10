@@ -1,3 +1,5 @@
+#![allow(clippy::ptr_arg)]
+
 use aoc::{Grid, Itertools};
 use std::cmp::Reverse;
 use std::collections::{BinaryHeap};
@@ -222,7 +224,7 @@ fn solve(parsed_grid: &Vec<Vec<u8>>, num: i64) -> Option<i64> {
 }
 
 fn part1(grid: &Parsed) -> Answer {
-    solve(&grid, 2).unwrap()
+    solve(grid, 2).unwrap()
 }
 
 fn part2(grid: &Parsed) -> Answer {

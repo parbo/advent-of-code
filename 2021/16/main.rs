@@ -1,3 +1,5 @@
+#![allow(clippy::ptr_arg)]
+
 use bitlab::ExtractBitsFromVecU8;
 use std::iter::*;
 use std::time::Instant;
@@ -92,10 +94,10 @@ fn sum_version(packet: &Packet) -> i64 {
 
 fn calculate(packet: &Packet) -> i64 {
     match packet.id {
-        0 => packet.packets.iter().map(|c| calculate(c)).sum(),
-        1 => packet.packets.iter().map(|c| calculate(c)).product(),
-        2 => packet.packets.iter().map(|c| calculate(c)).min().unwrap(),
-        3 => packet.packets.iter().map(|c| calculate(c)).max().unwrap(),
+        0 => packet.packets.iter().map(calculate).sum(),
+        1 => packet.packets.iter().map(calculate).product(),
+        2 => packet.packets.iter().map(calculate).min().unwrap(),
+        3 => packet.packets.iter().map(calculate).max().unwrap(),
         4 => packet.value.unwrap(),
         5 => (calculate(&packet.packets[0]) > calculate(&packet.packets[1])) as i64,
         6 => (calculate(&packet.packets[0]) < calculate(&packet.packets[1])) as i64,

@@ -13,6 +13,7 @@ struct Area {
 
 type Answer = i64;
 
+#[allow(clippy::comparison_chain)]
 fn shoot(mut x: i64, mut y: i64, area: &Area) -> (Option<i64>, Vec<aoc::Point>) {
     let mut p = [0, 0];
     let mut max_y = 0;
@@ -143,7 +144,7 @@ fn draw(area: &Area) -> Answer {
             let (ok, p) = if let Some(p) = found.get(&(v_x, v_y)) {
                 (true, p.clone())
             } else {
-                (false, shoot(v_x, v_y, &area).1)
+                (false, shoot(v_x, v_y, area).1)
             };
             for x in area.min_x..=area.max_x {
                 for y in area.min_y..=area.max_y {

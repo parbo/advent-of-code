@@ -21,7 +21,7 @@ fn part2(patterns: &[ParsedItem]) -> Answer {
     for (pattern, output) in patterns {
         let mut mappings = HashMap::new();
         let mut ptn: Vec<Vec<char>> = pattern.iter().map(|p| p.chars().collect()).collect();
-        ptn.sort_by(|a, b| a.len().cmp(&b.len()));
+        ptn.sort_by_key(|a| a.len());
         for i in 0..ptn.len() {
             let p = &ptn[i];
             for c in p {
@@ -70,9 +70,9 @@ fn part2(patterns: &[ParsedItem]) -> Answer {
         }
         let mut val = 0;
         for o in output {
-            val = val * 10;
+            val *= 10;
             let mut segments: Vec<char> = o.chars().map(|c| *mappings.get(&c).unwrap()).collect();
-            segments.sort();
+            segments.sort_unstable();
             let s: String = segments.into_iter().collect();
             match s.as_str() {
                 "abcefg" => val += 0,

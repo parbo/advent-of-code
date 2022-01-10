@@ -52,7 +52,7 @@ fn part2(lines: &[ParsedItem]) -> Answer {
         .map(|line| score_line(line))
         .filter_map(|(valid, score)| if valid { Some(score) } else { None })
         .collect();
-    scores.sort();
+    scores.sort_unstable();
     scores[scores.len() / 2]
 }
 

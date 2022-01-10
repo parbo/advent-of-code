@@ -1,16 +1,6 @@
 use std::iter::*;
 use std::time::Instant;
 
-// #[derive(parse_display::Display, parse_display::FromStr, Debug, Clone, PartialEq, Eq, Hash)]
-// #[display("{thing}: {al}-{ah} or {bl}-{bh}")]
-// struct Rule {
-//     thing: String,
-//     al: i64,
-//     ah: i64,
-//     bl: i64,
-//     bh: i64,
-// }
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum SnailNumber {
     Num(i64),
@@ -252,27 +242,6 @@ fn main() {
 mod tests {
     use super::*;
 
-    fn example() -> Vec<String> {
-        vec![
-            "[[[0,[5,8]],[[1,7],[9,6]]],[[4,[1,2]],[[1,4],2]]]".into(),
-            "[[[5,[2,8]],4],[5,[[9,9],0]]]".into(),
-            "[6,[[[6,2],[5,6]],[[7,6],[4,7]]]]".into(),
-            "[[[6,[0,7]],[0,9]],[4,[9,[9,0]]]]".into(),
-            "[[[7,[6,4]],[3,[1,3]]],[[[5,5],1],9]]".into(),
-            "[[6,[[7,3],[3,2]]],[[[3,8],[5,7]],4]]".into(),
-            "[[[[5,4],[7,7]],8],[[8,3],8]]".into(),
-            "[[9,3],[[9,9],[6,[4,9]]]]".into(),
-            "[[2,[[7,7],7]],[[5,8],[[9,3],[0,2]]]]".into(),
-            "[[[[5,2],5],[8,[3,7]]],[[5,[7,5]],[4,4]]]".into(),
-        ]
-    }
-
-    // #[test]
-    // fn test_part1() {
-    // 	let parsed = parse(&example());
-    //     assert_eq!(part1(&parsed), 4140);
-    // }
-
     #[test]
     fn test_explode_1() {
         let num = parse_line(&"[[[[[9,8],1],2],3],4]".chars().collect::<Vec<char>>());
@@ -465,30 +434,6 @@ mod tests {
         );
         assert_eq!(res, expected.0);
     }
-
-    // #[test]
-    // fn test_sum_4() {
-    //     let lines = vec![
-    //         "[[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]]".into(),
-    //         "[7,[[[3,7],[4,3]],[[6,3],[8,8]]]]".into(),
-    //         "[[2,[[0,8],[3,4]]],[[[6,7],1],[7,[1,6]]]]".into(),
-    //         "[[[[2,4],7],[6,[0,5]]],[[[6,8],[2,8]],[[2,1],[4,5]]]]".into(),
-    //         "[7,[5,[[3,8],[1,4]]]]".into(),
-    //         "[[2,[2,2]],[8,[8,1]]]".into(),
-    //         "[2,9]".into(),
-    //         "[1,[[[9,3],9],[[9,0],[0,7]]]]".into(),
-    //         "[[[5,[7,4]],7],1]".into(),
-    //         "[[[[4,2],2],6],[8,7]]".into(),
-    //     ];
-    //     let parsed = parse(&lines);
-    //     let num = sum(&parsed);
-    //     let expected = parse_line(
-    //         &"[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]"
-    //             .chars()
-    //             .collect::<Vec<char>>(),
-    //     );
-    //     assert_eq!(num, expected.0);
-    // }
 
     #[test]
     fn test_magnitude_1() {

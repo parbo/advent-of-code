@@ -1,6 +1,5 @@
-use std::iter::*;
+use aoc::Grid;
 use std::time::Instant;
-use aoc::{Grid, GridDrawer};
 
 type ParsedItem = Vec<char>;
 type Parsed = Vec<ParsedItem>;
@@ -12,35 +11,35 @@ fn part1(grid: &[ParsedItem]) -> Answer {
     let mut step = 0;
     let ([minx, miny], [maxx, maxy]) = g.extents();
     loop {
-	step += 1;
-	let mut new_g = g.clone();
-	for (c, d) in [('>', aoc::EAST), ('v', aoc::SOUTH)] {
-	    let mut nn_g = new_g.clone();
-	    for p in new_g.points() {
-		if let Some(v) = new_g.get_value(p) {
-		    if v == c {
-			let mut dp = aoc::point_add(p, d);
-			if dp[0] > maxx {
-			    dp[0] = minx;
-			}
-			if dp[1] > maxy {
-			    dp[1] = miny;
-			}
-			if let Some('.') = new_g.get_value(dp) {
-			    nn_g.set_value(p, '.');
-			    nn_g.set_value(dp, c);
-			}
-		    }
-		}
-	    }
-	    new_g = nn_g;
-	}
-	// gd.draw(&new_g);
-	// println!();
-	if new_g == g {
-	    break;
-	}
-	g = new_g;
+        step += 1;
+        let mut new_g = g.clone();
+        for (c, d) in [('>', aoc::EAST), ('v', aoc::SOUTH)] {
+            let mut nn_g = new_g.clone();
+            for p in new_g.points() {
+                if let Some(v) = new_g.get_value(p) {
+                    if v == c {
+                        let mut dp = aoc::point_add(p, d);
+                        if dp[0] > maxx {
+                            dp[0] = minx;
+                        }
+                        if dp[1] > maxy {
+                            dp[1] = miny;
+                        }
+                        if let Some('.') = new_g.get_value(dp) {
+                            nn_g.set_value(p, '.');
+                            nn_g.set_value(dp, c);
+                        }
+                    }
+                }
+            }
+            new_g = nn_g;
+        }
+        // gd.draw(&new_g);
+        // println!();
+        if new_g == g {
+            break;
+        }
+        g = new_g;
     }
     step
 }
@@ -72,20 +71,4 @@ fn main() {
         done_time.duration_since(parse_time)
     );
     println!("{}", result);
-}
-
-#[cfg(test)]
-mod tests {
-    // use super::*;
-
-    // fn example() -> Vec<String> {
-    // 	   vec![
-    //         "0".into()
-    //     ]
-    // }
-
-    // #[test]
-    // fn test_part1() {
-    //     assert_eq!(part1(&parse(&example())), 0);
-    // }
 }

@@ -24,7 +24,7 @@ fn get_path(
 ) -> (i64, Vec<aoc::Point>) {
     aoc::dijkstra_grid(
         grid,
-        |_p: &aoc::Point, c: &u8| *c == '.' as u8,
+        |_p: &aoc::Point, c: &u8| *c == b'.',
         |_pa, _va, _pb, _pv| Some(1),
         s,
         g,
@@ -51,7 +51,7 @@ fn is_reachable(
             .iter()
             .skip(1)
             .map(|p| grid[p2ix(*p)])
-            .all(|c| c == '.' as u8)
+            .all(|c| c == b'.')
         {
             return Some(*e);
         }
@@ -65,7 +65,7 @@ fn is_in_hallway(p: aoc::Point) -> bool {
 
 fn is_empty(grid: &[u8], num: i64, p: aoc::Point) -> bool {
     for y in 2..(2 + num) {
-        if grid[p2ix([p[0], y])] != '.' as u8 {
+        if grid[p2ix([p[0], y])] != b'.' {
             return false;
         }
     }
@@ -94,7 +94,7 @@ fn solve(parsed_grid: &Vec<Vec<u8>>, num: i64) -> Option<i64> {
         start.push(parsed_grid.get_value(p).unwrap());
     }
     let mut goals = FxHashMap::default();
-    for (c, x) in [('A' as u8, 3), ('B' as u8, 5), ('C' as u8, 7), ('D' as u8, 9)] {
+    for (c, x) in [(b'A', 3), (b'B', 5), (b'C', 7), (b'D', 9)] {
         let mut v = vec![];
         for y in 2..(2 + num) {
             v.push([x, y]);
@@ -112,7 +112,7 @@ fn solve(parsed_grid: &Vec<Vec<u8>>, num: i64) -> Option<i64> {
     for (ix, c) in start.iter().enumerate() {
         let p = ix2p(ix);
         if c.is_ascii_alphabetic() {
-            empty_g.insert(p, '.' as u8);
+            empty_g.insert(p, b'.');
         } else {
             empty_g.insert(p, *c);
         }
@@ -168,7 +168,7 @@ fn solve(parsed_grid: &Vec<Vec<u8>>, num: i64) -> Option<i64> {
             // Try all possible moves
             for to in &possible_moves {
                 // Don't move to self or non-empty
-                if *to == from || pos[p2ix(*to)] != '.' as u8 {
+                if *to == from || pos[p2ix(*to)] != b'.' {
                     continue;
                 }
                 // Don't move from hallway to hallway
@@ -192,7 +192,7 @@ fn solve(parsed_grid: &Vec<Vec<u8>>, num: i64) -> Option<i64> {
             }
             for (mv, n) in moves {
                 let mut new_pos = pos.clone();
-                new_pos[p2ix(from)] = '.' as u8;
+                new_pos[p2ix(from)] = b'.';
                 new_pos[p2ix(mv)] = *a;
                 let e = score(*a);
                 let new_g = g + e * n;
@@ -242,7 +242,7 @@ fn parse(lines: &[String]) -> Parsed {
     let w = g.iter().map(|x| x.len()).max().unwrap();
     for line in g.iter_mut() {
         while line.len() < w {
-            line.push(' ' as u8)
+            line.push(b' ')
         }
     }
     g

@@ -3,16 +3,6 @@ use std::collections::HashSet;
 use std::iter::*;
 use std::time::Instant;
 
-// #[derive(parse_display::Display, parse_display::FromStr, Debug, Clone, PartialEq, Eq, Hash)]
-// #[display("{thing}: {al}-{ah} or {bl}-{bh}")]
-// struct Rule {
-//     thing: String,
-//     al: i64,
-//     ah: i64,
-//     bl: i64,
-//     bh: i64,
-// }
-
 type ParsedItem = Vec<String>;
 type Parsed = Vec<ParsedItem>;
 type Answer = i64;
@@ -74,20 +64,4 @@ fn main() {
         done_time.duration_since(parse_time)
     );
     println!("{}", result);
-}
-
-#[cfg(test)]
-mod tests {
-    // use super::*;
-
-    // fn example() -> Vec<String> {
-    // 	   vec![
-    //         "0".into()
-    //     ]
-    // }
-
-    // #[test]
-    // fn test_part1() {
-    //     assert_eq!(part1(&parse(&example())), 0);
-    // }
 }

@@ -1,3 +1,4 @@
+use core::fmt::Write;
 use image::{GenericImageView, Rgb, RgbImage};
 use std::cmp::Reverse;
 use std::collections::{BTreeMap, BinaryHeap, HashMap, HashSet};
@@ -2227,6 +2228,14 @@ pub fn read_lines() -> (i32, Vec<String>) {
     println!("reading from {}", filename);
 
     (part, read_lines_from(&filename))
+}
+
+pub fn to_hex(data: &[u8]) -> String {
+    let mut s = String::with_capacity(2 * data.len());
+    for byte in data {
+        write!(s, "{:02x}", byte).unwrap();
+    }
+    s
 }
 
 #[cfg(test)]

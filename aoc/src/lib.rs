@@ -2216,10 +2216,17 @@ pub fn read_lines_from(filename: &str) -> Vec<String> {
 
 pub fn read_lines() -> (i32, Vec<String>) {
     let args: Vec<String> = env::args().collect();
+    let bin = Path::new(&args[0]);
+    let day = &bin.file_stem().unwrap().to_str().unwrap()[3..];
     let part = args[1].parse::<i32>().unwrap();
-    let filename = &args[2];
+    let filename = if args.len() > 2 {
+        args[2].to_string()
+    } else {
+        format!("{}/input.txt", day)
+    };
+    println!("reading from {}", filename);
 
-    (part, read_lines_from(filename))
+    (part, read_lines_from(&filename))
 }
 
 #[cfg(test)]

@@ -1,6 +1,6 @@
 use image::{GenericImageView, Rgb, RgbImage};
 use std::cmp::Reverse;
-use std::collections::{BinaryHeap, BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, BinaryHeap, HashMap, HashSet};
 use std::env;
 use std::error;
 use std::fmt;
@@ -77,8 +77,8 @@ pub use self::vecmath::vec3_scale as vec_mul;
 pub use self::vecmath::vec3_square_len as vec_square_length;
 pub use self::vecmath::vec3_sub as vec_sub;
 pub use self::vecmath::vec4_add;
-pub use self::vecmath::vec4_sub;
 pub use self::vecmath::vec4_neg;
+pub use self::vecmath::vec4_sub;
 
 pub fn length(v: FVec3) -> f64 {
     vec_square_length(v).sqrt()
@@ -454,7 +454,7 @@ where
                             came_from.insert(nb, current);
                             *nb_g = new_g;
                             let new_f = new_g + manhattan(goal, nb);
-			    *fscore.entry(nb).or_insert(i64::MAX) = new_f;
+                            *fscore.entry(nb).or_insert(i64::MAX) = new_f;
                             frontier.push(Reverse((new_f, nb)));
                         }
                     }

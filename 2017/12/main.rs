@@ -73,19 +73,3 @@ fn main() {
     );
     println!("{}", result);
 }
-
-#[cfg(test)]
-mod tests {
-    // use super::*;
-
-    // fn example() -> Vec<String> {
-    // 	   vec![
-    //         "0".into()
-    //     ]
-    // }
-
-    // #[test]
-    // fn test_part1() {
-    //     assert_eq!(part1(&parse(&example())), 0);
-    // }
-}

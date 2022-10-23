@@ -123,12 +123,20 @@ pub const NORTH_WEST: Point = [-1, -1];
 pub const UP_LEFT: Point = NORTH_WEST;
 
 // Hex directions
+// https://www.redblobgames.com/grids/hexagons/
 pub const HEX_E: Vec3 = [1, -1, 0];
 pub const HEX_W: Vec3 = [-1, 1, 0];
 pub const HEX_SE: Vec3 = [0, -1, 1];
 pub const HEX_SW: Vec3 = [-1, 0, 1];
 pub const HEX_NW: Vec3 = [0, 1, -1];
 pub const HEX_NE: Vec3 = [1, 0, -1];
+
+pub const HEX_ALT_SE: Vec3 = [1, -1, 0];
+pub const HEX_ALT_NW: Vec3 = [-1, 1, 0];
+pub const HEX_ALT_S: Vec3 = [0, -1, 1];
+pub const HEX_ALT_SW: Vec3 = [-1, 0, 1];
+pub const HEX_ALT_N: Vec3 = [0, 1, -1];
+pub const HEX_ALT_NE: Vec3 = [1, 0, -1];
 
 pub const DIRECTIONS: [Point; 4] = [NORTH, EAST, SOUTH, WEST];
 pub const DIRECTIONS_INCL_DIAGONALS: [Point; 8] = [
@@ -155,17 +163,67 @@ lazy_static! {
     pub static ref DIRECTION_MAP: HashMap<&'static str, Point> = {
         let mut map = HashMap::new();
         map.insert("U", NORTH);
+        map.insert("u", NORTH);
         map.insert("D", SOUTH);
+        map.insert("d", SOUTH);
         map.insert("R", EAST);
+        map.insert("r", EAST);
         map.insert("L", WEST);
+        map.insert("l", WEST);
         map.insert("N", NORTH);
+        map.insert("n", NORTH);
         map.insert("S", SOUTH);
+        map.insert("s", SOUTH);
         map.insert("E", EAST);
+        map.insert("e", EAST);
         map.insert("W", WEST);
+        map.insert("w", WEST);
         map.insert("NW", NORTH_WEST);
+        map.insert("nw", NORTH_WEST);
         map.insert("SW", SOUTH_WEST);
+        map.insert("sw", SOUTH_WEST);
         map.insert("NE", NORTH_WEST);
+        map.insert("ne", NORTH_WEST);
         map.insert("SE", SOUTH_EAST);
+        map.insert("se", SOUTH_EAST);
+        map
+    };
+}
+
+lazy_static! {
+    pub static ref HEX_DIRECTION_MAP: HashMap<&'static str, Vec3> = {
+        let mut map = HashMap::new();
+        map.insert("E", HEX_E);
+        map.insert("e", HEX_E);
+        map.insert("W", HEX_W);
+        map.insert("w", HEX_W);
+        map.insert("NW", HEX_NW);
+        map.insert("nw", HEX_NW);
+        map.insert("SW", HEX_SW);
+        map.insert("sw", HEX_SW);
+        map.insert("NE", HEX_NW);
+        map.insert("ne", HEX_NW);
+        map.insert("SE", HEX_SE);
+        map.insert("se", HEX_SE);
+        map
+    };
+}
+
+lazy_static! {
+    pub static ref HEX_ALT_DIRECTION_MAP: HashMap<&'static str, Vec3> = {
+        let mut map = HashMap::new();
+        map.insert("N", HEX_ALT_N);
+        map.insert("n", HEX_ALT_N);
+        map.insert("S", HEX_ALT_S);
+        map.insert("s", HEX_ALT_S);
+        map.insert("NW", HEX_ALT_NW);
+        map.insert("nw", HEX_ALT_NW);
+        map.insert("SW", HEX_ALT_SW);
+        map.insert("sw", HEX_ALT_SW);
+        map.insert("NE", HEX_ALT_NE);
+        map.insert("ne", HEX_ALT_NE);
+        map.insert("SE", HEX_ALT_SE);
+        map.insert("se", HEX_ALT_SE);
         map
     };
 }
@@ -414,6 +472,10 @@ pub fn manhattan(n: Point, goal: Point) -> i64 {
 
 pub fn manhattan_vec4(n: Vec4, goal: Vec4) -> i64 {
     (goal[0] - n[0]).abs() + (goal[1] - n[1]).abs() + (goal[2] - n[2]).abs()
+}
+
+pub fn manhattan_hex_cube(n: Vec3, goal: Vec3) -> i64 {
+    ((goal[0] - n[0]).abs() + (goal[1] - n[1]).abs() + (goal[2] - n[2]).abs()) / 2
 }
 
 pub fn astar_grid<T>(

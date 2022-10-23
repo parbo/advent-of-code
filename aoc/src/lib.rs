@@ -13,6 +13,7 @@ use std::marker::PhantomData;
 use std::num::ParseIntError;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use std::time::Instant;
 
 #[macro_use]
 extern crate lazy_static;
@@ -2290,6 +2291,42 @@ pub fn read_lines() -> (i32, Vec<String>) {
     println!("reading from {}", filename);
 
     (part, read_lines_from(&filename))
+}
+
+pub fn run_main<T, F, G, H, A, B>(parse: F, part1: G, part2: H)
+where
+    F: Fn(&[String]) -> T,
+    G: Fn(&T) -> A,
+    H: Fn(&T) -> B,
+    A: std::fmt::Display,
+    B: std::fmt::Display,
+{
+    let start_time = Instant::now();
+    let (part, lines) = read_lines();
+    let io_time = Instant::now();
+    let parsed = parse(&lines);
+    let parse_time = Instant::now();
+    if part == 1 {
+        let result = part1(&parsed);
+        let done_time = Instant::now();
+        println!(
+            "read: {:?}, parse: {:?}, solve: {:?}\n",
+            io_time.duration_since(start_time),
+            parse_time.duration_since(io_time),
+            done_time.duration_since(parse_time)
+        );
+        println!("{}", result);
+    } else {
+        let result = part2(&parsed);
+        let done_time = Instant::now();
+        println!(
+            "read: {:?}, parse: {:?}, solve: {:?}\n",
+            io_time.duration_since(start_time),
+            parse_time.duration_since(io_time),
+            done_time.duration_since(parse_time)
+        );
+        println!("{}", result);
+    };
 }
 
 pub fn to_hex(data: &[u8]) -> String {

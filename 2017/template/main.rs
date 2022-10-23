@@ -1,5 +1,4 @@
 use std::iter::*;
-use std::time::Instant;
 
 // #[derive(parse_display::Display, parse_display::FromStr, Debug, Clone, PartialEq, Eq, Hash)]
 // #[display("{thing}: {al}-{ah} or {bl}-{bh}")]
@@ -15,11 +14,12 @@ type ParsedItem = i64;
 type Parsed = Vec<ParsedItem>;
 type Answer = i64;
 
-fn part1(_: &[ParsedItem]) -> Answer {
+fn part1(data: &Parsed) -> Answer {
+    println!("{:?}", data);
     0
 }
 
-fn part2(_: &[ParsedItem]) -> Answer {
+fn part2(_: &Parsed) -> Answer {
     0
 }
 
@@ -28,24 +28,7 @@ fn parse(lines: &[String]) -> Parsed {
 }
 
 fn main() {
-    let start_time = Instant::now();
-    let (part, lines) = aoc::read_lines();
-    let io_time = Instant::now();
-    let parsed = parse(&lines);
-    let parse_time = Instant::now();
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    let done_time = Instant::now();
-    println!(
-        "read: {:?}, parse: {:?}, solve: {:?}\n",
-        io_time.duration_since(start_time),
-        parse_time.duration_since(io_time),
-        done_time.duration_since(parse_time)
-    );
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

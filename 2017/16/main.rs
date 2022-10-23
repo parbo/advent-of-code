@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::iter::*;
-use std::time::Instant;
 
 #[derive(parse_display::Display, parse_display::FromStr, Debug, Clone, PartialEq, Eq, Hash)]
 enum Move {
@@ -34,7 +33,7 @@ fn dance(moves: &[ParsedItem], programs: &mut [char; 16]) {
     }
 }
 
-fn part1(moves: &[ParsedItem]) -> Answer {
+fn part1(moves: &Parsed) -> Answer {
     let mut programs = [
         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
     ];
@@ -42,7 +41,7 @@ fn part1(moves: &[ParsedItem]) -> Answer {
     programs.into_iter().collect()
 }
 
-fn part2(moves: &[ParsedItem]) -> Answer {
+fn part2(moves: &Parsed) -> Answer {
     let mut programs = [
         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
     ];
@@ -72,22 +71,5 @@ fn parse(lines: &[String]) -> Parsed {
 }
 
 fn main() {
-    let start_time = Instant::now();
-    let (part, lines) = aoc::read_lines();
-    let io_time = Instant::now();
-    let parsed = parse(&lines);
-    let parse_time = Instant::now();
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    let done_time = Instant::now();
-    println!(
-        "read: {:?}, parse: {:?}, solve: {:?}\n",
-        io_time.duration_since(start_time),
-        parse_time.duration_since(io_time),
-        done_time.duration_since(parse_time)
-    );
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }

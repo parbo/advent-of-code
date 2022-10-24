@@ -37,13 +37,10 @@ fn part2(firewall: &Parsed) -> Answer {
         .map(|x| *ranges.get(&x).unwrap_or(&0))
         .collect();
     let mut delay = 0;
-    loop {
-        if !(delay..=(delay + layers)).any(|ps| {
-            let range = ranges[(ps - delay) as usize];
-            range > 0 && (ps % (2 * (range - 1))) == 0
-        }) {
-            break;
-        }
+    while (delay..=(delay + layers)).any(|ps| {
+        let range = ranges[(ps - delay) as usize];
+        range > 0 && (ps % (2 * (range - 1))) == 0
+    }) {
         delay += 1;
     }
     delay

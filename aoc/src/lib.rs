@@ -2282,7 +2282,11 @@ pub fn read_lines() -> (i32, Vec<String>) {
     let args: Vec<String> = env::args().collect();
     let bin = Path::new(&args[0]);
     let day = &bin.file_stem().unwrap().to_str().unwrap()[3..];
-    let part = args[1].parse::<i32>().unwrap();
+    let part = if args.len() > 1 {
+        args[1].parse::<i32>().unwrap()
+    } else {
+        -1
+    };
     let filename = if args.len() > 2 {
         args[2].to_string()
     } else {
@@ -2306,27 +2310,32 @@ where
     let io_time = Instant::now();
     let parsed = parse(&lines);
     let parse_time = Instant::now();
-    if part == 1 {
-        let result = part1(&parsed);
-        let done_time = Instant::now();
-        println!(
-            "read: {:?}, parse: {:?}, solve: {:?}\n",
-            io_time.duration_since(start_time),
-            parse_time.duration_since(io_time),
-            done_time.duration_since(parse_time)
-        );
-        println!("{}", result);
-    } else {
-        let result = part2(&parsed);
-        let done_time = Instant::now();
-        println!(
-            "read: {:?}, parse: {:?}, solve: {:?}\n",
-            io_time.duration_since(start_time),
-            parse_time.duration_since(io_time),
-            done_time.duration_since(parse_time)
-        );
-        println!("{}", result);
-    };
+    let parts = if part > 0 { vec![part] } else { vec![1, 2] };
+    println!(
+        "read: {:?}, parse: {:?}\n",
+        io_time.duration_since(start_time),
+        parse_time.duration_since(io_time),
+    );
+    for part in parts {
+        let part_time = Instant::now();
+        if part == 1 {
+            let result = part1(&parsed);
+            let done_time = Instant::now();
+            println!(
+                "Part 1: {:<30} ({:?})",
+                result,
+                done_time.duration_since(part_time)
+            );
+        } else {
+            let result = part2(&parsed);
+            let done_time = Instant::now();
+            println!(
+                "Part 2: {:<30} ({:?})",
+                result,
+                done_time.duration_since(part_time)
+            );
+        };
+    }
 }
 
 pub fn to_hex(data: &[u8]) -> String {

@@ -125,6 +125,6 @@ mod tests {
 
     #[test]
     fn test_part1() {
-        assert_eq!(solve(&[3, 4, 1, 5], 5, 1), vec![3, 4, 2, 1, 0]);
+        assert_eq!(solve(&[3, 4, 1, 5], 4, 1), vec![3, 4, 2, 1, 0]);
     }
 }

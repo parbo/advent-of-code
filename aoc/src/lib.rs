@@ -471,8 +471,15 @@ pub fn manhattan(n: Point, goal: Point) -> i64 {
     (goal[0] - n[0]).abs() + (goal[1] - n[1]).abs()
 }
 
-pub fn manhattan_vec4(n: Vec4, goal: Vec4) -> i64 {
+pub fn manhattan_vec3(n: Vec3, goal: Vec3) -> i64 {
     (goal[0] - n[0]).abs() + (goal[1] - n[1]).abs() + (goal[2] - n[2]).abs()
+}
+
+pub fn manhattan_vec4(n: Vec4, goal: Vec4) -> i64 {
+    (goal[0] - n[0]).abs()
+        + (goal[1] - n[1]).abs()
+        + (goal[2] - n[2]).abs()
+        + (goal[3] - n[3]).abs()
 }
 
 pub fn manhattan_hex_cube(n: Vec3, goal: Vec3) -> i64 {
@@ -1184,7 +1191,7 @@ where
                 let ch = if let Some(x) = area.get_value([x, y]) {
                     self.to_char(x)
                 } else {
-                    ' '
+                    '.'
                 };
                 print!("{}", ch);
             }

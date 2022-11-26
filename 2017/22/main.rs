@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-use aoc::{point_add, Grid, Point, DIRECTION_ROTATE_LEFT, DIRECTION_ROTATE_RIGHT, NORTH, point_neg};
+use aoc::{
+    point_add, point_neg, Grid, Point, DIRECTION_ROTATE_LEFT, DIRECTION_ROTATE_RIGHT, NORTH,
+};
 
 type Parsed = (usize, HashMap<Point, char>);
 type Answer = i64;
@@ -36,7 +38,7 @@ fn part2(data: &Parsed) -> Answer {
             Some('#') => {
                 dir = *DIRECTION_ROTATE_RIGHT.get(&dir).unwrap();
                 grid.set_value(pos, 'f');
-            },
+            }
             Some('f') => {
                 dir = point_neg(dir);
                 grid.remove(&pos);
@@ -44,7 +46,7 @@ fn part2(data: &Parsed) -> Answer {
             Some('w') => {
                 grid.set_value(pos, '#');
                 infected += 1;
-            },
+            }
             _ => {
                 dir = *DIRECTION_ROTATE_LEFT.get(&dir).unwrap();
                 grid.set_value(pos, 'w');

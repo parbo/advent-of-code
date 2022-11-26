@@ -1,48 +1,61 @@
 use std::iter::*;
 
-// #[derive(parse_display::Display, parse_display::FromStr, Debug, Clone, PartialEq, Eq, Hash)]
-// #[display("{thing}: {al}-{ah} or {bl}-{bh}")]
-// struct Rule {
-//     thing: String,
-//     al: i64,
-//     ah: i64,
-//     bl: i64,
-//     bh: i64,
-// }
+use aoc::point_add;
+use aoc::point_neg;
+use aoc::Grid;
+use aoc::Point;
+use aoc::DIRECTIONS;
+use aoc::SOUTH;
 
-type ParsedItem = i64;
-type Parsed = Vec<ParsedItem>;
-type Answer = i64;
+type Parsed = Vec<Vec<char>>;
 
-fn part1(data: &Parsed) -> Answer {
-    println!("{:?}", data);
-    0
+fn solve(data: &Parsed) -> (String, usize) {
+    let start_x = data[0].iter().position(|c| *c == '|').unwrap() as i64;
+    let mut dir = SOUTH;
+    let mut pos: Point = [start_x, 0];
+    let mut chars = vec![];
+    let mut steps = 1;
+    'outer: loop {
+        let forward = point_add(pos, dir);
+        let v = data.get_value(forward).unwrap_or(' ');
+        if v != ' ' {
+            pos = forward;
+            if v.is_ascii_alphabetic() {
+                chars.push(v);
+            }
+            steps += 1;
+            continue;
+        };
+        // Switch direction
+        let backtrack = point_neg(dir);
+        for d in DIRECTIONS {
+            if d == backtrack {
+                continue;
+            }
+            let pos_d = point_add(pos, d);
+            if data.get_value(pos_d).unwrap_or(' ') != ' ' {
+                dir = d;
+                continue 'outer;
+            }
+        }
+        // If we reach here, we can't move further
+        break;
+    }
+    (chars.iter().collect(), steps)
 }
 
-fn part2(_: &Parsed) -> Answer {
-    0
+fn part1(data: &Parsed) -> String {
+    solve(data).0
+}
+
+fn part2(data: &Parsed) -> usize {
+    solve(data).1
 }
 
 fn parse(lines: &[String]) -> Parsed {
-    lines.iter().map(|x| x.parse().unwrap()).collect()
+    aoc::parse_grid(lines)
 }
 
 fn main() {
     aoc::run_main(parse, part1, part2);
-}
-
-#[cfg(test)]
-mod tests {
-    // use super::*;
-
-    // fn example() -> Vec<String> {
-    // 	   vec![
-    //         "0".into()
-    //     ]
-    // }
-
-    // #[test]
-    // fn test_part1() {
-    //     assert_eq!(part1(&parse(&example())), 0);
-    // }
 }

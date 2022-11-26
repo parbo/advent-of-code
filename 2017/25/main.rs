@@ -10,26 +10,26 @@ enum Step {
 struct Rule {
     value: usize,
     step: Step,
-    next: String,
+    next: char,
 }
 
 #[derive(Debug)]
 struct State {
-    name: String,
+    name: char,
     actions: [Rule; 2],
 }
 
-type Parsed = (String, usize, Vec<State>);
+type Parsed = (char, usize, Vec<State>);
 type Answer = i64;
 
 fn part1(data: &Parsed) -> Answer {
     let mut tape = HashMap::new();
     let mut pos = 0;
-    let mut state = data.0.clone();
+    let mut state = data.0;
     let states = data
         .2
         .iter()
-        .map(|s| (s.name.clone(), s))
+        .map(|s| (s.name, s))
         .collect::<HashMap<_, _>>();
     for _ in 0..data.1 {
         let v = *tape.get(&pos).unwrap_or(&0);
@@ -41,7 +41,7 @@ fn part1(data: &Parsed) -> Answer {
         } else {
             pos += 1;
         }
-        state = action.next.clone();
+        state = action.next;
     }
     tape.values().filter(|x| **x == 1).count() as i64
 }
@@ -52,12 +52,12 @@ fn part2(_: &Parsed) -> Answer {
 
 fn parse(lines: &[String]) -> Parsed {
     let defs = aoc::split_by_empty_line(lines);
-    let start = defs[0][0][15..16].to_string();
+    let start = defs[0][0][15..16].chars().next().unwrap();
     let steps = aoc::split_w(defs[0][1])[5].parse::<usize>().unwrap();
     let mut states = vec![];
     for def in &defs[1..] {
         states.push(State {
-            name: aoc::split_w(def[0])[2][0..1].to_string(),
+            name: aoc::split_w(def[0])[2][0..1].chars().next().unwrap(),
             actions: [
                 Rule {
                     value: if def[2].ends_with("1.") { 1 } else { 0 },
@@ -66,7 +66,7 @@ fn parse(lines: &[String]) -> Parsed {
                     } else {
                         Step::Left
                     },
-                    next: def[4][26..27].to_string(),
+                    next: def[4][26..27].chars().next().unwrap(),
                 },
                 Rule {
                     value: if def[6].ends_with("1.") { 1 } else { 0 },
@@ -75,7 +75,7 @@ fn parse(lines: &[String]) -> Parsed {
                     } else {
                         Step::Left
                     },
-                    next: def[8][26..27].to_string(),
+                    next: def[8][26..27].chars().next().unwrap(),
                 },
             ],
         });

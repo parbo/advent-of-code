@@ -11,15 +11,11 @@ fn strength(bridge: &[(i64, i64)]) -> i64 {
 fn is_valid(bridge: &[(i64, i64)]) -> bool {
     // Must start with 0
     let mut port = 0;
-    for ix in 0..bridge.len() {
-        if bridge[ix].0 != port && bridge[ix].1 != port {
+    for c in bridge {
+        if c.0 != port && c.1 != port {
             return false;
         }
-        port = if bridge[ix].0 != port {
-            bridge[ix].0
-        } else {
-            bridge[ix].1
-        };
+        port = if c.0 != port { c.0 } else { c.1 };
     }
     true
 }
@@ -36,7 +32,7 @@ fn part1(data: &Parsed) -> Answer {
     while let Some(Reverse((s, bridge))) = queue.pop() {
         max_s = max_s.max(s);
         for component in data {
-            if bridge.iter().position(|x| x == component).is_some() {
+            if bridge.iter().any(|x| x == component) {
                 continue;
             }
             let mut bridge = bridge.to_vec();
@@ -65,7 +61,7 @@ fn part2(data: &Parsed) -> Answer {
             max_s = max_s.max(s);
         }
         for component in data {
-            if bridge.iter().position(|x| x == component).is_some() {
+            if bridge.iter().any(|x| x == component) {
                 continue;
             }
             let mut bridge = bridge.to_vec();

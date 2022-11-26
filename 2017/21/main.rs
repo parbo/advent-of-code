@@ -50,7 +50,7 @@ type Answer = i64;
 
 fn solve(data: &Parsed, iterations: usize, draw: bool) -> Answer {
     let mut drawer = aoc::PrintGridDrawer::new(|c| c);
-    let mut grid = aoc::parse_grid_to_sparse(&vec![".#.", "..#", "###"], |c| Some(c));
+    let mut grid = aoc::parse_grid_to_sparse(&vec![".#.", "..#", "###"], Some);
     if draw {
         drawer.draw(&grid);
         println!();
@@ -130,20 +130,4 @@ fn parse(lines: &[String]) -> Parsed {
 
 fn main() {
     aoc::run_main(parse, part1, part2);
-}
-
-#[cfg(test)]
-mod tests {
-    // use super::*;
-
-    // fn example() -> Vec<String> {
-    // 	   vec![
-    //         "0".into()
-    //     ]
-    // }
-
-    // #[test]
-    // fn test_part1() {
-    //     assert_eq!(part1(&parse(&example())), 0);
-    // }
 }

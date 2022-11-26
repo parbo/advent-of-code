@@ -18,9 +18,8 @@ fn parse_to_grid(s: &str) -> (HashMap<Point, char>, usize) {
             y += 1;
             x = 0;
             continue;
-        } else if c == '#' {
-            pat.insert([x, y], c);
         } else {
+            pat.insert([x, y], c);
         }
         x += 1;
     }
@@ -51,16 +50,15 @@ type Answer = i64;
 
 fn solve(data: &Parsed, iterations: usize, draw: bool) -> Answer {
     let mut drawer = aoc::PrintGridDrawer::new(|c| c);
-    let mut grid = aoc::parse_grid_to_sparse(&vec![".#.", "..#", "###"], |c| {
-        if c == '#' {
-            Some(c)
-        } else {
-            None
-        }
-    });
+    let mut grid = aoc::parse_grid_to_sparse(&vec![".#.", "..#", "###"], |c| Some(c));
     if draw {
         drawer.draw(&grid);
         println!();
+    }
+    let mut transpositions = vec![];
+    for rule in data {
+        let t = rule.pattern.transpositions().collect::<Vec<_>>();
+        transpositions.push(t);
     }
     let mut g_sz = 3;
     for _ in 0..iterations {
@@ -80,24 +78,19 @@ fn solve(data: &Parsed, iterations: usize, draw: bool) -> Answer {
                     for xx in x..(x + sz) {
                         let p = [xx as i64, yy as i64];
                         if let Some(v) = grid.get_value(p) {
-                            subgrid.insert(p, v);
+                            subgrid.insert([(xx - x) as i64, (yy - y) as i64], v);
                         }
                     }
                 }
                 let mut found = false;
-                'outer: for rule in data {
+                'outer: for (ix, rule) in data.iter().enumerate() {
                     if rule.sz == sz {
-                        'pat: for pat in rule.pattern.transpositions() {
-                            if pat != subgrid {
-                                // dbg!(&pat, &subgrid);
+                        'pat: for pat in &transpositions[ix] {
+                            if *pat != subgrid {
                                 continue 'pat;
                             }
                             // println!("match");
                             found = true;
-                            drawer.draw(&pat);
-                            println!();
-                            drawer.draw(&rule.output);
-                            dbg!(&rule.output);
                             new_grid.blit([out_x as i64, out_y as i64], &rule.output);
                             break 'outer;
                         }
@@ -112,7 +105,6 @@ fn solve(data: &Parsed, iterations: usize, draw: bool) -> Answer {
         }
         grid = new_grid;
         g_sz = g_sz * new_sz / sz;
-        println!("grid size: {}", g_sz);
         if draw {
             drawer.draw(&grid);
             println!();

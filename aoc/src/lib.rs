@@ -161,6 +161,28 @@ pub fn hex_neighbors(p: Vec3) -> impl Iterator<Item = Vec3> {
 }
 
 lazy_static! {
+    pub static ref DIRECTION_ROTATE_LEFT: HashMap<Point, Point> = {
+        let mut map = HashMap::new();
+        map.insert(NORTH, WEST);
+        map.insert(WEST, SOUTH);
+        map.insert(SOUTH, EAST);
+        map.insert(EAST, NORTH);
+        map
+    };
+}
+
+lazy_static! {
+    pub static ref DIRECTION_ROTATE_RIGHT: HashMap<Point, Point> = {
+        let mut map = HashMap::new();
+        map.insert(NORTH, EAST);
+        map.insert(EAST, SOUTH);
+        map.insert(SOUTH, WEST);
+        map.insert(WEST, NORTH);
+        map
+    };
+}
+
+lazy_static! {
     pub static ref DIRECTION_MAP: HashMap<&'static str, Point> = {
         let mut map = HashMap::new();
         map.insert("U", NORTH);

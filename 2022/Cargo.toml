@@ -1,0 +1,11 @@
+[workspace]
+members = [
+  "aoc",
+  "??"
+]
+
+[profile.release]
+debug = true
+
+[profile.test]
+opt-level = 3

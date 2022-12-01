@@ -22,8 +22,8 @@ extern crate vecmath;
 
 pub use itertools::Itertools;
 pub use mod_exp::mod_exp;
-pub use num::integer::*;
-pub use pancurses::*;
+// pub use num::integer::*;
+// pub use pancurses::*;
 pub use petgraph::algo;
 pub use petgraph::graph::DiGraph;
 pub use petgraph::graph::Graph;
@@ -33,8 +33,8 @@ pub use petgraph::graphmap::GraphMap;
 pub use petgraph::graphmap::UnGraphMap;
 pub use petgraph::visit;
 pub use petgraph::Direction::Outgoing;
-pub use petgraph::*;
-pub use regex::*;
+// pub use petgraph::*;
+// pub use regex::*;
 pub use serde_scan::from_str;
 pub use serde_scan::scan;
 

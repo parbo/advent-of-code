@@ -10,7 +10,7 @@ fn part1(data: &Parsed) -> Answer {
 
 fn part2(data: &Parsed) -> Answer {
     let mut d = data.iter().map(|x| x.iter().sum()).collect::<Vec<i64>>();
-    d.sort_by(|a, b| b.cmp(&a));
+    d.sort_by(|a, b| b.cmp(a));
     d.iter().take(3).sum()
 }
 

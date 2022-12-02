@@ -7,9 +7,8 @@ type Parsed = Vec<ParsedItem>;
 type Answer = i64;
 
 fn part1(data: &Parsed) -> Answer {
-    let mut score = 0;
-    for game in data {
-        score += match game {
+    data.iter()
+        .map(|game| match game {
             ('A', 'X') => 1 + 3,
             ('A', 'Y') => 2 + 6,
             ('A', 'Z') => 3 + 0,
@@ -20,15 +19,13 @@ fn part1(data: &Parsed) -> Answer {
             ('C', 'Y') => 2 + 0,
             ('C', 'Z') => 3 + 3,
             _ => panic!(),
-        };
-    }
-    score
+        })
+        .sum()
 }
 
 fn part2(data: &Parsed) -> Answer {
-    let mut score = 0;
-    for game in data {
-        score += match game {
+    data.iter()
+        .map(|game| match game {
             ('A', 'X') => 3 + 0,
             ('A', 'Y') => 1 + 3,
             ('A', 'Z') => 2 + 6,
@@ -39,9 +36,7 @@ fn part2(data: &Parsed) -> Answer {
             ('C', 'Y') => 3 + 3,
             ('C', 'Z') => 1 + 6,
             _ => panic!(),
-        };
-    }
-    score
+        }).sum()
 }
 
 fn parse(lines: &[String]) -> Parsed {

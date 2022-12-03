@@ -13,29 +13,25 @@ fn prio(common: char) -> i64 {
 }
 
 fn part1(data: &Parsed) -> Answer {
-    let mut sum = 0;
-    for rs in data {
-        let half = rs.len() / 2;
-        let first: HashSet<char> = rs[0..half].chars().collect();
-        let second: HashSet<char> = rs[half..].chars().collect();
-        let common = first.intersection(&second).collect::<Vec<_>>();
-        let common = prio(*common[0]);
-        sum += common;
-    }
-    sum
+    data.iter()
+        .map(|rs| {
+            let half = rs.len() / 2;
+            let first: HashSet<char> = rs[0..half].chars().collect();
+            let second: HashSet<char> = rs[half..].chars().collect();
+            prio(*first.intersection(&second).next().unwrap())
+        })
+        .sum()
 }
 
 fn part2(data: &Parsed) -> Answer {
-    let mut sum = 0;
-    for grp in data.chunks(3) {
-        let a: HashSet<char> = grp[0].chars().collect();
-        let b: HashSet<char> = grp[1].chars().collect();
-        let c: HashSet<char> = grp[2].chars().collect();
-        let common: HashSet<char> = a.intersection(&b).copied().collect();
-        let common: Vec<char> = common.intersection(&c).copied().collect();
-        sum += prio(common[0]);
-    }
-    sum
+    data.chunks(3)
+        .map(|grp| {
+            let a: HashSet<char> = grp[0].chars().collect();
+            let b: HashSet<char> = grp[1].chars().collect();
+            let c: HashSet<char> = grp[2].chars().collect();
+            prio(*(&(&a & &b) & &c).iter().next().unwrap())
+        })
+        .sum()
 }
 
 fn parse(lines: &[String]) -> Parsed {

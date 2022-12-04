@@ -20,14 +20,14 @@ impl Assignment {
 
 type ParsedItem = Assignment;
 type Parsed = Vec<ParsedItem>;
-type Answer = i64;
+type Answer = usize;
 
 fn part1(data: &Parsed) -> Answer {
-    data.iter().filter(|x| x.contains()).count() as i64
+    data.iter().filter(|x| x.contains()).count()
 }
 
 fn part2(data: &Parsed) -> Answer {
-    data.iter().filter(|x| x.overlaps()).count() as i64
+    data.iter().filter(|x| x.overlaps()).count()
 }
 
 fn parse(lines: &[String]) -> Parsed {

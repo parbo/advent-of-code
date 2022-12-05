@@ -14,6 +14,7 @@ type Answer = String;
 #[cfg(feature = "vis")]
 mod vis {
     use super::*;
+    use aoc::Grid;
     use aoc::GridDrawer;
 
     pub struct Drawer {
@@ -51,7 +52,7 @@ mod vis {
                 for s in stacks {
                     let mut y = (h - 1) as i64 * ys as i64;
                     for c in s {
-                        aoc::print_str(&mut grid, &c.to_string(), [x, y], [255, 255, 255]);
+                        grid.text_ch(*c, [x, y], [255, 255, 255]);
                         y -= ys as i64;
                     }
                     x += xs as i64;

@@ -797,6 +797,31 @@ where
             }
         }
     }
+    fn text_ch(&mut self, c: char, pos: Point, value: T) {
+        let mut tmp = [0u8; 4];
+        let s = c.encode_utf8(&mut tmp);
+        self.text(s, pos, value);
+    }
+
+    fn text(&mut self, a: &str, mut pos: Point, value: T) {
+        let (w, h) = SMALLFONT.glyph_size();
+        for c in a.chars() {
+            if let Some(glyph) = SMALLFONT.glyph(c as u32) {
+                for y in 0..h {
+                    for x in 0..w {
+                        let byte = y + (x / 8);
+                        let bit = 7 - (x % 8);
+                        if (glyph[byte as usize] & (1 << bit)) == 0 {
+                            // Do nothing
+                        } else {
+                            self.set_value(point_add(pos, [x as i64, y as i64]), value);
+                        }
+                    }
+                }
+            }
+            pos[0] += w as i64;
+        }
+    }
 }
 
 pub trait GridConvert<G, T, U>
@@ -2365,30 +2390,6 @@ impl<'a> PSF2Font<'a> {
 lazy_static! {
     pub static ref SMALLFONT: PSF2Font<'static> =
         PSF2Font::parse(include_bytes!("../fonts/Tamsyn5x9r.psf")).unwrap();
-}
-
-pub fn print_str<T>(grid: &mut dyn Grid<T>, a: &str, mut pos: Point, value: T)
-where
-    T: Copy + std::cmp::PartialEq,
-{
-    let (w, h) = SMALLFONT.glyph_size();
-    for c in a.chars() {
-        if let Some(glyph) = SMALLFONT.glyph(c as u32) {
-            for y in 0..h {
-                for x in 0..w {
-                    let byte = y + (x / 8);
-                    let bit = 7 - (x % 8);
-
-                    if (glyph[byte as usize] & (1 << bit)) == 0 {
-                        // Do nothing
-                    } else {
-                        grid.set_value(point_add(pos, [x as i64, y as i64]), value);
-                    }
-                }
-            }
-            pos[0] += w as i64;
-        }
-    }
 }
 
 pub fn read_lines_from(filename: &str) -> Vec<String> {

@@ -1,4 +1,4 @@
-use aoc::GridDrawer;
+use aoc::{Grid, GridDrawer};
 
 fn make_grid() -> Vec<String> {
     vec![
@@ -320,7 +320,7 @@ fn print_string(a: &str) {
         vec![' '; a.len() * aoc::SMALLFONT.glyph_size().0 as usize];
         aoc::SMALLFONT.glyph_size().1 as usize
     ];
-    aoc::print_str(&mut g, a, [0, 0], '#');
+    g.text(a, [0, 0], '#');
     let mut gd = aoc::PrintGridDrawer::new(|c| c);
     gd.draw(&g);
 }

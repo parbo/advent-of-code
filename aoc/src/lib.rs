@@ -2324,15 +2324,12 @@ pub struct PSF2Font<'a> {
 }
 
 impl<'a> PSF2Font<'a> {
-    fn parse(data: &'a [u8]) -> Result<Self, FontError> {
+    pub fn parse(data: &'a [u8]) -> Result<Self, FontError> {
         if data.len() < std::mem::size_of::<PSF2Header>() {
             return Err(FontError::OutOfBounds);
         }
 
-        let header = unsafe {
-            let ref header = *(data.as_ptr() as *const PSF2Header);
-            header
-        };
+        let header = unsafe { &(*(data.as_ptr() as *const PSF2Header)) };
 
         if header.magic != PSF2_MAGIC {
             return Err(FontError::InvalidMagic);
@@ -2346,15 +2343,15 @@ impl<'a> PSF2Font<'a> {
         Ok(PSF2Font { data, header })
     }
 
-    fn glyph_size(&self) -> (u32, u32) {
+    pub fn glyph_size(&self) -> (u32, u32) {
         (self.header.width, self.header.height)
     }
 
-    // fn glyph_count(&self) -> u32 {
-    //     self.header.length
-    // }
+    pub fn glyph_count(&self) -> u32 {
+        self.header.length
+    }
 
-    fn glyph(&self, index: u32) -> Option<&[u8]> {
+    pub fn glyph(&self, index: u32) -> Option<&[u8]> {
         if index >= self.header.length {
             return None;
         }

@@ -316,7 +316,10 @@ fn save_ppm() {
 }
 
 fn print_string(a: &str) {
-    let mut g = vec![vec![' '; 200]; 10];
+    let mut g = vec![
+        vec![' '; a.len() * aoc::SMALLFONT.glyph_size().0 as usize];
+        aoc::SMALLFONT.glyph_size().1 as usize
+    ];
     aoc::print_str(&mut g, a, [0, 0], '#');
     let mut gd = aoc::PrintGridDrawer::new(|c| c);
     gd.draw(&g);

@@ -2470,6 +2470,15 @@ pub fn to_hex(data: &[u8]) -> String {
     s
 }
 
+pub fn things<T>(s: &str) -> Vec<T>
+where
+    T: std::str::FromStr,
+{
+    s.split(char::is_whitespace)
+        .filter_map(|x| x.parse().ok())
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2544,7 +2553,7 @@ mod tests {
     #[test]
     fn test_parse_point_ok() {
         let parsed = parse_point("12,42");
-        assert!(!parsed.is_err());
+        assert!(parsed.is_ok());
         assert_eq!(parsed.unwrap(), [12, 42]);
     }
 
@@ -2555,5 +2564,16 @@ mod tests {
         assert!(parse_point("12,42,").is_err());
         assert!(parse_point("12,a2").is_err());
         assert!(parse_point("a2,42").is_err());
+    }
+
+    #[test]
+    fn test_things() {
+        let [a,b,c,d] = things::<i64>("apa 1 giraff 3 elefant 5 6")[..] else {
+            unreachable!()
+        };
+        assert_eq!(a, 1);
+        assert_eq!(b, 3);
+        assert_eq!(c, 5);
+        assert_eq!(d, 6);
     }
 }

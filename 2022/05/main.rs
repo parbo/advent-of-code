@@ -39,7 +39,8 @@ fn part2(data: &Parsed) -> Answer {
 
 fn parse(lines: &[String]) -> Parsed {
     let parts = aoc::split_by_empty_line(lines);
-    let mut stacks = vec![VecDeque::new(); 9];
+    let cols = (parts[0].iter().map(|x| x.len()).max().unwrap() + 1) / 4;
+    let mut stacks = vec![VecDeque::new(); cols];
     for line in &parts[0] {
         for (i, stack) in stacks.iter_mut().enumerate() {
             let c = line.chars().nth(1 + 4 * i).unwrap();

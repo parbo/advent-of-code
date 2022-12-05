@@ -2297,6 +2297,103 @@ where
     }
 }
 
+// psf font parser from https://gist.github.com/hinzundcode/0480c5c8aa220cd43cc8da634119a3c0
+const PSF2_MAGIC: [u8; 4] = [0x72, 0xb5, 0x4a, 0x86];
+
+#[derive(Debug)]
+pub enum FontError {
+    OutOfBounds,
+    InvalidMagic,
+}
+
+#[repr(C, packed)]
+struct PSF2Header {
+    magic: [u8; 4],
+    version: u32,
+    header_size: u32,
+    flags: u32,
+    length: u32,
+    char_size: u32,
+    height: u32,
+    width: u32,
+}
+
+pub struct PSF2Font<'a> {
+    data: &'a [u8],
+    header: &'a PSF2Header,
+}
+
+impl<'a> PSF2Font<'a> {
+    fn parse(data: &'a [u8]) -> Result<Self, FontError> {
+        if data.len() < std::mem::size_of::<PSF2Header>() {
+            return Err(FontError::OutOfBounds);
+        }
+
+        let header = unsafe {
+            let ref header = *(data.as_ptr() as *const PSF2Header);
+            header
+        };
+
+        if header.magic != PSF2_MAGIC {
+            return Err(FontError::InvalidMagic);
+        }
+
+        let last_glyph_pos = header.header_size + header.char_size * (header.length - 1);
+        if data.len() < last_glyph_pos as usize {
+            return Err(FontError::OutOfBounds);
+        }
+
+        Ok(PSF2Font { data, header })
+    }
+
+    fn glyph_size(&self) -> (u32, u32) {
+        (self.header.width, self.header.height)
+    }
+
+    // fn glyph_count(&self) -> u32 {
+    //     self.header.length
+    // }
+
+    fn glyph(&self, index: u32) -> Option<&[u8]> {
+        if index >= self.header.length {
+            return None;
+        }
+
+        let length = self.header.char_size as usize;
+        let offset = self.header.header_size as usize + index as usize * length;
+        Some(&self.data[offset..(offset + length)])
+    }
+}
+
+lazy_static! {
+    pub static ref SMALLFONT: PSF2Font<'static> =
+        PSF2Font::parse(include_bytes!("../fonts/Tamsyn5x9r.psf")).unwrap();
+}
+
+pub fn print_str<T>(grid: &mut dyn Grid<T>, a: &str, mut pos: Point, value: T)
+where
+    T: Copy + std::cmp::PartialEq,
+{
+    let (w, h) = SMALLFONT.glyph_size();
+    for c in a.chars() {
+        if let Some(glyph) = SMALLFONT.glyph(c as u32) {
+            for y in 0..h {
+                for x in 0..w {
+                    let byte = y + (x / 8);
+                    let bit = 7 - (x % 8);
+
+                    if (glyph[byte as usize] & (1 << bit)) == 0 {
+                        // Do nothing
+                    } else {
+                        grid.set_value(point_add(pos, [x as i64, y as i64]), value);
+                    }
+                }
+            }
+            pos[0] += w as i64;
+        }
+    }
+}
+
 pub fn read_lines_from(filename: &str) -> Vec<String> {
     let input = File::open(Path::new(filename)).unwrap();
     let buffered = BufReader::new(input);

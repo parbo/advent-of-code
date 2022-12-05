@@ -315,9 +315,17 @@ fn save_ppm() {
     gd.draw(&grid);
 }
 
+fn print_string(a: &str) {
+    let mut g = vec![vec![' '; 200]; 10];
+    aoc::print_str(&mut g, a, [0, 0], '#');
+    let mut gd = aoc::PrintGridDrawer::new(|c| c);
+    gd.draw(&g);
+}
+
 fn main() {
     print_i64();
     println!();
     print_char();
     save_ppm();
+    print_string("Testar lite");
 }

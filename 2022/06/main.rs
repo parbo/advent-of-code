@@ -1,4 +1,5 @@
-use std::{collections::HashSet, iter::*};
+use aoc::AsciiSet;
+use std::iter::*;
 
 type ParsedItem = char;
 type Parsed = Vec<ParsedItem>;
@@ -6,7 +7,7 @@ type Answer = usize;
 
 fn solve(data: &Parsed, n: usize) -> Answer {
     data.windows(n)
-        .map(|w| HashSet::<_>::from_iter(w.iter()))
+        .map(|w| AsciiSet::from_iter(w.iter()))
         .position(|h| h.len() == n)
         .unwrap()
         + n

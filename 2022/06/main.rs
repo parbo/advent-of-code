@@ -6,8 +6,8 @@ type Answer = usize;
 
 fn solve(data: &Parsed, n: usize) -> Answer {
     data.windows(n)
-        .map(|w| HashSet::from_iter(w.iter()))
-        .position(|h: HashSet<_>| h.len() == n)
+        .map(|w| HashSet::<_>::from_iter(w.iter()))
+        .position(|h| h.len() == n)
         .unwrap()
         + n
 }

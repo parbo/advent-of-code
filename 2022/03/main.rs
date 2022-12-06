@@ -27,12 +27,10 @@ fn part1(data: &Parsed) -> Answer {
 fn part2(data: &Parsed) -> Answer {
     data.chunks(3)
         .map(|grp| {
-            let mut a: AsciiSet = grp[0].chars().collect();
+            let a: AsciiSet = grp[0].chars().collect();
             let b: AsciiSet = grp[1].chars().collect();
             let c: AsciiSet = grp[2].chars().collect();
-            a.intersect_with(&b);
-            a.intersect_with(&c);
-            prio(a.iter().next().unwrap())
+            prio((a & b & c).iter().next().unwrap())
         })
         .sum()
 }

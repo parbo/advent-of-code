@@ -8,7 +8,7 @@ fn solve(data: &Parsed, n: usize) -> Answer {
     data.as_slice()
         .windows(n)
         .map(|w| HashSet::from_iter(w.iter()))
-        .position(|h: HashSet<&char>| h.len() == n)
+        .position(|h: HashSet<_>| h.len() == n)
         .unwrap()
         + n
 }

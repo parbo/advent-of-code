@@ -6,6 +6,9 @@
 use core::cmp;
 use core::fmt;
 use core::iter::FromIterator;
+use std::ops::BitAnd;
+use std::ops::BitOr;
+use std::ops::BitXor;
 
 type Set = [u64; 4];
 
@@ -45,6 +48,33 @@ impl<'a> Extend<&'a char> for AsciiSet {
         for i in iter {
             self.insert(*i);
         }
+    }
+}
+
+impl BitAnd for AsciiSet {
+    type Output = Self;
+
+    fn bitand(mut self, rhs: Self) -> Self::Output {
+        self.intersect_with(&rhs);
+        self
+    }
+}
+
+impl BitOr for AsciiSet {
+    type Output = Self;
+
+    fn bitor(mut self, rhs: Self) -> Self::Output {
+        self.union_with(&rhs);
+        self
+    }
+}
+
+impl BitXor for AsciiSet {
+    type Output = Self;
+
+    fn bitxor(mut self, rhs: Self) -> Self::Output {
+        self.symmetric_difference_with(&rhs);
+        self
     }
 }
 
@@ -693,6 +723,30 @@ mod tests {
         b.symmetric_difference_with(&c);
         assert_eq!(a.len(), 2);
         assert_eq!(b.len(), 2);
+    }
+
+    #[test]
+    fn test_ascii_set_bitand() {
+        let a = AsciiSet::from_iter(['a', 'c', 'g']);
+        let b = AsciiSet::from_iter(['b', 'c', 'g']);
+        let c = a & b;
+        assert_eq!(c, AsciiSet::from_iter(['c', 'g']));
+    }
+
+    #[test]
+    fn test_ascii_set_bitor() {
+        let a = AsciiSet::from_iter(['a', 'c', 'g']);
+        let b = AsciiSet::from_iter(['b', 'c', 'g']);
+        let c = a | b;
+        assert_eq!(c, AsciiSet::from_iter(['a', 'b', 'c', 'g']));
+    }
+
+    #[test]
+    fn test_ascii_set_bitxor() {
+        let a = AsciiSet::from_iter(['a', 'c', 'g']);
+        let b = AsciiSet::from_iter(['b', 'c', 'g']);
+        let c = a ^ b;
+        assert_eq!(c, AsciiSet::from_iter(['a', 'b']));
     }
 
     #[test]

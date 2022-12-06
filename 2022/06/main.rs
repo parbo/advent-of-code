@@ -2,38 +2,23 @@ use std::{collections::HashSet, iter::*};
 
 type ParsedItem = char;
 type Parsed = Vec<ParsedItem>;
-type Answer = i64;
+type Answer = usize;
+
+fn solve(data: &Parsed, n: usize) -> Answer {
+    data.as_slice()
+        .windows(n)
+        .map(|w| HashSet::from_iter(w.iter()))
+        .position(|h: HashSet<&char>| h.len() == n)
+        .unwrap()
+        + n
+}
 
 fn part1(data: &Parsed) -> Answer {
-    let mut i = 0;
-    for w in data.as_slice().windows(4) {
-        let mut h = HashSet::new();
-        for c in w {
-            h.insert(c);
-        }
-        if h.len() == 4 {
-            dbg!(w);
-            break;
-        }
-        i += 1;
-    }
-    i + 4
+    solve(data, 4)
 }
 
 fn part2(data: &Parsed) -> Answer {
-    let mut i = 0;
-    for w in data.as_slice().windows(14) {
-        let mut h = HashSet::new();
-        for c in w {
-            h.insert(c);
-        }
-        if h.len() == 14 {
-            dbg!(w);
-            break;
-        }
-        i += 1;
-    }
-    i + 14
+    solve(data, 14)
 }
 
 fn parse(lines: &[String]) -> Parsed {
@@ -43,4 +28,3 @@ fn parse(lines: &[String]) -> Parsed {
 fn main() {
     aoc::run_main(parse, part1, part2);
 }
-

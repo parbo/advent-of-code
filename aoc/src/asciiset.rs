@@ -7,7 +7,7 @@ use core::cmp;
 use core::fmt;
 use core::iter::FromIterator;
 
-type Set = [u8; 32];
+type Set = [u64; 4];
 
 #[derive(Clone, Default, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub struct AsciiSet {
@@ -59,7 +59,7 @@ impl AsciiSet {
     #[inline]
     fn other_op<F>(&mut self, other: &Self, mut f: F)
     where
-        F: FnMut(u8, u8) -> u8,
+        F: FnMut(u64, u64) -> u64,
     {
         for (i, w) in other.set.iter().enumerate() {
             let old = self.set[i];
@@ -75,7 +75,7 @@ impl AsciiSet {
 
     #[inline]
     pub fn union(&self, other: &Self) -> Union {
-        fn or(w1: u8, w2: u8) -> u8 {
+        fn or(w1: u64, w2: u64) -> u64 {
             w1 | w2
         }
 
@@ -88,7 +88,7 @@ impl AsciiSet {
 
     #[inline]
     pub fn intersection(&self, other: &Self) -> Intersection {
-        fn bitand(w1: u8, w2: u8) -> u8 {
+        fn bitand(w1: u64, w2: u64) -> u64 {
             w1 & w2
         }
 
@@ -101,7 +101,7 @@ impl AsciiSet {
 
     #[inline]
     pub fn difference(&self, other: &Self) -> Difference {
-        fn diff(w1: u8, w2: u8) -> u8 {
+        fn diff(w1: u64, w2: u64) -> u64 {
             w1 & !w2
         }
 
@@ -114,7 +114,7 @@ impl AsciiSet {
 
     #[inline]
     pub fn symmetric_difference(&self, other: &Self) -> SymmetricDifference {
-        fn bitxor(w1: u8, w2: u8) -> u8 {
+        fn bitxor(w1: u64, w2: u64) -> u64 {
             w1 ^ w2
         }
 
@@ -166,8 +166,8 @@ impl AsciiSet {
     #[inline]
     pub fn contains(&self, value: char) -> bool {
         if let Ok(c) = u8::try_from(value) {
-            let mask = 1 << (c % 8);
-            let v = self.set[(c / 8) as usize];
+            let mask = 1 << (c % 64);
+            let v = self.set[(c / 64) as usize];
             (v & mask) != 0
         } else {
             false
@@ -200,8 +200,8 @@ impl AsciiSet {
     /// present in the set.
     pub fn insert(&mut self, value: char) -> bool {
         if let Ok(c) = u8::try_from(value) {
-            let mask = 1 << (c % 8);
-            let v = &mut self.set[(c / 8) as usize];
+            let mask = 1 << (c % 64);
+            let v = &mut self.set[(c / 64) as usize];
             let old = *v & mask;
             *v |= mask;
             old != (*v & mask)
@@ -214,8 +214,8 @@ impl AsciiSet {
     /// present in the set.
     pub fn remove(&mut self, value: char) -> bool {
         if let Ok(c) = u8::try_from(value) {
-            let mask = 1 << (c % 8);
-            let v = &mut self.set[(c / 8) as usize];
+            let mask = 1 << (c % 64);
+            let v = &mut self.set[(c / 64) as usize];
             let old = *v & mask;
             *v &= !mask;
             old != (*v & mask)
@@ -242,8 +242,8 @@ impl<'a> Iterator for AsciiIter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         while self.c < 255 {
-            let byte = self.c / 8;
-            let mask = 1 << (self.c % 8);
+            let byte = self.c / 64;
+            let mask = 1 << (self.c % 64);
             let c = self.c as char;
             self.c += 1;
             if self.s[byte as usize] & mask != 0 {
@@ -256,14 +256,14 @@ impl<'a> Iterator for AsciiIter<'a> {
 
 #[derive(Clone)]
 struct ByteIter<T> {
-    head: u8,
+    head: u64,
     head_offset: u8,
     tail: T,
 }
 
 impl<T> ByteIter<T>
 where
-    T: Iterator<Item = u8>,
+    T: Iterator<Item = u64>,
 {
     fn from_set(mut set: T) -> ByteIter<T> {
         let h = set.next().unwrap_or_default();
@@ -278,9 +278,9 @@ where
 /// An iterator combining two `AsciiSet` iterators.
 #[derive(Clone)]
 struct TwoBytes {
-    set: std::array::IntoIter<u8, 32>,
-    other: std::array::IntoIter<u8, 32>,
-    merge: fn(u8, u8) -> u8,
+    set: std::array::IntoIter<u64, 4>,
+    other: std::array::IntoIter<u64, 4>,
+    merge: fn(u64, u64) -> u64,
 }
 
 /// An iterator for `BitSet`.
@@ -297,7 +297,7 @@ pub struct SymmetricDifference(ByteIter<TwoBytes>);
 
 impl<T> Iterator for ByteIter<T>
 where
-    T: Iterator<Item = u8>,
+    T: Iterator<Item = u64>,
 {
     type Item = char;
 
@@ -307,7 +307,7 @@ where
                 Some(w) => self.head = w,
                 None => return None,
             }
-            self.head_offset += 8;
+            self.head_offset += 64;
         }
 
         // from the current byte, isolate the
@@ -331,9 +331,9 @@ where
 }
 
 impl Iterator for TwoBytes {
-    type Item = u8;
+    type Item = u64;
 
-    fn next(&mut self) -> Option<u8> {
+    fn next(&mut self) -> Option<u64> {
         match (self.set.next(), self.other.next()) {
             (Some(a), Some(b)) => Some((self.merge)(a, b)),
             (Some(a), None) => Some((self.merge)(a, 0)),
@@ -698,7 +698,7 @@ mod tests {
     #[test]
     fn test_ascii_set_eq() {
         let a = AsciiSet::from_iter(['a', 'c']);
-        let b = AsciiSet::from_iter([]);
+        let b = AsciiSet::from_iter(&[]);
         let c = AsciiSet::new();
 
         assert!(a == a);
@@ -712,7 +712,7 @@ mod tests {
     #[test]
     fn test_ascii_set_cmp() {
         let a = AsciiSet::from_iter(['a', 'c', 'g']);
-        let b = AsciiSet::from_iter([]);
+        let b = AsciiSet::from_iter(&[]);
         let c = AsciiSet::new();
 
         assert_eq!(a.cmp(&b), Greater);

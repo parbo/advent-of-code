@@ -82,6 +82,9 @@ pub use self::vecmath::vec4_add;
 pub use self::vecmath::vec4_neg;
 pub use self::vecmath::vec4_sub;
 
+mod asciiset;
+pub use asciiset::*;
+
 pub fn length(v: FVec3) -> f64 {
     vec_square_length(v).sqrt()
 }

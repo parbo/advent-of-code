@@ -5,8 +5,7 @@ type Parsed = Vec<ParsedItem>;
 type Answer = usize;
 
 fn solve(data: &Parsed, n: usize) -> Answer {
-    data.as_slice()
-        .windows(n)
+    data.windows(n)
         .map(|w| HashSet::from_iter(w.iter()))
         .position(|h: HashSet<_>| h.len() == n)
         .unwrap()

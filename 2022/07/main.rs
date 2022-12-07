@@ -4,7 +4,7 @@ use std::{
     path::PathBuf,
 };
 
-type Parsed = (HashMap<PathBuf, HashSet<String>>, HashMap<PathBuf, i64>);
+type Parsed = HashMap<PathBuf, i64>;
 type Answer = i64;
 
 fn acc_size(
@@ -30,21 +30,16 @@ fn acc_size(
 }
 
 fn part1(data: &Parsed) -> Answer {
-    let (dirs, files) = data;
-    let mut acc: HashMap<PathBuf, i64> = HashMap::new();
-    acc_size(dirs, files, &mut acc, PathBuf::from("/"));
-    acc.values().filter(|x| **x <= 100000).sum()
+    data.values().filter(|x| **x <= 100000).sum()
 }
 
 fn part2(data: &Parsed) -> Answer {
-    let (dirs, files) = data;
-    let mut acc: HashMap<PathBuf, i64> = HashMap::new();
-    acc_size(dirs, files, &mut acc, PathBuf::from("/"));
-    let used = acc.get(&PathBuf::from("/")).unwrap();
+    let used = data.get(&PathBuf::from("/")).unwrap();
     let free = 70000000 - used;
     let to_free = 30000000 - free;
-    acc.into_iter()
-        .filter(|(_p, sz)| *sz >= to_free)
+    *data
+        .iter()
+        .filter(|(_p, sz)| **sz >= to_free)
         .min_by(|a, b| a.1.cmp(&b.1))
         .unwrap()
         .1
@@ -86,7 +81,9 @@ fn parse(lines: &[String]) -> Parsed {
             files.insert(fp, parts[0].parse::<i64>().unwrap());
         }
     }
-    (dirs, files)
+    let mut acc: HashMap<PathBuf, i64> = HashMap::new();
+    acc_size(&dirs, &files, &mut acc, PathBuf::from("/"));
+    acc
 }
 
 fn main() {

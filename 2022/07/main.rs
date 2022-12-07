@@ -55,44 +55,35 @@ fn parse(lines: &[String]) -> Parsed {
     let mut files: HashMap<PathBuf, i64> = HashMap::new();
     let mut currdir = PathBuf::from("/");
     dirs.insert(currdir.clone(), HashSet::new());
-    let mut in_ls = false;
     for line in lines {
-        if in_ls {
-            if line.starts_with('$') {
-                in_ls = false;
-            } else if line.starts_with("dir") {
-                let d = &line[4..];
-                dirs.entry(currdir.clone()).or_default().insert(d.to_string());
-                dirs.entry(PathBuf::from(d)).or_default();
+        if line.starts_with("$ cd") {
+            let dest = &line[5..];
+            if dest == ".." {
+                currdir.pop();
+            } else if dest == "/" {
+                currdir = PathBuf::from("/");
             } else {
-                let parts = aoc::split_w(line);
                 dirs.entry(currdir.clone())
                     .or_default()
-                    .insert(parts[1].to_string());
-                let fp = currdir.join(parts[1]);
-                dirs.entry(fp.clone()).or_default();
-                files.insert(fp, parts[0].parse::<i64>().unwrap());
+                    .insert(dest.to_string());
+                currdir.push(dest);
             }
-        }
-
-        if !in_ls {
-            if line.starts_with("$ cd") {
-                let dest = &line[5..];
-                if dest == ".." {
-                    currdir.pop();
-                } else if dest == "/" {
-                    currdir = PathBuf::from("/");
-                } else {
-                    dirs.entry(currdir.clone())
-                        .or_default()
-                        .insert(dest.to_string());
-                    currdir.push(dest);
-                }
-            } else if line.starts_with("$ ls") {
-                in_ls = true;
-            } else {
-                unreachable!();
-            }
+        } else if line.starts_with("$ ls") {
+            // nop
+        } else if line.starts_with("dir") {
+            let d = &line[4..];
+            dirs.entry(currdir.clone())
+                .or_default()
+                .insert(d.to_string());
+            dirs.entry(PathBuf::from(d)).or_default();
+        } else {
+            let parts = aoc::split_w(line);
+            dirs.entry(currdir.clone())
+                .or_default()
+                .insert(parts[1].to_string());
+            let fp = currdir.join(parts[1]);
+            dirs.entry(fp.clone()).or_default();
+            files.insert(fp, parts[0].parse::<i64>().unwrap());
         }
     }
     (dirs, files)

@@ -51,6 +51,7 @@ fn parse(lines: &[String]) -> Parsed {
     let mut currdir = PathBuf::from("/");
     dirs.insert(currdir.clone(), HashSet::new());
     for line in lines {
+        #[allow(clippy::if_same_then_else)]
         if line.starts_with("$ cd") {
             let dest = &line[5..];
             if dest == ".." {
@@ -66,11 +67,7 @@ fn parse(lines: &[String]) -> Parsed {
         } else if line.starts_with("$ ls") {
             // nop
         } else if line.starts_with("dir") {
-            let d = &line[4..];
-            dirs.entry(currdir.clone())
-                .or_default()
-                .insert(d.to_string());
-            dirs.entry(PathBuf::from(d)).or_default();
+            // If a dir is just ls:d and never entered, then we can't know the size anyway
         } else {
             let parts = aoc::split_w(line);
             dirs.entry(currdir.clone())

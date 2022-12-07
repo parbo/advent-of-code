@@ -40,7 +40,7 @@ fn part2(data: &Parsed) -> Answer {
     *data
         .iter()
         .filter(|(_p, sz)| **sz >= to_free)
-        .min_by(|a, b| a.1.cmp(&b.1))
+        .min_by(|a, b| a.1.cmp(b.1))
         .unwrap()
         .1
 }

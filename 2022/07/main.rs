@@ -61,8 +61,8 @@ fn parse(lines: &[String]) -> Parsed {
             if line.starts_with('$') {
                 in_ls = false;
             } else if line.starts_with("dir") {
-                let d = line[4..].to_string();
-                dirs.entry(currdir.clone()).or_default().insert(d.clone());
+                let d = &line[4..];
+                dirs.entry(currdir.clone()).or_default().insert(d.to_string());
                 dirs.entry(PathBuf::from(d)).or_default();
             } else {
                 let parts = aoc::split_w(line);
@@ -77,7 +77,7 @@ fn parse(lines: &[String]) -> Parsed {
 
         if !in_ls {
             if line.starts_with("$ cd") {
-                let dest = line[5..].to_string();
+                let dest = &line[5..];
                 if dest == ".." {
                     currdir.pop();
                 } else if dest == "/" {
@@ -85,7 +85,7 @@ fn parse(lines: &[String]) -> Parsed {
                 } else {
                     dirs.entry(currdir.clone())
                         .or_default()
-                        .insert(dest.clone());
+                        .insert(dest.to_string());
                     currdir.push(dest);
                 }
             } else if line.starts_with("$ ls") {

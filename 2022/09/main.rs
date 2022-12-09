@@ -11,6 +11,7 @@ mod vis {
     pub struct Drawer {
         drawer: Box<dyn aoc::GridDrawer<HashMap<aoc::Point, char>, char>>,
         ropes: Vec<Vec<aoc::Point>>,
+        n: usize,
     }
 
     fn make_col(c: char) -> [u8; 3] {
@@ -24,12 +25,13 @@ mod vis {
     }
 
     impl Drawer {
-        pub fn new(name: &str) -> Drawer {
+        pub fn new(name: &str, n: usize) -> Drawer {
             let mut drawer = aoc::BitmapGridDrawer::new(make_col, name);
             drawer.set_bg([0, 0, 0]);
             Drawer {
                 drawer: Box::new(drawer),
                 ropes: vec![],
+                n,
             }
         }
 
@@ -43,7 +45,7 @@ mod vis {
             let grids = self
                 .ropes
                 .iter()
-                .map(|r| make_grid(r.as_slice()))
+                .map(|r| make_grid(r.as_slice(), self.n))
                 .collect::<Vec<_>>();
             let extents = grids.iter().map(|g| g.extents()).collect::<Vec<_>>();
             let minx = extents.iter().map(|(minp, _)| minp[0]).min().unwrap();
@@ -58,16 +60,17 @@ mod vis {
                 for (k, v) in grid {
                     g.insert(*k, *v);
                 }
-                tails.insert(self.ropes[i][9], 't');
+                tails.insert(*self.ropes[i].last().unwrap(), 't');
                 self.drawer.draw(&g);
             }
         }
     }
 
-    fn make_grid(rope: &[aoc::Point]) -> HashMap<aoc::Point, char> {
+    fn make_grid(rope: &[aoc::Point], n: usize) -> HashMap<aoc::Point, char> {
         let mut grid: HashMap<aoc::Point, char> = HashMap::new();
         for (i, c) in ['9', '8', '7', '6', '5', '4', '3', '2', '1', 'H']
             .into_iter()
+            .take(n)
             .enumerate()
         {
             grid.insert(rope[i], c);
@@ -78,7 +81,7 @@ mod vis {
 
 type ParsedItem = (String, i64);
 type Parsed = Vec<ParsedItem>;
-type Answer = i64;
+type Answer = usize;
 
 fn follow(h: aoc::Point, mut t: aoc::Point) -> aoc::Point {
     if (h[0] - t[0]).abs() > 1 || (h[1] - t[1]).abs() > 1 {
@@ -88,41 +91,34 @@ fn follow(h: aoc::Point, mut t: aoc::Point) -> aoc::Point {
     t
 }
 
-fn part1(data: &Parsed) -> Answer {
-    let mut h = [0, 0];
-    let mut t = [0, 0];
-    let mut visited: HashSet<aoc::Point> = HashSet::new();
-    visited.insert(t);
-    for (mv, d) in data {
-        let dir = aoc::DIRECTION_MAP.get(mv.as_str()).unwrap();
-        for _ in 0..*d {
-            h = aoc::point_add(h, *dir);
-            t = follow(h, t);
-            visited.insert(t);
-        }
-    }
-    visited.len() as i64
-}
-
-fn part2(data: &Parsed) -> Answer {
-    let mut rope = vec![[0, 0]; 10];
+#[allow(unused_variables)]
+fn solve(data: &Parsed, n: usize, part: usize) -> Option<Answer> {
+    let mut rope = vec![[0, 0]; n];
     let mut visited: HashSet<aoc::Point> = HashSet::new();
     #[cfg(feature = "vis")]
-    let mut drawer = vis::Drawer::new("vis/9/part2");
-    visited.insert(rope[9]);
+    let mut drawer = vis::Drawer::new(&format!("vis/9/part{}", part), n);
+    visited.insert(*rope.last()?);
     for (mv, d) in data {
-        let dir = aoc::DIRECTION_MAP.get(mv.as_str()).unwrap();
+        let dir = aoc::DIRECTION_MAP.get(mv.as_str())?;
         for _ in 0..*d {
             rope[0] = aoc::point_add(rope[0], *dir);
-            for i in 1..10 {
+            for i in 1..n {
                 rope[i] = follow(rope[i - 1], rope[i]);
             }
             #[cfg(feature = "vis")]
             drawer.draw(&rope);
-            visited.insert(rope[9]);
+            visited.insert(*rope.last()?);
         }
     }
-    visited.len() as i64
+    Some(visited.len())
+}
+
+fn part1(data: &Parsed) -> Answer {
+    solve(data, 2, 1).unwrap()
+}
+
+fn part2(data: &Parsed) -> Answer {
+    solve(data, 10, 2).unwrap()
 }
 
 fn parse(lines: &[String]) -> Parsed {

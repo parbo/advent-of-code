@@ -36,7 +36,8 @@ fn part2(data: &Parsed) -> Answer {
             ('C', 'Y') => 3 + 3,
             ('C', 'Z') => 1 + 6,
             _ => panic!(),
-        }).sum()
+        })
+        .sum()
 }
 
 fn parse(lines: &[String]) -> Parsed {

@@ -1,34 +1,6 @@
 use std::collections::HashSet;
 use std::iter::*;
 
-type ParsedItem = (String, i64);
-type Parsed = Vec<ParsedItem>;
-type Answer = i64;
-
-fn follow(h: aoc::Point, mut t: aoc::Point) -> aoc::Point {
-    if (h[0] - t[0]).abs() > 1 || (h[1] - t[1]).abs() > 1 {
-        let dir = aoc::point_sub(h, t);
-        t = aoc::point_add(t, [dir[0].signum(), dir[1].signum()]);
-    }
-    t
-}
-
-fn part1(data: &Parsed) -> Answer {
-    let mut h = [0, 0];
-    let mut t = [0, 0];
-    let mut visited: HashSet<aoc::Point> = HashSet::new();
-    visited.insert(t);
-    for (mv, d) in data {
-        let dir = aoc::DIRECTION_MAP.get(mv.as_str()).unwrap();
-        for _ in 0..*d {
-            h = aoc::point_add(h, *dir);
-            t = follow(h, t);
-            visited.insert(t);
-        }
-    }
-    visited.len() as i64
-}
-
 #[cfg(feature = "vis")]
 mod vis {
     use std::collections::HashMap;
@@ -102,6 +74,34 @@ mod vis {
         }
         grid
     }
+}
+
+type ParsedItem = (String, i64);
+type Parsed = Vec<ParsedItem>;
+type Answer = i64;
+
+fn follow(h: aoc::Point, mut t: aoc::Point) -> aoc::Point {
+    if (h[0] - t[0]).abs() > 1 || (h[1] - t[1]).abs() > 1 {
+        let dir = aoc::point_sub(h, t);
+        t = aoc::point_add(t, [dir[0].signum(), dir[1].signum()]);
+    }
+    t
+}
+
+fn part1(data: &Parsed) -> Answer {
+    let mut h = [0, 0];
+    let mut t = [0, 0];
+    let mut visited: HashSet<aoc::Point> = HashSet::new();
+    visited.insert(t);
+    for (mv, d) in data {
+        let dir = aoc::DIRECTION_MAP.get(mv.as_str()).unwrap();
+        for _ in 0..*d {
+            h = aoc::point_add(h, *dir);
+            t = follow(h, t);
+            visited.insert(t);
+        }
+    }
+    visited.len() as i64
 }
 
 fn part2(data: &Parsed) -> Answer {

@@ -6,36 +6,9 @@ type Parsed = Vec<ParsedItem>;
 type Answer = i64;
 
 fn follow(h: aoc::Point, mut t: aoc::Point) -> aoc::Point {
-    let xd = (h[0] - t[0]).abs();
-    let yd = (h[1] - t[1]).abs();
-    if xd > 1 && yd > 1 {
-        let mut dir = aoc::point_sub(h, t);
-        dir[0] = dir[0] / dir[0].abs();
-        dir[1] = dir[1] / dir[1].abs();
-        t = aoc::point_add(t, dir);
-    } else {
-        let md = xd.max(yd);
-        if h[0] != t[0] && h[1] != t[1] && md > 1 {
-            if (h[0] - t[0]).abs() > (h[1] - t[1]).abs() {
-                t[1] = h[1];
-            } else {
-                t[0] = h[0];
-            }
-        }
-        if h[0] == t[0] && h[1] != t[1] {
-            if h[1] - t[1] > 1 {
-                t[1] += 1;
-            } else if t[1] - h[1] > 1 {
-                t[1] -= 1;
-            }
-        }
-        if h[1] == t[1] && h[0] != t[0] {
-            if h[0] - t[0] > 1 {
-                t[0] += 1;
-            } else if t[0] - h[0] > 1 {
-                t[0] -= 1;
-            }
-        }
+    if (h[0] - t[0]).abs() > 1 || (h[1] - t[1]).abs() > 1 {
+        let dir = aoc::point_sub(h, t);
+        t = aoc::point_add(t, [dir[0].signum(), dir[1].signum()]);
     }
     t
 }

@@ -1,4 +1,4 @@
-use std::{cell::RefCell, iter::*, path::PathBuf, rc::Rc};
+use std::{iter::*, path::PathBuf};
 
 use aoc::Grid;
 
@@ -49,31 +49,12 @@ fn part1(data: &Parsed) -> Answer {
                 b'a'
             } else {
                 v as u8
-            } - b'a') as f32
+            }) - b'a'
         };
 
         let w = data[0].len();
         let h = data.len();
-        let mut vertices = vec![];
-        let mut uvs = vec![];
-        // Make vertices
-        let divs = 2;
-        let divsf = divs as f32;
-        for y in 0..h {
-            for yy in 0..divs {
-                for x in 0..w {
-                    for xx in 0..divs {
-                        let p = [x as i64, y as i64];
-                        let v = data.get_value(p).unwrap();
-                        let hp = hf(v);
-                        let xp = p[0] as f32 + xx as f32 / divsf;
-                        let yp = p[1] as f32 + yy as f32 / divsf;
-                        vertices.push(kiss3d::nalgebra::Point3::new(xp, hp, yp));
-                        uvs.push([xp.floor() / w as f32, yp.floor() / h as f32].into());
-                    }
-                }
-            }
-        }
+
         // Make texture
         let mut img = image::RgbImage::new(w as u32, h as u32);
         for y in 0..h {
@@ -83,48 +64,64 @@ fn part1(data: &Parsed) -> Answer {
                 let hp = hf(v);
                 let on_path = path.contains(&p);
                 if on_path {
-                    img.put_pixel(p[0] as u32, p[1] as u32, image::Rgb([255, 255, 0]));
+                    img.put_pixel(
+                        (w - 1) as u32 - p[0] as u32,
+                        (h - 1) as u32 - p[1] as u32,
+                        image::Rgb([255, 255, 0]),
+                    );
                 } else {
                     img.put_pixel(
-                        p[0] as u32,
-                        p[1] as u32,
+                        (w - 1) as u32 - p[0] as u32,
+                        (h - 1) as u32 - p[1] as u32,
                         image::Rgb([0, (126.0 + (hp as f32 / 13.0) * 255.0) as u8, 0]),
                     );
                 }
             }
         }
-        // Make quads
-        let mut faces = vec![];
-        let stride = w * divs;
-        for i in 0..vertices.len() {
-            if i + 1 + stride < vertices.len() {
-                faces.push(kiss3d::nalgebra::Point3::new(
-                    i as u16,
-                    (i + stride) as u16,
-                    (i + 1) as u16,
-                ));
-                faces.push(kiss3d::nalgebra::Point3::new(
-                    (i + 1) as u16,
-                    (i + stride) as u16,
-                    (i + 1 + stride) as u16,
-                ));
-            }
-        }
-        let mesh = Rc::new(RefCell::new(kiss3d::resource::Mesh::new(
-            vertices,
-            faces,
-            None,
-            Some(uvs),
-            false,
-        )));
         let mut bytes: Vec<u8> = Vec::new();
         img.write_to(
             &mut std::io::Cursor::new(&mut bytes),
             image::ImageOutputFormat::Png,
         )
         .unwrap();
-        let mut c = window.add_mesh(mesh, [1.0, 1.0, 1.0].into());
-        c.set_texture_from_memory(&bytes, "col");
+
+        let scale = 2;
+
+        // Scale the heightmap with gaussian
+        let mut hm = image::GrayImage::new(w as u32, h as u32);
+        for [x, y] in data.points() {
+            let v = data.get_value([x, y]).unwrap();
+            hm.put_pixel(x as u32, y as u32, image::Luma([hf(v)]));
+        }
+        let hm = image::imageops::resize(
+            &hm,
+            (w * scale) as u32,
+            (h * scale) as u32,
+            image::imageops::FilterType::Gaussian,
+        );
+        let w = hm.width();
+        let h = hm.height();
+
+        let mut vertices = vec![];
+        // Make vertices
+        for y in 0..h {
+            for x in 0..w {
+                let p = [x as u32, y as u32];
+                let image::Luma(hp) = hm.get_pixel(x as u32, y as u32);
+                let hp = hp[0] as f32;
+                let xp = p[0] as f32;
+                let yp = p[1] as f32;
+                vertices.push(kiss3d::nalgebra::Point3::new(
+                    xp / scale as f32,
+                    hp as f32,
+                    yp / scale as f32,
+                ));
+            }
+        }
+        // Make quads
+        let mut q = window.add_quad_with_vertices(&vertices, w as usize, h as usize);
+        q.set_texture_from_memory(&bytes, "col");
+        //        q.set_color(0.0, 1.0, 0.0);
 
         let mut i = 0;
         let eye = kiss3d::nalgebra::Point3::new(path[i][0] as f32, 0.7, path[i][1] as f32);
@@ -142,16 +139,16 @@ fn part1(data: &Parsed) -> Answer {
                 }
                 // Step camera
                 let v1 = data.get_value(path[i]).unwrap();
-                let h1 = hf(v1) + 0.7;
+                let h1 = hf(v1) as f32 + 0.7;
                 let v2 = data.get_value(path[i + 1]).unwrap();
-                let h2 = hf(v2) + 0.7;
+                let h2 = hf(v2) as f32 + 0.7;
                 let f = 2;
                 let v3 = data.get_value(path[(i + f).min(path.len() - 1)]).unwrap();
-                let h3 = hf(v3) + 0.7;
+                let h3 = hf(v3) as f32 + 0.7;
                 let v4 = data
                     .get_value(path[(i + f + 1).min(path.len() - 1)])
                     .unwrap();
-                let h4 = hf(v4) + 0.7;
+                let h4 = hf(v4) as f32 + 0.7;
                 let x1 = path[i][0] as f32;
                 let y1 = path[i][1] as f32;
                 let x2 = path[i + 1][0] as f32;
@@ -161,15 +158,16 @@ fn part1(data: &Parsed) -> Answer {
                 let x4 = path[(i + f + 1).min(path.len() - 1)][0] as f32;
                 let y4 = path[(i + f + 1).min(path.len() - 1)][1] as f32;
                 let d = (frame % 20) as f32 / 20.0;
+                let scale = scale as f32;
                 let eye = kiss3d::nalgebra::Point3::new(
-                    x1 + d * (x2 - x1),
-                    h1 + d * (h2 - h1),
-                    y1 + d * (y2 - y1),
+                    (x1 + d * (x2 - x1)),
+                    (h1 + d * (h2 - h1)),
+                    (y1 + d * (y2 - y1)),
                 );
                 let at = kiss3d::nalgebra::Point3::new(
-                    x3 + d * (x4 - x3),
-                    h3 + d * (h4 - h3),
-                    y3 + d * (y4 - y3),
+                    (x3 + d * (x4 - x3)),
+                    (h3 + d * (h4 - h3)),
+                    (y3 + d * (y4 - y3)),
                 );
                 camera.look_at(eye, at);
             }

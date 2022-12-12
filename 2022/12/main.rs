@@ -1,4 +1,5 @@
 use aoc::Grid;
+use rayon::prelude::*;
 use std::iter::*;
 
 type Parsed = Vec<Vec<char>>;
@@ -212,7 +213,7 @@ fn part2(data: &Parsed) -> Answer {
         .unwrap()
         .0;
     starts
-        .iter()
+        .par_iter()
         .filter_map(|start| {
             if let Some(p) = aoc::astar_grid(
                 data,

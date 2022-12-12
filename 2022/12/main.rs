@@ -55,43 +55,15 @@ fn part1(data: &Parsed) -> Answer {
         let w = data[0].len();
         let h = data.len();
 
-        // Make texture
-        let mut img = image::RgbImage::new(w as u32, h as u32);
-        for y in 0..h {
-            for x in 0..w {
-                let p = [x as i64, y as i64];
-                let v = data.get_value(p).unwrap();
-                let hp = hf(v);
-                let on_path = path.contains(&p);
-                if on_path {
-                    img.put_pixel(
-                        (w - 1) as u32 - p[0] as u32,
-                        (h - 1) as u32 - p[1] as u32,
-                        image::Rgb([255, 255, 0]),
-                    );
-                } else {
-                    img.put_pixel(
-                        (w - 1) as u32 - p[0] as u32,
-                        (h - 1) as u32 - p[1] as u32,
-                        image::Rgb([0, (126.0 + (hp as f32 / 13.0) * 255.0) as u8, 0]),
-                    );
-                }
-            }
-        }
-        let mut bytes: Vec<u8> = Vec::new();
-        img.write_to(
-            &mut std::io::Cursor::new(&mut bytes),
-            image::ImageOutputFormat::Png,
-        )
-        .unwrap();
-
-        let scale = 2;
+        let scale = 8;
 
         // Scale the heightmap with gaussian
         let mut hm = image::GrayImage::new(w as u32, h as u32);
         for [x, y] in data.points() {
             let v = data.get_value([x, y]).unwrap();
-            hm.put_pixel(x as u32, y as u32, image::Luma([hf(v)]));
+            let h = hf(v) as f32;
+            let c = 255.0 * h / 26.0;
+            hm.put_pixel(x as u32, y as u32, image::Luma([c as u8]));
         }
         let hm = image::imageops::resize(
             &hm,
@@ -99,29 +71,38 @@ fn part1(data: &Parsed) -> Answer {
             (h * scale) as u32,
             image::imageops::FilterType::Gaussian,
         );
-        let w = hm.width();
-        let h = hm.height();
 
-        let mut vertices = vec![];
-        // Make vertices
         for y in 0..h {
             for x in 0..w {
-                let p = [x as u32, y as u32];
-                let image::Luma(hp) = hm.get_pixel(x as u32, y as u32);
-                let hp = hp[0] as f32;
-                let xp = p[0] as f32;
-                let yp = p[1] as f32;
-                vertices.push(kiss3d::nalgebra::Point3::new(
-                    xp / scale as f32,
-                    hp as f32,
-                    yp / scale as f32,
-                ));
+                let mut vertices = vec![];
+                for xx in 0..(scale + 1) {
+                    for yy in 0..(scale + 1) {
+                        let xxx = (x * scale + xx) as u32;
+                        let yyy = (y * scale + yy) as u32;
+                        let image::Luma(hp) =
+                            hm.get_pixel_checked(xxx, yyy).unwrap_or(&image::Luma([0]));
+                        let hp = hp[0] as f32;
+                        let xp = xx as f32;
+                        let yp = yy as f32;
+                        vertices.push(kiss3d::nalgebra::Point3::new(
+                            xp / scale as f32,
+                            26.0 * hp / 255.0,
+                            yp / scale as f32,
+                        ));
+                    }
+                }
+                let mut q = window.add_quad_with_vertices(&vertices, scale + 1, scale + 1);
+                q.enable_backface_culling(true);
+                q.append_translation(&[x as f32 - 0.5, 0.0, y as f32 - 0.5].into());
+                q.recompute_normals();
+                let on_path = path.contains(&[x as i64, y as i64]);
+                if on_path {
+                    q.set_color(1.0, 1.0, 0.0);
+                } else {
+                    q.set_color(0.0, 1.0, 0.0);
+                }
             }
         }
-        // Make quads
-        let mut q = window.add_quad_with_vertices(&vertices, w as usize, h as usize);
-        q.set_texture_from_memory(&bytes, "col");
-        //        q.set_color(0.0, 1.0, 0.0);
 
         let mut i = 0;
         let eye = kiss3d::nalgebra::Point3::new(path[i][0] as f32, 0.7, path[i][1] as f32);
@@ -132,9 +113,10 @@ fn part1(data: &Parsed) -> Answer {
         if let Some(parent) = png_path.parent() {
             std::fs::create_dir_all(parent).expect("could not create folder");
         }
+        let speed = 5;
         while window.render_with_camera(&mut camera) {
             if i + 2 < path.len() {
-                if frame % 20 == 0 {
+                if frame % speed == 0 {
                     i += 1;
                 }
                 // Step camera
@@ -157,17 +139,16 @@ fn part1(data: &Parsed) -> Answer {
                 let y3 = path[(i + f).min(path.len() - 1)][1] as f32;
                 let x4 = path[(i + f + 1).min(path.len() - 1)][0] as f32;
                 let y4 = path[(i + f + 1).min(path.len() - 1)][1] as f32;
-                let d = (frame % 20) as f32 / 20.0;
-                let scale = scale as f32;
+                let d = (frame % speed) as f32 / speed as f32;
                 let eye = kiss3d::nalgebra::Point3::new(
-                    (x1 + d * (x2 - x1)),
-                    (h1 + d * (h2 - h1)),
-                    (y1 + d * (y2 - y1)),
+                    x1 + d * (x2 - x1),
+                    h1 + d * (h2 - h1),
+                    y1 + d * (y2 - y1),
                 );
                 let at = kiss3d::nalgebra::Point3::new(
-                    (x3 + d * (x4 - x3)),
-                    (h3 + d * (h4 - h3)),
-                    (y3 + d * (y4 - y3)),
+                    x3 + d * (x4 - x3),
+                    h3 + d * (h4 - h3),
+                    y3 + d * (y4 - y3),
                 );
                 camera.look_at(eye, at);
             }

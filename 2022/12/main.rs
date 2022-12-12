@@ -1,6 +1,5 @@
 use aoc::Grid;
-use rand::Rng;
-use std::{iter::*, path::PathBuf};
+use std::iter::*;
 
 type Parsed = Vec<Vec<char>>;
 type Answer = i64;
@@ -36,6 +35,9 @@ fn part1(data: &Parsed) -> Answer {
 
     #[cfg(feature = "vis")]
     {
+        use rand::Rng;
+        use std::{iter::*, path::PathBuf};
+
         let mut window = kiss3d::window::Window::new_with_size("Day 12", 1280, 720);
 
         window.set_light(kiss3d::light::Light::StickToCamera);

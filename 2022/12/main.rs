@@ -18,7 +18,7 @@ fn part1(data: &Parsed) -> Answer {
         .find(|x| x.1 == 'E')
         .unwrap()
         .0;
-    let p = aoc::dijkstra_grid(
+    let p = aoc::astar_grid(
         data,
         |_p, _c| true,
         |_p1, c1, _p2, c2| {
@@ -51,7 +51,7 @@ fn part2(data: &Parsed) -> Answer {
     starts
         .iter()
         .filter_map(|start| {
-            if let Some(p) = aoc::dijkstra_grid(
+            if let Some(p) = aoc::astar_grid(
                 data,
                 |_p, _c| true,
                 |_p1, c1, _p2, c2| {

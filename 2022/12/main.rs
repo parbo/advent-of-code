@@ -1,6 +1,6 @@
-use std::{iter::*, path::PathBuf};
-
 use aoc::Grid;
+use rand::Rng;
+use std::{iter::*, path::PathBuf};
 
 type Parsed = Vec<Vec<char>>;
 type Answer = i64;
@@ -57,7 +57,12 @@ fn part1(data: &Parsed) -> Answer {
 
         let scale = 8;
 
-        // Scale the heightmap with gaussian
+        kiss3d::resource::TextureManager::get_global_manager(|tm| {
+            tm.add_image_from_memory(include_bytes!("grass.jpg"), "grass");
+            tm.add_image_from_memory(include_bytes!("gravel.jpg"), "gravel");
+        });
+
+        // Scale the heightmap
         let mut hm = image::GrayImage::new(w as u32, h as u32);
         for [x, y] in data.points() {
             let v = data.get_value([x, y]).unwrap();
@@ -69,9 +74,10 @@ fn part1(data: &Parsed) -> Answer {
             &hm,
             (w * scale) as u32,
             (h * scale) as u32,
-            image::imageops::FilterType::Gaussian,
+            image::imageops::FilterType::Triangle,
         );
 
+        let mut rng = rand::thread_rng();
         for y in 0..h {
             for x in 0..w {
                 let mut vertices = vec![];
@@ -95,25 +101,38 @@ fn part1(data: &Parsed) -> Answer {
                 q.enable_backface_culling(true);
                 q.append_translation(&[x as f32 - 0.5, 0.0, y as f32 - 0.5].into());
                 q.recompute_normals();
-                let on_path = path.contains(&[x as i64, y as i64]);
-                if on_path {
-                    q.set_color(1.0, 1.0, 0.0);
+                let h = hf(data.get_value([x as i64, y as i64]).unwrap());
+                let n: u8 = rng.gen();
+                if h > 18 && (h - 18) as u32 * n as u32 > 100 {
+                    q.set_color(1.0, 1.0, 1.0);
+                } else if h > 5 && (h - 5) as u32 * n as u32 > 100 {
+                    q.set_color(0.3, 0.3, 0.3);
+                    q.set_texture_with_name("gravel");
                 } else {
                     q.set_color(0.0, 1.0, 0.0);
+                    q.set_texture_with_name("grass");
                 }
             }
         }
+        for p in &path {
+            let mut c = window.add_cube(1.0, 1.0, 1.0);
+            c.set_color(1.0, 1.0, 0.0);
+            c.set_texture_with_name("gravel");
+            let h = hf(data.get_value(*p).unwrap()) as f32;
+            c.append_translation(&[p[0] as f32, h - 0.5, p[1] as f32].into());
+        }
 
         let mut i = 0;
-        let eye = kiss3d::nalgebra::Point3::new(path[i][0] as f32, 0.7, path[i][1] as f32);
-        let at = kiss3d::nalgebra::Point3::new(path[i + 1][0] as f32, 0.7, path[i + 1][1] as f32);
+        let mh = 1.7;
+        let eye = kiss3d::nalgebra::Point3::new(path[i][0] as f32, mh, path[i][1] as f32);
+        let at = kiss3d::nalgebra::Point3::new(path[i + 1][0] as f32, mh, path[i + 1][1] as f32);
         let mut camera = kiss3d::camera::FirstPerson::new(eye, at);
         let mut frame = 0;
         let png_path = PathBuf::from("vis/12/part1");
         if let Some(parent) = png_path.parent() {
             std::fs::create_dir_all(parent).expect("could not create folder");
         }
-        let speed = 5;
+        let speed = 2;
         while window.render_with_camera(&mut camera) {
             if i + 2 < path.len() {
                 if frame % speed == 0 {
@@ -121,16 +140,16 @@ fn part1(data: &Parsed) -> Answer {
                 }
                 // Step camera
                 let v1 = data.get_value(path[i]).unwrap();
-                let h1 = hf(v1) as f32 + 0.7;
+                let h1 = hf(v1) as f32 + mh;
                 let v2 = data.get_value(path[i + 1]).unwrap();
-                let h2 = hf(v2) as f32 + 0.7;
-                let f = 2;
+                let h2 = hf(v2) as f32 + mh;
+                let f = 4;
                 let v3 = data.get_value(path[(i + f).min(path.len() - 1)]).unwrap();
-                let h3 = hf(v3) as f32 + 0.7;
+                let h3 = hf(v3) as f32 + mh;
                 let v4 = data
                     .get_value(path[(i + f + 1).min(path.len() - 1)])
                     .unwrap();
-                let h4 = hf(v4) as f32 + 0.7;
+                let h4 = hf(v4) as f32 + mh;
                 let x1 = path[i][0] as f32;
                 let y1 = path[i][1] as f32;
                 let x2 = path[i + 1][0] as f32;

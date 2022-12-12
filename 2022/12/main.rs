@@ -1,4 +1,4 @@
-use std::iter::*;
+use std::{cell::RefCell, iter::*, path::PathBuf, rc::Rc};
 
 use aoc::Grid;
 
@@ -52,29 +52,91 @@ fn part1(data: &Parsed) -> Answer {
             } - b'a') as f32
         };
 
-        for p in data.points() {
-            let v = data.get_value(p).unwrap();
-            let h = hf(v);
-            let mut c = window.add_cube(1.0, h, 1.0);
-            c.append_translation(&kiss3d::nalgebra::Translation3::new(
-                p[0] as f32,
-                h / 2.0,
-                p[1] as f32,
-            ));
-            if path.contains(&p) {
-                c.set_color(1.0, 1.0, 0.0);
-            } else {
-                c.set_color(0.0, 0.5 + h / 13.0, 0.0);
+        let w = data[0].len();
+        let h = data.len();
+        let mut vertices = vec![];
+        let mut uvs = vec![];
+        // Make vertices
+        let divs = 2;
+        let divsf = divs as f32;
+        for y in 0..h {
+            for yy in 0..divs {
+                for x in 0..w {
+                    for xx in 0..divs {
+                        let p = [x as i64, y as i64];
+                        let v = data.get_value(p).unwrap();
+                        let hp = hf(v);
+                        let xp = p[0] as f32 + xx as f32 / divsf;
+                        let yp = p[1] as f32 + yy as f32 / divsf;
+                        vertices.push(kiss3d::nalgebra::Point3::new(xp, hp, yp));
+                        uvs.push([xp.floor() / w as f32, yp.floor() / h as f32].into());
+                    }
+                }
             }
         }
+        // Make texture
+        let mut img = image::RgbImage::new(w as u32, h as u32);
+        for y in 0..h {
+            for x in 0..w {
+                let p = [x as i64, y as i64];
+                let v = data.get_value(p).unwrap();
+                let hp = hf(v);
+                let on_path = path.contains(&p);
+                if on_path {
+                    img.put_pixel(p[0] as u32, p[1] as u32, image::Rgb([255, 255, 0]));
+                } else {
+                    img.put_pixel(
+                        p[0] as u32,
+                        p[1] as u32,
+                        image::Rgb([0, (126.0 + (hp as f32 / 13.0) * 255.0) as u8, 0]),
+                    );
+                }
+            }
+        }
+        // Make quads
+        let mut faces = vec![];
+        let stride = w * divs;
+        for i in 0..vertices.len() {
+            if i + 1 + stride < vertices.len() {
+                faces.push(kiss3d::nalgebra::Point3::new(
+                    i as u16,
+                    (i + stride) as u16,
+                    (i + 1) as u16,
+                ));
+                faces.push(kiss3d::nalgebra::Point3::new(
+                    (i + 1) as u16,
+                    (i + stride) as u16,
+                    (i + 1 + stride) as u16,
+                ));
+            }
+        }
+        let mesh = Rc::new(RefCell::new(kiss3d::resource::Mesh::new(
+            vertices,
+            faces,
+            None,
+            Some(uvs),
+            false,
+        )));
+        let mut bytes: Vec<u8> = Vec::new();
+        img.write_to(
+            &mut std::io::Cursor::new(&mut bytes),
+            image::ImageOutputFormat::Png,
+        )
+        .unwrap();
+        let mut c = window.add_mesh(mesh, [1.0, 1.0, 1.0].into());
+        c.set_texture_from_memory(&bytes, "col");
 
         let mut i = 0;
         let eye = kiss3d::nalgebra::Point3::new(path[i][0] as f32, 0.7, path[i][1] as f32);
         let at = kiss3d::nalgebra::Point3::new(path[i + 1][0] as f32, 0.7, path[i + 1][1] as f32);
         let mut camera = kiss3d::camera::FirstPerson::new(eye, at);
         let mut frame = 0;
+        let png_path = PathBuf::from("vis/12/part1");
+        if let Some(parent) = png_path.parent() {
+            std::fs::create_dir_all(parent).expect("could not create folder");
+        }
         while window.render_with_camera(&mut camera) {
-            if i + 2 < path.len() && frame > 500 {
+            if i + 2 < path.len() {
                 if frame % 20 == 0 {
                     i += 1;
                 }
@@ -111,6 +173,14 @@ fn part1(data: &Parsed) -> Answer {
                 );
                 camera.look_at(eye, at);
             }
+            // Save image
+            let filename = png_path.parent().unwrap().join(&format!(
+                "{}_{:06}.png",
+                png_path.file_name().unwrap().to_str().unwrap(),
+                frame
+            ));
+            let img = window.snap_image();
+            img.save(filename).unwrap();
             frame += 1;
         }
     }

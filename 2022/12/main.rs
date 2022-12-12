@@ -133,6 +133,12 @@ fn part1(data: &Parsed) -> Answer {
             std::fs::create_dir_all(parent).expect("could not create folder");
         }
         let speed = 2;
+        let mut s = window.add_sphere(0.2);
+        let g = kiss3d::nalgebra::Point3::new(
+            goal[0] as f32,
+            hf(data.get_value(goal).unwrap()) as f32,
+            goal[1] as f32,
+        );
         while window.render_with_camera(&mut camera) {
             if i + 2 < path.len() {
                 if frame % speed == 0 {
@@ -169,7 +175,13 @@ fn part1(data: &Parsed) -> Answer {
                     h3 + d * (h4 - h3),
                     y3 + d * (y4 - y3),
                 );
-                camera.look_at(eye, at);
+                let dir = kiss3d::nalgebra::Unit::new_normalize(eye - g);
+                let mut curr = eye;
+                curr.y -= 1.5;
+                let mut eye = at + dir.scale(40.0);
+                eye.y = curr.y + 10.0;
+                s.set_local_translation(curr.into());
+                camera.look_at(eye, curr);
             }
             // Save image
             let filename = png_path.parent().unwrap().join(&format!(

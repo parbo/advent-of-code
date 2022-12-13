@@ -52,44 +52,46 @@ impl FromStr for Value {
     }
 }
 
-type Parsed = Vec<(Value, Value)>;
-type Answer = usize;
-
-fn compare(a: &Value, b: &Value) -> Ordering {
-    match (a, b) {
-        (Value::Number(x), Value::Number(y)) => x.cmp(y),
-        (Value::List(x), Value::List(y)) => {
-            let mut i = 0;
-            for (xx, yy) in zip(x, y) {
-                let r = compare(xx, yy);
-                if r != Ordering::Equal {
-                    return r;
+impl Ord for Value {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match (self, other) {
+            (Value::Number(x), Value::Number(y)) => x.cmp(y),
+            (Value::List(x), Value::List(y)) => {
+                let mut i = 0;
+                for (xx, yy) in zip(x, y) {
+                    let r = xx.cmp(yy);
+                    if r != Ordering::Equal {
+                        return r;
+                    }
+                    i += 1
                 }
-                i += 1
+                if x.len() == y.len() {
+                    Ordering::Equal
+                } else if i == x.len() {
+                    Ordering::Less
+                } else {
+                    Ordering::Greater
+                }
             }
-            if x.len() == y.len() {
-                Ordering::Equal
-            } else if i == x.len() {
-                Ordering::Less
-            } else {
-                Ordering::Greater
-            }
+            (Value::List(_), Value::Number(_)) => self.cmp(&Value::List(vec![other.clone()])),
+            (Value::Number(_), Value::List(_)) => Value::List(vec![self.clone()]).cmp(other),
         }
-        (Value::List(_), Value::Number(_)) => compare(a, &Value::List(vec![b.clone()])),
-        (Value::Number(_), Value::List(_)) => compare(&Value::List(vec![a.clone()]), b),
     }
 }
+
+impl PartialOrd for Value {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+type Parsed = Vec<(Value, Value)>;
+type Answer = usize;
 
 fn part1(data: &Parsed) -> Answer {
     data.iter()
         .enumerate()
-        .filter_map(|(ix, (a, b))| {
-            if compare(a, b) == Ordering::Less {
-                Some(ix + 1)
-            } else {
-                None
-            }
-        })
+        .filter_map(|(ix, (a, b))| if a < b { Some(ix + 1) } else { None })
         .sum()
 }
 
@@ -101,7 +103,7 @@ fn part2(data: &Parsed) -> Answer {
         all.push(a.clone());
         all.push(b.clone());
     }
-    all.sort_by(compare);
+    all.sort();
     let ix1 = all.iter().position(|a| *a == div1).unwrap();
     let ix2 = all.iter().position(|a| *a == div2).unwrap();
     (ix1 + 1) * (ix2 + 1)

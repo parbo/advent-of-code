@@ -402,7 +402,7 @@ where
 
     for y in min[1]..=max[1] {
         for x in min[0]..=max[0] {
-            let p: Point = [x as i64, y as i64];
+            let p: Point = [x, y];
             if let Some(c) = grid.get_value(p) {
                 if is_node(&p, &c) {
                     let gp = graph.add_node(p);
@@ -452,7 +452,7 @@ where
 
     for y in min[1]..=max[1] {
         for x in min[0]..=max[0] {
-            let p: Point = [x as i64, y as i64];
+            let p: Point = [x, y];
             if let Some(c) = grid.get_value(p) {
                 if is_node(&p, &c) {
                     let gp = graph.add_node(p);
@@ -1387,7 +1387,7 @@ where
     pub fn save_image(&self) {
         let path = Path::new(&self.basename);
         let filename = if let Some(parent) = path.parent() {
-            parent.join(&format!(
+            parent.join(format!(
                 "{}_{:06}.png",
                 path.file_name().unwrap().to_str().unwrap(),
                 self.frame
@@ -1530,7 +1530,7 @@ where
     pub fn save_image(&self) {
         let path = Path::new(&self.basename);
         let filename = if let Some(parent) = path.parent() {
-            parent.join(&format!(
+            parent.join(format!(
                 "{}_{:06}.png",
                 path.file_name().unwrap().to_str().unwrap(),
                 self.frame
@@ -2018,7 +2018,7 @@ where
                 print!("  ");
             }
             for x in min_x..=max_x {
-                let p = [x as i64, y as i64];
+                let p = [x, y];
                 let d = T::default();
                 let c = g.get(&p).unwrap_or(&d);
                 print!("| {} ", self.to_char(*c));
@@ -2116,8 +2116,8 @@ where
         let hh = (2 * (max_y - min_y + 1)) as i32;
         let xoffs = (self.w - ww) / 2;
         let yoffs = (self.h - hh) / 2;
-        let mut xx = xoffs as i32;
-        let mut yy = yoffs as i32;
+        let mut xx = xoffs;
+        let mut yy = yoffs;
         if min_y.rem_euclid(2) == 0 {
             self.put(xx, yy, ' ');
             xx += 1;
@@ -2146,7 +2146,7 @@ where
                 xx += 2;
             }
             for x in min_x..=max_x {
-                let p = [x as i64, y as i64];
+                let p = [x, y];
                 let d = T::default();
                 let c = grid.get(&p).unwrap_or(&d);
                 let s = format!("| {} ", self.to_char(*c));
@@ -2248,7 +2248,7 @@ where
     pub fn save_image(&self) {
         let path = Path::new(&self.basename);
         let filename = if let Some(parent) = path.parent() {
-            parent.join(&format!(
+            parent.join(format!(
                 "{}_{:06}.png",
                 path.file_name().unwrap().to_str().unwrap(),
                 self.frame
@@ -2275,10 +2275,7 @@ where
             let (xoffs, yoffs) = if y.rem_euclid(2) != 0 { (3, 0) } else { (0, 0) };
             for x in min_x..=max_x {
                 image.blit(
-                    [
-                        ((x - min_x) * 6 + xoffs) as i64,
-                        ((y - min_y) * 5 + yoffs) as i64,
-                    ],
+                    [(x - min_x) * 6 + xoffs, (y - min_y) * 5 + yoffs],
                     &self.hexagon,
                 );
             }
@@ -2287,13 +2284,10 @@ where
         for y in min_y..=max_y {
             let (xoffs, yoffs) = if y.rem_euclid(2) != 0 { (3, 0) } else { (0, 0) };
             for x in min_x..=max_x {
-                let p = [x as i64, y as i64];
+                let p = [x, y];
                 if let Some(c) = g.get(&p) {
                     image.fill(
-                        [
-                            ((x - min_x) * 6 + xoffs + 3) as i64,
-                            ((y - min_y) * 5 + yoffs + 3) as i64,
-                        ],
+                        [(x - min_x) * 6 + xoffs + 3, (y - min_y) * 5 + yoffs + 3],
                         (self.to_color)(*c),
                     );
                 }

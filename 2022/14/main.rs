@@ -119,8 +119,6 @@ fn solve(data: &Parsed, floor: bool) -> Answer {
         path.pop();
         let p = path.pop().unwrap_or([500, 0]);
         grains += 1;
-        // gd.draw(&grid);
-        // println!();
         if s == [500, 0] {
             break;
         }

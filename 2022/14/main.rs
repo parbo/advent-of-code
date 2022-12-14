@@ -1,9 +1,68 @@
 use std::{collections::HashMap, iter::*};
 
-use aoc::{Grid, GridDrawer, Point};
+use aoc::{Grid, Point};
 
 type Parsed = Vec<Vec<Point>>;
 type Answer = i64;
+
+#[cfg(feature = "vis")]
+mod vis {
+    use super::*;
+
+    pub struct Drawer {
+        drawer: Box<dyn aoc::GridDrawer<HashMap<aoc::Point, char>, char>>,
+        grids: Vec<HashMap<Point, char>>,
+        paths: Vec<Vec<Point>>,
+    }
+
+    fn make_col(c: char) -> [u8; 3] {
+        if c == '#' {
+            [127, 127, 127]
+        } else if c == 'o' {
+            [255, 255, 0]
+        } else if c == '~' {
+            [255, 0, 0]
+        } else {
+            [0, 0, 0]
+        }
+    }
+
+    impl Drawer {
+        pub fn new(name: &str) -> Drawer {
+            let mut drawer = aoc::BitmapGridDrawer::new(make_col, name);
+            drawer.set_bg([0, 0, 0]);
+            Drawer {
+                drawer: Box::new(drawer),
+                grids: vec![],
+                paths: vec![],
+            }
+        }
+
+        pub fn draw(&mut self, grid: &HashMap<Point, char>, path: &[aoc::Point]) {
+            self.grids.push(grid.clone());
+            self.paths.push(path.to_vec());
+        }
+    }
+
+    impl Drop for Drawer {
+        fn drop(&mut self) {
+            let extents = self.grids.iter().map(|g| g.extents()).collect::<Vec<_>>();
+            let minx = extents.iter().map(|(minp, _)| minp[0]).min().unwrap();
+            let maxx = extents.iter().map(|(_, maxp)| maxp[0]).max().unwrap();
+            let miny = extents.iter().map(|(minp, _)| minp[1]).min().unwrap();
+            let maxy = extents.iter().map(|(_, maxp)| maxp[1]).max().unwrap();
+            for (grid, path) in zip(&self.grids, &self.paths) {
+                let mut g = grid.clone();
+                g.insert([minx, miny], ' ');
+                g.insert([maxx, maxy], ' ');
+                for p in path {
+                    g.insert(*p, '~');
+                }
+                self.drawer.draw(&g);
+            }
+        }
+    }
+}
 
 fn solve(data: &Parsed, floor: bool) -> Answer {
     let maxy = data
@@ -31,10 +90,12 @@ fn solve(data: &Parsed, floor: bool) -> Answer {
             }
         }
     }
-    let mut gd = aoc::PrintGridDrawer::new(|c| c);
+    #[cfg(feature = "vis")]
+    let mut drawer = vis::Drawer::new(&format!("vis/14/part{}", if floor { 2 } else { 1 }));
     let mut grains = 0;
     let mut s = [500, 0];
     grid.insert(s, '+');
+    let mut path = vec![];
     'outer: loop {
         for d in [aoc::SOUTH, aoc::SOUTH_WEST, aoc::SOUTH_EAST] {
             let p = aoc::point_add(s, d);
@@ -44,6 +105,7 @@ fn solve(data: &Parsed, floor: bool) -> Answer {
             }
             if c != '#' && c != 'o' {
                 s = p;
+                path.push(s);
                 if !floor && s[1] > maxy {
                     break 'outer;
                 } else {
@@ -52,6 +114,9 @@ fn solve(data: &Parsed, floor: bool) -> Answer {
             }
         }
         grid.set_value(s, 'o');
+        #[cfg(feature = "vis")]
+        drawer.draw(&grid, &path);
+        path.clear();
         grains += 1;
         // gd.draw(&grid);
         // println!();

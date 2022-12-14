@@ -1551,22 +1551,14 @@ where
         let width = max_x - min_x + 1;
         let height = max_y - min_y + 1;
         // Default bg is white
-        let mut buffer = vec![255; (3 * width * height) as usize];
-        buffer.chunks_mut(3).for_each(|c| {
-            c[0] = self.bg[0];
-            c[1] = self.bg[1];
-            c[2] = self.bg[2]
-        });
-        let mut image = RgbImage::from_raw(width as u32, height as u32, buffer).unwrap();
-        for y in min_y..=max_y {
-            for x in min_x..=max_x {
-                if let Some(value) = area.get_value([x, y]) {
-                    let color = self.to_color(value);
-                    let yy = y - min_y;
-                    let xx = x - min_x;
-                    let rgb = Rgb(color);
-                    image.put_pixel(xx as u32, yy as u32, rgb);
-                }
+        let mut image = RgbImage::from_pixel(width as u32, height as u32, image::Rgb(self.bg));
+        for [x, y] in area.points() {
+            if let Some(value) = area.get_value([x, y]) {
+                let color = self.to_color(value);
+                let yy = y - min_y;
+                let xx = x - min_x;
+                let rgb = Rgb(color);
+                image.put_pixel(xx as u32, yy as u32, rgb);
             }
         }
         self.image = Some(image);

@@ -13,6 +13,7 @@ mod vis {
         drawer: Box<dyn aoc::GridDrawer<HashMap<aoc::Point, char>, char>>,
         grids: Vec<HashMap<Point, char>>,
         paths: Vec<Vec<Point>>,
+        fast: bool,
     }
 
     fn make_col(c: char) -> [u8; 3] {
@@ -28,13 +29,14 @@ mod vis {
     }
 
     impl Drawer {
-        pub fn new(name: &str) -> Drawer {
+        pub fn new(name: &str, fast: bool) -> Drawer {
             let mut drawer = aoc::BitmapGridDrawer::new(make_col, name);
             drawer.set_bg([0, 0, 0]);
             Drawer {
                 drawer: Box::new(drawer),
                 grids: vec![],
                 paths: vec![],
+                fast,
             }
         }
 
@@ -51,14 +53,19 @@ mod vis {
             let maxx = extents.iter().map(|(_, maxp)| maxp[0]).max().unwrap();
             let miny = extents.iter().map(|(minp, _)| minp[1]).min().unwrap();
             let maxy = extents.iter().map(|(_, maxp)| maxp[1]).max().unwrap();
+            let mut last_path = vec![];
             for (grid, path) in zip(&self.grids, &self.paths) {
-                let mut g = grid.clone();
-                g.insert([minx, miny], ' ');
-                g.insert([maxx, maxy], ' ');
-                for p in path {
-                    g.insert(*p, '~');
+                let draw = !self.fast || path.len().abs_diff(last_path.len()) > 2;
+                last_path = path.clone();
+                if draw {
+                    let mut g = grid.clone();
+                    g.insert([minx, miny], ' ');
+                    g.insert([maxx, maxy], ' ');
+                    for p in path {
+                        g.insert(*p, '~');
+                    }
+                    self.drawer.draw(&g);
                 }
-                self.drawer.draw(&g);
             }
         }
     }
@@ -73,7 +80,7 @@ fn solve(data: &Parsed, floor: bool) -> Answer {
     }
     let ([_, _], [_, maxy]) = grid.extents();
     #[cfg(feature = "vis")]
-    let mut drawer = vis::Drawer::new(&format!("vis/14/part{}", if floor { 2 } else { 1 }));
+    let mut drawer = vis::Drawer::new(&format!("vis/14/part{}", if floor { 2 } else { 1 }), floor);
     let mut grains = 0;
     let mut s = [500, 0];
     grid.insert(s, '+');

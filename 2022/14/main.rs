@@ -65,17 +65,13 @@ mod vis {
 }
 
 fn solve(data: &Parsed, floor: bool) -> Answer {
-    let maxy = data
-        .iter()
-        .flat_map(|x| x.iter().map(|p| p[1]))
-        .max()
-        .unwrap();
     let mut grid = HashMap::new();
     for wall in data {
         for p in wall.windows(2) {
             grid.line(p[0], p[1], '#');
         }
     }
+    let ([_, _], [_, maxy]) = grid.extents();
     #[cfg(feature = "vis")]
     let mut drawer = vis::Drawer::new(&format!("vis/14/part{}", if floor { 2 } else { 1 }));
     let mut grains = 0;

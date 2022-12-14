@@ -73,21 +73,7 @@ fn solve(data: &Parsed, floor: bool) -> Answer {
     let mut grid = HashMap::new();
     for wall in data {
         for p in wall.windows(2) {
-            let a = p[0];
-            let b = p[1];
-            if a[0] == b[0] {
-                let s = a[1].min(b[1]);
-                let e = a[1].max(b[1]);
-                for y in s..=e {
-                    grid.insert([a[0], y], '#');
-                }
-            } else {
-                let s = a[0].min(b[0]);
-                let e = a[0].max(b[0]);
-                for x in s..=e {
-                    grid.insert([x, a[1]], '#');
-                }
-            }
+            grid.line(p[0], p[1], '#');
         }
     }
     #[cfg(feature = "vis")]

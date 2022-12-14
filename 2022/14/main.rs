@@ -116,14 +116,15 @@ fn solve(data: &Parsed, floor: bool) -> Answer {
         grid.set_value(s, 'o');
         #[cfg(feature = "vis")]
         drawer.draw(&grid, &path);
-        path.clear();
+        path.pop();
+        let p = path.pop().unwrap_or([500, 0]);
         grains += 1;
         // gd.draw(&grid);
         // println!();
         if s == [500, 0] {
             break;
         }
-        s = [500, 0];
+        s = p;
     }
     grains
 }

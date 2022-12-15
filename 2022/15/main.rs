@@ -39,12 +39,16 @@ fn part1(data: &Parsed) -> Answer {
 }
 
 fn part2(data: &Parsed) -> i64 {
+    let sensors = data
+        .iter()
+        .map(|s| {
+            let mh = aoc::manhattan([s.sx, s.sy], [s.bx, s.by]);
+            (s, mh)
+        })
+        .collect::<Vec<_>>();
     for y in 0..4000000i64 {
         let mut ranges = vec![];
-        for s in data {
-            let sp = [s.sx, s.sy];
-            let bp = [s.bx, s.by];
-            let mh = aoc::manhattan(sp, bp);
+        for &(s, mh) in &sensors {
             let dy = s.sy.abs_diff(y) as i64;
             if dy > mh {
                 // This sensor not in range of this row

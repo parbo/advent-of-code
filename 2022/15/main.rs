@@ -1,4 +1,4 @@
-use std::{collections::HashMap, iter::*};
+use std::{collections::HashSet, iter::*};
 
 #[derive(parse_display::Display, parse_display::FromStr, Debug, Clone, PartialEq, Eq, Hash)]
 #[display("Sensor at x={sx}, y={sy}: closest beacon is at x={bx}, y={by}")]
@@ -14,24 +14,36 @@ type Parsed = Vec<ParsedItem>;
 type Answer = usize;
 
 fn solve(data: &Parsed, row: i64) -> Answer {
-    let mut grid = HashMap::new();
+    let mut ranges = vec![];
+    let mut sb = HashSet::new();
     for s in data {
         let sp = [s.sx, s.sy];
         let bp = [s.bx, s.by];
-        grid.insert(sp, 'S');
-        grid.insert(bp, 'B');
+        if s.by == row {
+            sb.insert(s.bx);
+        }
         let mh = aoc::manhattan(sp, bp);
-        let y = row;
-        for x in (s.sx - mh)..(s.sx + mh) {
-            let mhp = aoc::manhattan(sp, [x, y]);
-            if mhp <= mh {
-                grid.entry([x, y]).or_insert('#');
-            }
+        let dy = s.sy.abs_diff(row) as i64;
+        if dy <= mh {
+            let d = mh - dy;
+            ranges.push(((s.sx - d), (s.sx + d)));
         }
     }
-    grid.iter()
-        .filter(|(p, c)| **c == '#' && p[1] == row)
-        .count()
+    ranges.sort();
+    let mut c = -(sb.len() as i64);
+    let mut s = ranges[0].0;
+    let mut e = ranges[0].1;
+    for rg in &ranges[1..] {
+        if rg.0 > e {
+            c += e - s + 1;
+            s = rg.0;
+            e = rg.1;
+        } else if rg.1 > s {
+            e = e.max(rg.1);
+        }
+    }
+    c += e - s + 1;
+    c as usize
 }
 
 fn part1(data: &Parsed) -> Answer {

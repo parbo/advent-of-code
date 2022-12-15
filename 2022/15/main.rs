@@ -46,18 +46,13 @@ fn part2(data: &Parsed) -> i64 {
             (s, mh)
         })
         .collect::<Vec<_>>();
+    let mut ranges = vec![];
     for y in 0..4000000i64 {
-        let mut ranges = vec![];
         for &(s, mh) in &sensors {
             let dy = s.sy.abs_diff(y) as i64;
-            if dy > mh {
-                // This sensor not in range of this row
-                continue;
-            }
-            let d = mh - dy;
-            let rg = ((s.sx - d).clamp(0, 4000000), (s.sx + d).clamp(0, 4000000));
-            if rg.0 != rg.1 {
-                ranges.push(rg);
+            if dy <= mh {
+                let d = mh - dy;
+                ranges.push(((s.sx - d).clamp(0, 4000000), (s.sx + d).clamp(0, 4000000)));
             }
         }
         ranges.sort();
@@ -75,6 +70,7 @@ fn part2(data: &Parsed) -> i64 {
         if let Some(gap) = ranges.windows(2).find(|g| g[0].1 < g[1].0) {
             return (gap[0].1 + 1) * 4000000 + y;
         }
+        ranges.clear();
     }
     0
 }

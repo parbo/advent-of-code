@@ -67,20 +67,22 @@ fn part2(data: &Parsed) -> i64 {
                 ranges.push(((s.sx - d).clamp(0, 4000000), (s.sx + d).clamp(0, 4000000)));
             }
         }
-        ranges.sort();
-        let mut i = 0;
-        while i + 1 < ranges.len() {
-            let a = ranges[i];
-            let b = ranges[i + 1];
+        ranges.sort_unstable();
+        let mut ai = 0;
+        let mut bi = 1;
+        while bi < ranges.len() {
+            let a = ranges[ai];
+            let b = ranges[bi];
+            if a.1 < b.0 {
+                return (a.1 + 1) * 4000000 + y;
+            }
             if a.0 <= b.0 && a.1 >= b.1 {
                 // b is contained
-                ranges.remove(i + 1);
+                bi += 1;
             } else {
-                i += 1;
+                ai = bi;
+                bi += 1;
             }
-        }
-        if let Some(gap) = ranges.windows(2).find(|g| g[0].1 < g[1].0) {
-            return (gap[0].1 + 1) * 4000000 + y;
         }
         ranges.clear();
     }

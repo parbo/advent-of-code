@@ -1,6 +1,6 @@
 use std::{
     cmp::Ordering,
-    collections::{BTreeSet, BinaryHeap, HashSet},
+    collections::{BTreeSet, BinaryHeap},
     iter::*,
 };
 
@@ -33,7 +33,7 @@ fn walk(pos: u8, scan: &[Valve], paths: &[i64], minute: i64, time_cap: i64) -> i
         },
         minute,
     ));
-    let mut visited = HashSet::new();
+    let mut visited = aoc::FxHashSet::default();
     let mut best = 0;
     while let Some((escore, score, state, minute)) = frontier.pop() {
         if escore < best {
@@ -117,7 +117,7 @@ fn walk2(pos: u8, scan: &[Valve], paths: &[i64], minute: i64, time_cap: i64) -> 
         },
         minute,
     ));
-    let mut visited = HashSet::new();
+    let mut visited = aoc::FxHashSet::default();
     let mut best = 0;
     while let Some((escore, score, state, minute)) = frontier.pop() {
         if escore < best {

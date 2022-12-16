@@ -134,7 +134,7 @@ impl PartialOrd for State2 {
     }
 }
 
-fn walk2(pos: u16, scan: &HashMap<u16, Valve2>, minute: i64) -> i64 {
+fn walk2(pos: u16, scan: &aoc::FxHashMap<u16, Valve2>, minute: i64) -> i64 {
     let mut frontier = BinaryHeap::new();
     frontier.push((
         0,
@@ -159,9 +159,9 @@ fn walk2(pos: u16, scan: &HashMap<u16, Valve2>, minute: i64) -> i64 {
                 .iter()
                 .map(|(v, t)| (26 - t) * scan.get(v).unwrap().rate)
                 .sum();
-            // if score > best {
-            // println!("{}, {:?}", score, state);
-            // }
+            if score > best {
+                println!("{}, {:?}", score, state);
+            }
             best = best.max(score);
             gscore.insert(state.clone(), score);
             continue;
@@ -244,17 +244,19 @@ fn name_to_u16(name: &str) -> u16 {
 }
 
 fn part2(data: &Parsed) -> Answer {
-    let mut scan = HashMap::new();
-    for v in data {
-        scan.insert(
-            name_to_u16(&v.name),
-            Valve2 {
-                name: name_to_u16(&v.name),
-                tunnels: v.tunnels.iter().map(|x| name_to_u16(x)).collect(),
-                rate: v.rate,
-            },
-        );
-    }
+    let scan: aoc::FxHashMap<u16, Valve2> = data
+        .iter()
+        .map(|v| {
+            (
+                name_to_u16(&v.name),
+                Valve2 {
+                    name: name_to_u16(&v.name),
+                    tunnels: v.tunnels.iter().map(|x| name_to_u16(x)).collect(),
+                    rate: v.rate,
+                },
+            )
+        })
+        .collect();
     walk2(name_to_u16("AA"), &scan, 1)
 }
 

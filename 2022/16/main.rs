@@ -13,7 +13,7 @@ struct Valve {
     tunnels: Vec<u8>,
 }
 
-type Parsed = (Vec<Valve>, aoc::FxHashMap<(u8, u8), i64>);
+type Parsed = (Vec<Valve>, Vec<i64>);
 type Answer = i64;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
@@ -22,15 +22,10 @@ struct State {
     opened: [i64; 64],
 }
 
-fn walk(
-    pos: u8,
-    scan: &[Valve],
-    paths: &aoc::FxHashMap<(u8, u8), i64>,
-    minute: i64,
-    time_cap: i64,
-) -> i64 {
+fn walk(pos: u8, scan: &[Valve], paths: &[i64], minute: i64, time_cap: i64) -> i64 {
     let mut frontier = BinaryHeap::new();
     frontier.push((
+        0,
         0,
         State {
             pos,
@@ -40,19 +35,11 @@ fn walk(
     ));
     let mut visited = HashSet::new();
     let mut best = 0;
-    while let Some((escore, state, minute)) = frontier.pop() {
+    while let Some((escore, score, state, minute)) = frontier.pop() {
         if escore < best {
             break;
         }
         if minute == time_cap {
-            let score: i64 = state
-                .opened
-                .iter()
-                .take(scan.len())
-                .enumerate()
-                .filter(|(_, v)| **v != 0)
-                .map(|(v, t)| (time_cap - t) * scan[v].rate)
-                .sum();
             if score > best {
                 best = score;
             }
@@ -69,32 +56,28 @@ fn walk(
                 let mut o = state.opened;
                 let mut tl = minute;
                 // Should/can we open?
+                let mut sc = 0;
                 if x == 1 && o[state.pos as usize] == 0 {
                     o[state.pos as usize] = tl;
+                    sc += (time_cap - tl) * scan[state.pos as usize].rate;
                     tl += 1;
                 }
                 if tl > time_cap {
                     continue;
                 }
-                let score: i64 = o
-                    .iter()
-                    .take(scan.len())
-                    .enumerate()
-                    .filter(|(_, v)| **v != 0)
-                    .map(|(v, t)| (time_cap - t) * scan[v].rate)
-                    .sum();
+                let new_score: i64 = score + sc;
                 let e: i64 = scan
                     .iter()
                     .map(|v| v.name)
                     // Filter already opened
                     .filter(|x| o[*x as usize] == 0)
                     // Filter unreachable
-                    .map(|x| (x, *paths.get(&(*t, x)).unwrap()))
+                    .map(|x| (x, paths[*t as usize * 256 + x as usize]))
                     .map(|(v, d)| (time_cap - (tl + 1 + d)).max(0) * scan[v as usize].rate)
                     .sum();
                 let ns = State { pos: *t, opened: o };
                 if visited.insert(ns.clone()) {
-                    let next = (score + e, ns, tl + 1);
+                    let next = (new_score + e, new_score, ns, tl + 1);
                     frontier.push(next);
                 }
             }
@@ -122,15 +105,10 @@ impl PartialOrd for State2 {
     }
 }
 
-fn walk2(
-    pos: u8,
-    scan: &[Valve],
-    paths: &aoc::FxHashMap<(u8, u8), i64>,
-    minute: i64,
-    time_cap: i64,
-) -> i64 {
+fn walk2(pos: u8, scan: &[Valve], paths: &[i64], minute: i64, time_cap: i64) -> i64 {
     let mut frontier = BinaryHeap::new();
     frontier.push((
+        0,
         0,
         State2 {
             posa: pos,
@@ -141,19 +119,11 @@ fn walk2(
     ));
     let mut visited = HashSet::new();
     let mut best = 0;
-    while let Some((escore, state, minute)) = frontier.pop() {
+    while let Some((escore, score, state, minute)) = frontier.pop() {
         if escore < best {
             break;
         }
         if minute == time_cap {
-            let score: i64 = state
-                .opened
-                .iter()
-                .take(scan.len())
-                .enumerate()
-                .filter(|(_, v)| **v != 0)
-                .map(|(v, t)| (time_cap - *t) * scan[v].rate)
-                .sum();
             if score > best {
                 best = score;
             }
@@ -187,22 +157,19 @@ fn walk2(
                 }
                 let mut o = state.opened;
                 // Should we open?
+                let mut sc = 0;
                 if oa {
                     o[*ta as usize] = minute;
+                    sc += (time_cap - minute) * scan[*ta as usize].rate;
                 }
                 if ob {
                     o[*tb as usize] = minute;
+                    sc += (time_cap - minute) * scan[*tb as usize].rate;
                 }
                 if minute + 1 > time_cap {
                     continue;
                 }
-                let score: i64 = o
-                    .iter()
-                    .take(scan.len())
-                    .enumerate()
-                    .filter(|(_, v)| **v != 0)
-                    .map(|(v, t)| (time_cap - *t) * scan[v].rate)
-                    .sum();
+                let new_score: i64 = score + sc;
                 let e: i64 = scan
                     .iter()
                     .map(|v| v.name)
@@ -212,10 +179,8 @@ fn walk2(
                     .map(|x| {
                         (
                             x,
-                            *paths
-                                .get(&(*ta, x))
-                                .unwrap()
-                                .min(paths.get(&(*tb, x)).unwrap()),
+                            paths[*ta as usize * 256 + x as usize]
+                                .min(paths[*tb as usize * 256 + x as usize]),
                         )
                     })
                     .map(|(v, d)| (time_cap - (minute + 1 + d)).max(0) * scan[v as usize].rate)
@@ -226,7 +191,7 @@ fn walk2(
                     opened: o,
                 };
                 if visited.insert(ns.clone()) {
-                    let next = (score + e, ns, minute + 1);
+                    let next = (new_score + e, new_score, ns, minute + 1);
                     frontier.push(next);
                 }
             }
@@ -235,7 +200,7 @@ fn walk2(
     best
 }
 
-fn get_paths(scan: &[Valve]) -> aoc::FxHashMap<(u8, u8), i64> {
+fn get_paths(scan: &[Valve]) -> Vec<i64> {
     // Find all distances
     let mut graph = UnGraphMap::new();
     for v in scan {
@@ -245,14 +210,16 @@ fn get_paths(scan: &[Valve]) -> aoc::FxHashMap<(u8, u8), i64> {
             graph.add_edge(gp, gnp, 1);
         }
     }
-    scan.iter()
-        .flat_map(|n| {
-            let res = aoc::algo::dijkstra(&graph, n.name, None, |_| 1);
-            res.iter()
-                .map(|(nn, d)| ((n.name, *nn), *d as i64))
-                .collect::<Vec<_>>()
-        })
-        .collect()
+    let mut dist = vec![0; 256 * 256];
+    for ((a, b), d) in scan.iter().flat_map(|n| {
+        let res = aoc::algo::dijkstra(&graph, n.name, None, |_| 1);
+        res.iter()
+            .map(|(nn, d)| ((n.name, *nn), *d as i64))
+            .collect::<Vec<_>>()
+    }) {
+        dist[a as usize * 256 + b as usize] = d;
+    }
+    dist
 }
 
 fn part1(data: &Parsed) -> Answer {

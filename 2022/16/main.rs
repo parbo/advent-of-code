@@ -188,10 +188,10 @@ fn walk2(
                 let mut o = state.opened;
                 // Should we open?
                 if oa {
-                    o[state.posa as usize] = minute;
+                    o[*ta as usize] = minute;
                 }
                 if ob {
-                    o[state.posb as usize] = minute;
+                    o[*tb as usize] = minute;
                 }
                 if minute + 1 > time_cap {
                     continue;

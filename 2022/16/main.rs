@@ -108,11 +108,18 @@ fn walk(pos: &str, scan: &HashMap<String, Valve>, minute: i64) -> i64 {
     best
 }
 
+#[derive(Debug, Clone)]
+struct Valve2 {
+    name: u16,
+    rate: i64,
+    tunnels: Vec<u16>,
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 struct State2 {
-    posa: String,
-    posb: String,
-    opened: BTreeMap<String, i64>,
+    posa: u16,
+    posb: u16,
+    opened: BTreeMap<u16, i64>,
 }
 
 impl Ord for State2 {
@@ -127,13 +134,13 @@ impl PartialOrd for State2 {
     }
 }
 
-fn walk2(pos: &str, scan: &HashMap<String, Valve>, minute: i64) -> i64 {
+fn walk2(pos: u16, scan: &HashMap<u16, Valve2>, minute: i64) -> i64 {
     let mut frontier = BinaryHeap::new();
     frontier.push((
         0,
         State2 {
-            posa: pos.to_string(),
-            posb: pos.to_string(),
+            posa: pos,
+            posb: pos,
             opened: BTreeMap::new(),
         },
         minute,
@@ -189,10 +196,10 @@ fn walk2(pos: &str, scan: &HashMap<String, Valve>, minute: i64) -> i64 {
                 let mut o = state.opened.clone();
                 // Should we open?
                 if oa {
-                    o.insert(state.posa.clone(), minute);
+                    o.insert(state.posa, minute);
                 }
                 if ob {
-                    o.insert(state.posb.clone(), minute);
+                    o.insert(state.posb, minute);
                 }
                 if minute + 1 > 26 {
                     continue;
@@ -207,16 +214,14 @@ fn walk2(pos: &str, scan: &HashMap<String, Valve>, minute: i64) -> i64 {
                     .map(|v| (26 - (minute + 1)) * scan.get(v).unwrap().rate)
                     .sum();
                 let ns = State2 {
-                    posa: ta.clone(),
-                    posb: tb.clone(),
+                    posa: *ta,
+                    posb: *tb,
                     opened: o,
                 };
-                if !gscore.contains_key(&ns)  {
-                    if visited.insert((minute + 1, ns.clone())) {
-                        let next = (score + e, ns, minute + 1);
-                        // println!("next: {:?}, {}, {}", next, score, e);
-                        frontier.push(next);
-                    }
+                if !gscore.contains_key(&ns) && visited.insert((minute + 1, ns.clone())) {
+                    let next = (score + e, ns, minute + 1);
+                    // println!("next: {:?}, {}, {}", next, score, e);
+                    frontier.push(next);
                 }
             }
         }
@@ -233,12 +238,24 @@ fn part1(data: &Parsed) -> Answer {
     walk("AA", &scan, 1)
 }
 
+fn name_to_u16(name: &str) -> u16 {
+    ((name.chars().nth(0).unwrap() as u8) as u16) << 8
+        | ((name.chars().nth(1).unwrap() as u8) as u16)
+}
+
 fn part2(data: &Parsed) -> Answer {
     let mut scan = HashMap::new();
     for v in data {
-        scan.insert(v.name.clone(), v.clone());
+        scan.insert(
+            name_to_u16(&v.name),
+            Valve2 {
+                name: name_to_u16(&v.name),
+                tunnels: v.tunnels.iter().map(|x| name_to_u16(x)).collect(),
+                rate: v.rate,
+            },
+        );
     }
-    walk2("AA", &scan, 1)
+    walk2(name_to_u16("AA"), &scan, 1)
 }
 
 fn parse(lines: &[String]) -> Parsed {

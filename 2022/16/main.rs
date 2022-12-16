@@ -1,6 +1,6 @@
 use std::{
     cmp::Ordering,
-    collections::{BTreeMap, BinaryHeap, HashSet},
+    collections::{BTreeSet, BinaryHeap, HashSet},
     iter::*,
 };
 
@@ -8,36 +8,24 @@ use aoc::UnGraphMap;
 
 #[derive(Debug, Clone)]
 struct Valve {
-    name: u16,
+    name: u8,
     rate: i64,
-    tunnels: Vec<u16>,
+    tunnels: Vec<u8>,
 }
 
-type Parsed = (aoc::FxHashMap<u16, Valve>, aoc::FxHashMap<(u16, u16), i64>);
+type Parsed = (Vec<Valve>, aoc::FxHashMap<(u8, u8), i64>);
 type Answer = i64;
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
 struct State {
-    pos: u16,
-    opened: BTreeMap<u16, i64>,
-}
-
-impl Ord for State {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.pos.cmp(&other.pos)
-    }
-}
-
-impl PartialOrd for State {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
+    pos: u8,
+    opened: [i64; 64],
 }
 
 fn walk(
-    pos: u16,
-    scan: &aoc::FxHashMap<u16, Valve>,
-    paths: &aoc::FxHashMap<(u16, u16), i64>,
+    pos: u8,
+    scan: &[Valve],
+    paths: &aoc::FxHashMap<(u8, u8), i64>,
     minute: i64,
     time_cap: i64,
 ) -> i64 {
@@ -46,7 +34,7 @@ fn walk(
         0,
         State {
             pos,
-            opened: BTreeMap::new(),
+            opened: [0; 64],
         },
         minute,
     ));
@@ -60,14 +48,17 @@ fn walk(
             let score: i64 = state
                 .opened
                 .iter()
-                .map(|(v, t)| (time_cap - t) * scan.get(v).unwrap().rate)
+                .take(scan.len())
+                .enumerate()
+                .filter(|(_, v)| **v != 0)
+                .map(|(v, t)| (time_cap - t) * scan[v].rate)
                 .sum();
             if score > best {
                 best = score;
             }
             continue;
         }
-        let v = scan.get(&state.pos).unwrap();
+        let v = &scan[state.pos as usize];
         // dbg!(v);
         for t in &v.tunnels {
             for x in 0..2 {
@@ -75,11 +66,11 @@ fn walk(
                     // Can't open
                     continue;
                 }
-                let mut o = state.opened.clone();
+                let mut o = state.opened;
                 let mut tl = minute;
                 // Should/can we open?
-                if x == 1 && !o.contains_key(&v.name) {
-                    o.insert(state.pos, tl);
+                if x == 1 && o[state.pos as usize] == 0 {
+                    o[state.pos as usize] = tl;
                     tl += 1;
                 }
                 if tl > time_cap {
@@ -87,15 +78,19 @@ fn walk(
                 }
                 let score: i64 = o
                     .iter()
-                    .map(|(v, t)| (time_cap - t) * scan.get(v).unwrap().rate)
+                    .take(scan.len())
+                    .enumerate()
+                    .filter(|(_, v)| **v != 0)
+                    .map(|(v, t)| (time_cap - t) * scan[v].rate)
                     .sum();
                 let e: i64 = scan
-                    .keys()
+                    .iter()
+                    .map(|v| v.name)
                     // Filter already opened
-                    .filter(|x| !o.contains_key(*x))
+                    .filter(|x| o[*x as usize] == 0)
                     // Filter unreachable
-                    .map(|x| (x, *paths.get(&(*t, *x)).unwrap()))
-                    .map(|(v, d)| (time_cap - (tl + 1 + d)).max(0) * scan.get(v).unwrap().rate)
+                    .map(|x| (x, *paths.get(&(*t, x)).unwrap()))
+                    .map(|(v, d)| (time_cap - (tl + 1 + d)).max(0) * scan[v as usize].rate)
                     .sum();
                 let ns = State { pos: *t, opened: o };
                 if visited.insert(ns.clone()) {
@@ -110,9 +105,9 @@ fn walk(
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 struct State2 {
-    posa: u16,
-    posb: u16,
-    opened: BTreeMap<u16, i64>,
+    posa: u8,
+    posb: u8,
+    opened: [i64; 64],
 }
 
 impl Ord for State2 {
@@ -128,9 +123,9 @@ impl PartialOrd for State2 {
 }
 
 fn walk2(
-    pos: u16,
-    scan: &aoc::FxHashMap<u16, Valve>,
-    paths: &aoc::FxHashMap<(u16, u16), i64>,
+    pos: u8,
+    scan: &[Valve],
+    paths: &aoc::FxHashMap<(u8, u8), i64>,
     minute: i64,
     time_cap: i64,
 ) -> i64 {
@@ -140,7 +135,7 @@ fn walk2(
         State2 {
             posa: pos,
             posb: pos,
-            opened: BTreeMap::new(),
+            opened: [0; 64],
         },
         minute,
     ));
@@ -154,15 +149,18 @@ fn walk2(
             let score: i64 = state
                 .opened
                 .iter()
-                .map(|(v, t)| (time_cap - t) * scan.get(v).unwrap().rate)
+                .take(scan.len())
+                .enumerate()
+                .filter(|(_, v)| **v != 0)
+                .map(|(v, t)| (time_cap - *t) * scan[v].rate)
                 .sum();
             if score > best {
                 best = score;
             }
             continue;
         }
-        let va = scan.get(&state.posa).unwrap();
-        let vb = scan.get(&state.posb).unwrap();
+        let va = &scan[state.posa as usize];
+        let vb = &scan[state.posb as usize];
         for (ta, oa) in va
             .tunnels
             .iter()
@@ -179,44 +177,48 @@ fn walk2(
                     // Don't go to the same place and open
                     continue;
                 }
-                if oa && (va.rate == 0 || state.opened.contains_key(ta)) {
+                if oa && (va.rate == 0 || state.opened[*ta as usize] != 0) {
                     // Can't open
                     continue;
                 }
-                if ob && (vb.rate == 0 || state.opened.contains_key(tb)) {
+                if ob && (vb.rate == 0 || state.opened[*tb as usize] != 0) {
                     // Can't open
                     continue;
                 }
-                let mut o = state.opened.clone();
+                let mut o = state.opened;
                 // Should we open?
                 if oa {
-                    o.insert(state.posa, minute);
+                    o[state.posa as usize] = minute;
                 }
                 if ob {
-                    o.insert(state.posb, minute);
+                    o[state.posb as usize] = minute;
                 }
                 if minute + 1 > time_cap {
                     continue;
                 }
                 let score: i64 = o
                     .iter()
-                    .map(|(v, t)| (time_cap - t) * scan.get(v).unwrap().rate)
+                    .take(scan.len())
+                    .enumerate()
+                    .filter(|(_, v)| **v != 0)
+                    .map(|(v, t)| (time_cap - *t) * scan[v].rate)
                     .sum();
                 let e: i64 = scan
-                    .keys()
+                    .iter()
+                    .map(|v| v.name)
                     // Filter already opened
-                    .filter(|x| !o.contains_key(*x))
+                    .filter(|x| o[*x as usize] == 0)
                     // Filter unreachable
                     .map(|x| {
                         (
                             x,
                             *paths
-                                .get(&(*ta, *x))
+                                .get(&(*ta, x))
                                 .unwrap()
-                                .min(paths.get(&(*tb, *x)).unwrap()),
+                                .min(paths.get(&(*tb, x)).unwrap()),
                         )
                     })
-                    .map(|(v, d)| (time_cap - (minute + 1 + d)).max(0) * scan.get(v).unwrap().rate)
+                    .map(|(v, d)| (time_cap - (minute + 1 + d)).max(0) * scan[v as usize].rate)
                     .sum();
                 let ns = State2 {
                     posa: *ta,
@@ -233,37 +235,32 @@ fn walk2(
     best
 }
 
-fn get_paths(scan: &aoc::FxHashMap<u16, Valve>) -> aoc::FxHashMap<(u16, u16), i64> {
+fn get_paths(scan: &[Valve]) -> aoc::FxHashMap<(u8, u8), i64> {
     // Find all distances
     let mut graph = UnGraphMap::new();
-    for (n, v) in scan {
-        let gp = graph.add_node(*n);
+    for v in scan {
+        let gp = graph.add_node(v.name);
         for t in &v.tunnels {
             let gnp = graph.add_node(*t);
             graph.add_edge(gp, gnp, 1);
         }
     }
-    scan.keys()
+    scan.iter()
         .flat_map(|n| {
-            let res = aoc::algo::dijkstra(&graph, *n, None, |_| 1);
+            let res = aoc::algo::dijkstra(&graph, n.name, None, |_| 1);
             res.iter()
-                .map(|(nn, d)| ((*n, *nn), *d))
+                .map(|(nn, d)| ((n.name, *nn), *d as i64))
                 .collect::<Vec<_>>()
         })
         .collect()
 }
 
 fn part1(data: &Parsed) -> Answer {
-    walk(name_to_u16("AA"), &data.0, &data.1, 1, 30)
+    walk(0, &data.0, &data.1, 1, 30)
 }
 
 fn part2(data: &Parsed) -> Answer {
-    walk2(name_to_u16("AA"), &data.0, &data.1, 1, 26)
-}
-
-fn name_to_u16(name: &str) -> u16 {
-    let mut c = name.chars();
-    ((c.next().unwrap() as u8) as u16) << 8 | ((c.next().unwrap() as u8) as u16)
+    walk2(0, &data.0, &data.1, 1, 26)
 }
 
 fn parse(lines: &[String]) -> Parsed {
@@ -272,20 +269,36 @@ fn parse(lines: &[String]) -> Parsed {
         .map(|x| {
             let p = aoc::split_ch(x, ';');
             let pp = aoc::split_w(p[0]);
-            let name = name_to_u16(pp[1]);
+            let name = pp[1];
             let rate = pp[4][5..].parse::<i64>().unwrap();
-            let tunnels = aoc::split_ch(&p[1][22..], ',')
-                .iter()
-                .map(|x| name_to_u16(x))
-                .collect();
-            Valve {
-                name,
-                rate,
-                tunnels,
-            }
+            let tunnels = aoc::split_ch(&p[1][22..], ',');
+            (name, rate, tunnels)
         })
         .collect();
-    let scan: aoc::FxHashMap<u16, Valve> = data.iter().map(|v| (v.name, v.clone())).collect();
+    let names: BTreeSet<_> = data.iter().map(|(name, _, _)| *name).collect();
+    let get_name = |name: &str| {
+        names
+            .iter()
+            .enumerate()
+            .find(|(_, n)| **n == name)
+            .unwrap()
+            .0 as u8
+    };
+
+    let mut scan: Vec<Valve> = data
+        .iter()
+        .map(|v| Valve {
+            name: get_name(v.0),
+            rate: v.1,
+            tunnels: v.2.iter().map(|t| get_name(t)).collect(),
+        })
+        .collect();
+    // Scan must be indexable by name
+    scan.sort_by(|a, b| a.name.cmp(&b.name));
+    for (i, v) in scan.iter().enumerate() {
+        assert_eq!(i as u8, v.name);
+    }
+    assert_eq!(get_name("AA"), 0);
     let paths = get_paths(&scan);
     (scan, paths)
 }

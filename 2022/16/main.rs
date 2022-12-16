@@ -8,9 +8,9 @@ use aoc::UnGraphMap;
 
 #[derive(Debug, Clone)]
 struct Valve {
-    name: String,
+    name: u16,
     rate: i64,
-    tunnels: Vec<String>,
+    tunnels: Vec<u16>,
 }
 
 type ParsedItem = Valve;
@@ -19,8 +19,8 @@ type Answer = i64;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 struct State {
-    pos: String,
-    opened: BTreeMap<String, i64>,
+    pos: u16,
+    opened: BTreeMap<u16, i64>,
 }
 
 impl Ord for State {
@@ -35,12 +35,17 @@ impl PartialOrd for State {
     }
 }
 
-fn walk(pos: &str, scan: &HashMap<String, Valve>, minute: i64) -> i64 {
+fn walk(
+    pos: u16,
+    scan: &aoc::FxHashMap<u16, Valve>,
+    _paths: aoc::FxHashMap<(u16, u16), i64>,
+    minute: i64,
+) -> i64 {
     let mut frontier = BinaryHeap::new();
     frontier.push((
         0,
         State {
-            pos: pos.to_string(),
+            pos,
             opened: BTreeMap::new(),
         },
         minute,
@@ -84,10 +89,6 @@ fn walk(pos: &str, scan: &HashMap<String, Valve>, minute: i64) -> i64 {
                 if tl > 30 {
                     continue;
                 }
-                let ns = State {
-                    pos: t.clone(),
-                    opened: o.clone(),
-                };
                 let score: i64 = o
                     .iter()
                     .map(|(v, t)| (30 - t) * scan.get(v).unwrap().rate)
@@ -97,6 +98,7 @@ fn walk(pos: &str, scan: &HashMap<String, Valve>, minute: i64) -> i64 {
                     .filter(|x| !o.contains_key(*x))
                     .map(|v| (30 - (tl + 1)) * scan.get(v).unwrap().rate)
                     .sum();
+                let ns = State { pos: *t, opened: o };
                 if !gscore.contains_key(&ns) && !visited.contains(&(tl + 1, ns.clone())) {
                     visited.insert((tl + 1, ns.clone()));
                     let next = (score + e, ns, tl + 1);
@@ -108,13 +110,6 @@ fn walk(pos: &str, scan: &HashMap<String, Valve>, minute: i64) -> i64 {
     }
     dbg!(gscore.iter().max_by(|a, b| a.1.cmp(b.1)).unwrap());
     best
-}
-
-#[derive(Debug, Clone)]
-struct Valve2 {
-    name: u16,
-    rate: i64,
-    tunnels: Vec<u16>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -136,24 +131,12 @@ impl PartialOrd for State2 {
     }
 }
 
-fn walk2(pos: u16, scan: &aoc::FxHashMap<u16, Valve2>, minute: i64) -> i64 {
-    // Find all distances
-    let mut graph = UnGraphMap::new();
-    for (n, v) in scan {
-        let gp = graph.add_node(*n);
-        for t in &v.tunnels {
-            let gnp = graph.add_node(*t);
-            graph.add_edge(gp, gnp, 1);
-        }
-    }
-    let mut paths = HashMap::new();
-    for n in scan.keys() {
-        let res = aoc::algo::dijkstra(&graph, *n, None, |_| 1);
-        for (nn, d) in res {
-            paths.insert((n, nn), d);
-        }
-    }
-
+fn walk2(
+    pos: u16,
+    scan: &aoc::FxHashMap<u16, Valve>,
+    paths: aoc::FxHashMap<(u16, u16), i64>,
+    minute: i64,
+) -> i64 {
     let mut frontier = BinaryHeap::new();
     frontier.push((
         0,
@@ -239,9 +222,9 @@ fn walk2(pos: u16, scan: &aoc::FxHashMap<u16, Valve2>, minute: i64) -> i64 {
                         (
                             x,
                             *paths
-                                .get(&(ta, *x))
+                                .get(&(*ta, *x))
                                 .unwrap()
-                                .min(paths.get(&(tb, *x)).unwrap()),
+                                .min(paths.get(&(*tb, *x)).unwrap()),
                         )
                     })
                     .map(|(v, d)| (26 - (minute + 1 + d)).max(0) * scan.get(v).unwrap().rate)
@@ -263,12 +246,29 @@ fn walk2(pos: u16, scan: &aoc::FxHashMap<u16, Valve2>, minute: i64) -> i64 {
     best
 }
 
-fn part1(data: &Parsed) -> Answer {
-    let mut scan = HashMap::new();
-    for v in data {
-        scan.insert(v.name.clone(), v.clone());
+fn get_paths(scan: &aoc::FxHashMap<u16, Valve>) -> aoc::FxHashMap<(u16, u16), i64> {
+    // Find all distances
+    let mut graph = UnGraphMap::new();
+    for (n, v) in scan {
+        let gp = graph.add_node(*n);
+        for t in &v.tunnels {
+            let gnp = graph.add_node(*t);
+            graph.add_edge(gp, gnp, 1);
+        }
     }
-    walk("AA", &scan, 1)
+    scan.keys()
+        .flat_map(|n| {
+            let res = aoc::algo::dijkstra(&graph, *n, None, |_| 1);
+            res.iter()
+                .map(|(nn, d)| ((*n, *nn), *d))
+                .collect::<Vec<_>>()
+        })
+        .collect()
+}
+
+fn part1(data: &Parsed) -> Answer {
+    let scan: aoc::FxHashMap<u16, Valve> = data.iter().map(|v| (v.name, v.clone())).collect();
+    walk(name_to_u16("AA"), &scan, get_paths(&scan), 1)
 }
 
 fn name_to_u16(name: &str) -> u16 {
@@ -277,20 +277,8 @@ fn name_to_u16(name: &str) -> u16 {
 }
 
 fn part2(data: &Parsed) -> Answer {
-    let scan: aoc::FxHashMap<u16, Valve2> = data
-        .iter()
-        .map(|v| {
-            (
-                name_to_u16(&v.name),
-                Valve2 {
-                    name: name_to_u16(&v.name),
-                    tunnels: v.tunnels.iter().map(|x| name_to_u16(x)).collect(),
-                    rate: v.rate,
-                },
-            )
-        })
-        .collect();
-    walk2(name_to_u16("AA"), &scan, 1)
+    let scan: aoc::FxHashMap<u16, Valve> = data.iter().map(|v| (v.name, v.clone())).collect();
+    walk2(name_to_u16("AA"), &scan, get_paths(&scan), 1)
 }
 
 fn parse(lines: &[String]) -> Parsed {
@@ -299,11 +287,11 @@ fn parse(lines: &[String]) -> Parsed {
         .map(|x| {
             let p = aoc::split_ch(x, ';');
             let pp = aoc::split_w(p[0]);
-            let name = pp[1].to_string();
+            let name = name_to_u16(pp[1]);
             let rate = pp[4][5..].parse::<i64>().unwrap();
             let tunnels = aoc::split_ch(&p[1][22..], ',')
                 .iter()
-                .map(|x| x.to_string())
+                .map(|x| name_to_u16(x))
                 .collect();
             Valve {
                 name,

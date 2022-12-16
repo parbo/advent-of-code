@@ -4,6 +4,8 @@ use std::{
     iter::*,
 };
 
+use aoc::UnGraphMap;
+
 #[derive(Debug, Clone)]
 struct Valve {
     name: String,
@@ -135,6 +137,23 @@ impl PartialOrd for State2 {
 }
 
 fn walk2(pos: u16, scan: &aoc::FxHashMap<u16, Valve2>, minute: i64) -> i64 {
+    // Find all distances
+    let mut graph = UnGraphMap::new();
+    for (n, v) in scan {
+        let gp = graph.add_node(*n);
+        for t in &v.tunnels {
+            let gnp = graph.add_node(*t);
+            graph.add_edge(gp, gnp, 1);
+        }
+    }
+    let mut paths = HashMap::new();
+    for n in scan.keys() {
+        let res = aoc::algo::dijkstra(&graph, *n, None, |_| 1);
+        for (nn, d) in res {
+            paths.insert((n, nn), d);
+        }
+    }
+
     let mut frontier = BinaryHeap::new();
     frontier.push((
         0,
@@ -210,7 +229,16 @@ fn walk2(pos: u16, scan: &aoc::FxHashMap<u16, Valve2>, minute: i64) -> i64 {
                     .sum();
                 let e: i64 = scan
                     .keys()
+                    // Filter already opened
                     .filter(|x| !o.contains_key(*x))
+                    // Filter unreachable
+                    .filter(|x| {
+                        *paths
+                            .get(&(ta, **x))
+                            .unwrap()
+                            .min(paths.get(&(tb, **x)).unwrap())
+                            <= (26 - (minute + 1))
+                    })
                     .map(|v| (26 - (minute + 1)) * scan.get(v).unwrap().rate)
                     .sum();
                 let ns = State2 {
@@ -222,6 +250,9 @@ fn walk2(pos: u16, scan: &aoc::FxHashMap<u16, Valve2>, minute: i64) -> i64 {
                     let next = (score + e, ns, minute + 1);
                     // println!("next: {:?}, {}, {}", next, score, e);
                     frontier.push(next);
+                    if frontier.len() % 10000 == 0 {
+                        println!("queue size: {}", frontier.len());
+                    }
                 }
             }
         }

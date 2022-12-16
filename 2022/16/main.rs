@@ -168,7 +168,10 @@ fn walk2(pos: u16, scan: &aoc::FxHashMap<u16, Valve2>, minute: i64) -> i64 {
     let mut gscore: HashMap<State2, i64> = HashMap::new();
     let mut best = 0;
     while let Some((escore, state, minute)) = frontier.pop() {
-        // println!("{}, {:?}, {}", escore, state, minute);
+        if frontier.len() % 10000 == 0 {
+            println!("queue size: {}", frontier.len());
+            println!("{}, {:?}, {}", escore, state, minute);
+        }
         if escore < best {
             break;
         }
@@ -232,14 +235,16 @@ fn walk2(pos: u16, scan: &aoc::FxHashMap<u16, Valve2>, minute: i64) -> i64 {
                     // Filter already opened
                     .filter(|x| !o.contains_key(*x))
                     // Filter unreachable
-                    .filter(|x| {
-                        *paths
-                            .get(&(ta, **x))
-                            .unwrap()
-                            .min(paths.get(&(tb, **x)).unwrap())
-                            <= (26 - (minute + 1))
+                    .map(|x| {
+                        (
+                            x,
+                            *paths
+                                .get(&(ta, *x))
+                                .unwrap()
+                                .min(paths.get(&(tb, *x)).unwrap()),
+                        )
                     })
-                    .map(|v| (26 - (minute + 1)) * scan.get(v).unwrap().rate)
+                    .map(|(v, d)| (26 - (minute + 1 + d)).max(0) * scan.get(v).unwrap().rate)
                     .sum();
                 let ns = State2 {
                     posa: *ta,
@@ -250,9 +255,6 @@ fn walk2(pos: u16, scan: &aoc::FxHashMap<u16, Valve2>, minute: i64) -> i64 {
                     let next = (score + e, ns, minute + 1);
                     // println!("next: {:?}, {}, {}", next, score, e);
                     frontier.push(next);
-                    if frontier.len() % 10000 == 0 {
-                        println!("queue size: {}", frontier.len());
-                    }
                 }
             }
         }

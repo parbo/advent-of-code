@@ -35,7 +35,6 @@ impl PartialOrd for State {
 
 fn walk(pos: &str, scan: &HashMap<String, Valve>, minute: i64) -> i64 {
     let mut frontier = BinaryHeap::new();
-    let mut visited: HashSet<State> = HashSet::new();
     frontier.push((
         0,
         State {
@@ -44,23 +43,26 @@ fn walk(pos: &str, scan: &HashMap<String, Valve>, minute: i64) -> i64 {
         },
         minute,
     ));
+    let mut visited = HashSet::new();
     let mut gscore: HashMap<State, i64> = HashMap::new();
-    while let Some((_score, state, minute)) = frontier.pop() {
-        if visited.contains(&state) {
-            continue;
+    let mut best = 0;
+    while let Some((escore, state, minute)) = frontier.pop() {
+        // println!("{}, {:?}, {}", escore, state, minute);
+        if escore < best {
+            break;
         }
-        println!("{}, {:?}, {}", _score, state, minute);
         if minute == 30 {
             let score: i64 = state
                 .opened
                 .iter()
-                .map(|(v, t)| (31 - t) * scan.get(v).unwrap().rate)
+                .map(|(v, t)| (30 - t) * scan.get(v).unwrap().rate)
                 .sum();
-            println!("score: {}, {}", score, _score);
-            if score > _score {
-                println!("{:?}", state);
-            }
-            return score;
+            // if score > best {
+            // println!("{}, {:?}", score, state);
+            // }
+            best = best.max(score);
+            gscore.insert(state.clone(), score);
+            continue;
         }
         let v = scan.get(&state.pos).unwrap();
         // dbg!(v);
@@ -84,29 +86,26 @@ fn walk(pos: &str, scan: &HashMap<String, Valve>, minute: i64) -> i64 {
                     pos: t.clone(),
                     opened: o.clone(),
                 };
-                let gs =
-                    gscore.get(&state).unwrap_or(&0) + (31 - (tl + 1)) * scan.get(t).unwrap().rate;
-                let e = gscore.entry(ns.clone()).or_default();
-                if gs > *e {
-                    *e = gs;
-                    // Overestimate score by opening all remaining valves now
-                    let h = scan
-                        .keys()
-                        .filter(|vvv| !o.contains_key(*vvv))
-                        .map(|v| (31 - (tl + 1)) * scan.get(v).unwrap().rate)
-                        .sum::<i64>();
-                    let fscore = gs + h;
-                    //                println!("next: {:?}", next);
-                    if !visited.contains(&ns) {
-                        let next = (fscore, ns, tl + 1);
-                        frontier.push(next);
-                    }
+                let score: i64 = o
+                    .iter()
+                    .map(|(v, t)| (30 - t) * scan.get(v).unwrap().rate)
+                    .sum();
+                let e: i64 = scan
+                    .keys()
+                    .filter(|x| !o.contains_key(*x))
+                    .map(|v| (30 - (tl + 1)) * scan.get(v).unwrap().rate)
+                    .sum();
+                if !gscore.contains_key(&ns) && !visited.contains(&(tl + 1, ns.clone())) {
+                    visited.insert((tl + 1, ns.clone()));
+                    let next = (score + e, ns, tl + 1);
+                    // println!("next: {:?}, {}, {}", next, score, e);
+                    frontier.push(next);
                 }
             }
         }
-        visited.insert(state);
     }
-    panic!();
+    dbg!(gscore.iter().max_by(|a, b| a.1.cmp(b.1)).unwrap());
+    best
 }
 
 fn part1(data: &Parsed) -> Answer {

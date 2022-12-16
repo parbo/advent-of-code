@@ -79,27 +79,113 @@ fn walk(pos: &str, scan: &HashMap<String, Valve>, minute: i64) -> i64 {
                     o.insert(state.pos.clone(), tl);
                     tl += 1;
                 }
-                if tl > 30 {
-                    continue;
-                }
-                let ns = State {
-                    pos: t.clone(),
-                    opened: o.clone(),
-                };
-                let score: i64 = o
-                    .iter()
-                    .map(|(v, t)| (30 - t) * scan.get(v).unwrap().rate)
-                    .sum();
-                let e: i64 = scan
-                    .keys()
-                    .filter(|x| !o.contains_key(*x))
-                    .map(|v| (30 - (tl + 1)) * scan.get(v).unwrap().rate)
-                    .sum();
-                if !gscore.contains_key(&ns) && !visited.contains(&(tl + 1, ns.clone())) {
-                    visited.insert((tl + 1, ns.clone()));
-                    let next = (score + e, ns, tl + 1);
-                    // println!("next: {:?}, {}, {}", next, score, e);
-                    frontier.push(next);
+            }
+        }
+    }
+    dbg!(gscore.iter().max_by(|a, b| a.1.cmp(b.1)).unwrap());
+    best
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+struct State2 {
+    posa: String,
+    posb: String,
+    opened: BTreeMap<String, i64>,
+}
+
+impl Ord for State2 {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.posa.cmp(&other.posa).then(self.posb.cmp(&other.posb))
+    }
+}
+
+impl PartialOrd for State2 {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+fn walk2(pos: &str, scan: &HashMap<String, Valve>, minute: i64) -> i64 {
+    let mut frontier = BinaryHeap::new();
+    frontier.push((
+        0,
+        State2 {
+            posa: pos.to_string(),
+            posb: pos.to_string(),
+            opened: BTreeMap::new(),
+        },
+        minute,
+    ));
+    let mut visited = HashSet::new();
+    let mut gscore: HashMap<State2, i64> = HashMap::new();
+    let mut best = 0;
+    while let Some((escore, state, minute)) = frontier.pop() {
+        // println!("{}, {:?}, {}", escore, state, minute);
+        if escore < best {
+            break;
+        }
+        if minute == 30 {
+            let score: i64 = state
+                .opened
+                .iter()
+                .map(|(v, t)| (30 - t) * scan.get(v).unwrap().rate)
+                .sum();
+            // if score > best {
+            // println!("{}, {:?}", score, state);
+            // }
+            best = best.max(score);
+            gscore.insert(state.clone(), score);
+            continue;
+        }
+        let va = scan.get(&state.posa).unwrap();
+        let vb = scan.get(&state.posb).unwrap();
+        // dbg!(v);
+        for ta in &va.tunnels {
+            for tb in &vb.tunnels {
+                for x in 0..4 {
+                    if x & 1 != 0 && (va.rate == 0 || state.opened.contains_key(&va.name)) {
+                        // Can't open
+                        continue;
+                    }
+                    if x & 2 != 0 && (vb.rate == 0 || state.opened.contains_key(&vb.name)) {
+                        // Can't open
+                        continue;
+                    }
+                    let mut o = state.opened.clone();
+                    let mut tl = minute;
+                    // Should/can we open?
+                    if x & 1 != 0 {
+                        o.insert(state.posa.clone(), tl);
+                    }
+                    if x & 2 != 0 {
+                        o.insert(state.posb.clone(), tl);
+                    }
+                    if x != 0 {
+                        tl += 1;
+                    }
+                    if tl > 30 {
+                        continue;
+                    }
+                    let ns = State {
+                        posa: ta.clone(),
+                        posb: tb.clone(),
+                        opened: o.clone(),
+                    };
+                    let score: i64 = o
+                        .iter()
+                        .map(|(v, t)| (30 - t) * scan.get(v).unwrap().rate)
+                        .sum();
+                    let e: i64 = scan
+                        .keys()
+                        .filter(|x| !o.contains_key(*x))
+                        .map(|v| (30 - (tl + 1)) * scan.get(v).unwrap().rate)
+                        .sum();
+                    if !gscore.contains_key(&ns) && !visited.contains(&(tl + 1, ns.clone())) {
+                        visited.insert((tl + 1, ns.clone()));
+                        let next = (score + e, ns, tl + 1);
+                        // println!("next: {:?}, {}, {}", next, score, e);
+                        frontier.push(next);
+                    }
                 }
             }
         }

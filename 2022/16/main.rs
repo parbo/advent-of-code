@@ -52,7 +52,6 @@ fn walk(
     ));
     let mut visited = HashSet::new();
     let mut best = 0;
-    let mut best_o = BTreeMap::new();
     while let Some((escore, state, minute)) = frontier.pop() {
         if escore < best {
             break;
@@ -65,7 +64,6 @@ fn walk(
                 .sum();
             if score > best {
                 best = score;
-                best_o = state.opened.clone();
             }
             continue;
         }
@@ -148,7 +146,6 @@ fn walk2(
     ));
     let mut visited = HashSet::new();
     let mut best = 0;
-    let mut best_o = BTreeMap::new();
     while let Some((escore, state, minute)) = frontier.pop() {
         if escore < best {
             break;
@@ -161,7 +158,6 @@ fn walk2(
                 .sum();
             if score > best {
                 best = score;
-                best_o = state.opened.clone();
             }
             continue;
         }
@@ -266,8 +262,8 @@ fn part2(data: &Parsed) -> Answer {
 }
 
 fn name_to_u16(name: &str) -> u16 {
-    ((name.chars().nth(0).unwrap() as u8) as u16) << 8
-        | ((name.chars().nth(1).unwrap() as u8) as u16)
+    let mut c = name.chars();
+    ((c.next().unwrap() as u8) as u16) << 8 | ((c.next().unwrap() as u8) as u16)
 }
 
 fn parse(lines: &[String]) -> Parsed {

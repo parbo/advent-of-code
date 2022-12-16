@@ -218,7 +218,7 @@ fn walk2(pos: u16, scan: &aoc::FxHashMap<u16, Valve2>, minute: i64) -> i64 {
                     posb: *tb,
                     opened: o,
                 };
-                if !gscore.contains_key(&ns) && visited.insert((minute + 1, ns.clone())) {
+                if !gscore.contains_key(&ns) && visited.insert((0 /*minute + 1*/, ns.clone())) {
                     let next = (score + e, ns, minute + 1);
                     // println!("next: {:?}, {}, {}", next, score, e);
                     frontier.push(next);

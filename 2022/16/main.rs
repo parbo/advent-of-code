@@ -69,6 +69,7 @@ fn walk(pos: u8, scan: &[Valve], paths: &[i64], minute: i64, time_cap: i64) -> i
                 let e: i64 = scan
                     .iter()
                     .map(|v| v.name)
+                    .filter(|x| scan[*x as usize].rate != 0)
                     // Filter already opened
                     .filter(|x| o[*x as usize] == 0)
                     // Filter unreachable
@@ -173,6 +174,7 @@ fn walk2(pos: u8, scan: &[Valve], paths: &[i64], minute: i64, time_cap: i64) -> 
                 let e: i64 = scan
                     .iter()
                     .map(|v| v.name)
+                    .filter(|x| scan[*x as usize].rate != 0)
                     // Filter already opened
                     .filter(|x| o[*x as usize] == 0)
                     // Filter unreachable

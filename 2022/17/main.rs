@@ -172,8 +172,8 @@ fn part2(data: &Parsed) -> Answer {
         last = top;
         first_loop = (rounds, y);
     };
-    let mut gd = aoc::PrintGridDrawer::new(|c| c);
-    gd.draw(&g);
+    // let mut gd = aoc::PrintGridDrawer::new(|c| c);
+    // gd.draw(&g);
     println!(
         "found loop: {}, {}, {}, {}",
         first_loop.0, first_loop.1, rounds, lh

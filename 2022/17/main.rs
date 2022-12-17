@@ -1,4 +1,7 @@
-use std::{collections::HashMap, iter::*};
+use std::{
+    collections::{BTreeMap, HashMap},
+    iter::*,
+};
 
 use aoc::{point_add, GridDrawer, Point};
 
@@ -22,7 +25,7 @@ fn make_grid() -> HashMap<Point, char> {
     grid
 }
 
-fn tetris(grid: &mut HashMap<Point, char>, data: &Parsed, rounds: usize) {
+fn tetris(grid: &mut HashMap<Point, char>, data: &Parsed, mut c: usize, rounds: usize) -> usize {
     let rock1 = ((4, 1), vec![[0, 0], [1, 0], [2, 0], [3, 0]]);
     let rock2 = ((3, 3), vec![[1, 0], [0, 1], [1, 1], [2, 1], [1, 2]]);
     let rock3 = ((3, 3), vec![[2, 0], [2, 1], [0, 2], [1, 2], [2, 2]]);
@@ -50,8 +53,7 @@ fn tetris(grid: &mut HashMap<Point, char>, data: &Parsed, rounds: usize) {
         }
     };
 
-    let mut c = 0;
-    let mut gd = aoc::PrintGridDrawer::new(|c| c);
+    // let mut gd = aoc::PrintGridDrawer::new(|c| c);
     for i in 0..rounds {
         // println!("===== {} ======", i);
         let ((_w, h), rock) = &rocks[i % rocks.len()];
@@ -86,24 +88,113 @@ fn tetris(grid: &mut HashMap<Point, char>, data: &Parsed, rounds: usize) {
             }
         }
     }
-
-    // gd.draw(&grid);
+    c
 }
 
 fn part1(data: &Parsed) -> Answer {
     let mut g = make_grid();
-    tetris(&mut g, data, 2022);
-    g.keys().map(|p| p[1]).max().unwrap() - g.keys().map(|p| p[1]).min().unwrap()
+    tetris(&mut g, data, 0, 2022);
+    -g.keys().map(|p| p[1]).min().unwrap()
 }
 
 fn part2(data: &Parsed) -> Answer {
-    // println!("{}, {}", data.len(), data.len() * 5);
-    // let loops = 1000000000000 / (data.len() * 5);
-    // let rem = 1000000000000 % (data.len() * 5);
-    // let h = tetris(data, data.len() * 5);
-    // loops as i64 * h + tetris(data, rem)
-    // g.keys().map(|p| p[1]).max().unwrap() - g.keys().map(|p| p[1]).min().unwrap()
-    0
+    // Find the looping pattern
+    let mut rounds = 5i64;
+    let mut c = 0;
+    let mut g = make_grid();
+    let mut rems = vec![];
+    let mut heights = vec![];
+    let c = 'outer: loop {
+        c = tetris(&mut g, data, c, 5);
+        let y = g.keys().map(|p| p[1]).min().unwrap();
+        // println!("{}, {}, {}", rounds, c, c % data.len());
+        let rem = c % data.len();
+        rems.push(rem);
+        heights.push(y);
+
+        for offs in 0..rems.len() {
+            let w = (rems.len() - offs) / 2;
+            if w == 0 {
+                break;
+            }
+            if rems[offs..(offs + w)] == rems[(offs + w)..(offs + w + w)] {
+                println!(
+                    "Found loop at {} {}, {:?}, {}, {}",
+                    y,
+                    rounds,
+                    rems,
+                    heights[offs],
+                    heights[offs + w],
+                );
+                break 'outer (
+                    5 * offs as i64,
+                    heights[offs + w] - heights[offs],
+                    rems[offs],
+                    heights[offs],
+                );
+            }
+        }
+
+        rounds += 5;
+    };
+    let initial = c.0;
+    let loop_length = rounds - initial;
+    let loop_height = c.1;
+    let init_h = c.3;
+    let c = c.2;
+
+    let mut first_loop = (rounds, init_h);
+    let mut last = (0..7)
+        .map(|x| *g.get(&[x, init_h]).unwrap_or(&' '))
+        .collect::<Vec<_>>();
+    let lh = loop {
+        let nc = tetris(&mut g, data, c, loop_length as usize);
+        assert_eq!(nc % data.len(), c);
+        rounds += loop_length;
+        let y = g.keys().map(|p| p[1]).min().unwrap();
+        let top = (0..7)
+            .map(|x| *g.get(&[x, y]).unwrap_or(&' '))
+            .collect::<Vec<_>>();
+        if top == last {
+            // loop found!
+            println!("found a loop at {}, {}, {:?} ({})", rounds, y, top, g.len());
+            break first_loop.1 - y;
+        } else {
+            println!(
+                "not a loop at {}, {}, {:?}, {:?} ({})",
+                rounds,
+                y,
+                top,
+                last,
+                g.len()
+            );
+        }
+        last = top;
+        first_loop = (rounds, y);
+    };
+    let mut gd = aoc::PrintGridDrawer::new(|c| c);
+    gd.draw(&g);
+    println!(
+        "found loop: {}, {}, {}, {}",
+        first_loop.0, first_loop.1, rounds, lh
+    );
+    let lp = rounds - first_loop.0;
+    let left = 1000000000000 - rounds;
+    let loops = left / loop_length;
+    let rem = left % loop_length;
+    println!("loops: {}, rem: {}, lp: {}", loops, rem, lp);
+    let yy = g.keys().map(|p| p[1]).min().unwrap();
+    tetris(&mut g, data, c, rem as usize);
+    let remh = yy - g.keys().map(|p| p[1]).min().unwrap();
+    println!(
+        "{}, {}, {}, {}",
+        first_loop.0 - first_loop.1,
+        loops * lh,
+        lh,
+        remh
+    );
+    println!("lh: {}, init_h: {}", lh, first_loop.0);
+    (first_loop.0 - first_loop.1) + loops * lh + remh
 }
 
 fn parse(lines: &[String]) -> Parsed {
@@ -125,5 +216,13 @@ mod tests {
     #[test]
     fn test_part1() {
         assert_eq!(part1(&parse(&example())), 3068);
+    }
+
+    #[test]
+    fn test_part2() {
+        let res = part2(&parse(&example()));
+        let expected = 1514285714288;
+        println!("{}", res - expected);
+        assert_eq!(res, expected);
     }
 }

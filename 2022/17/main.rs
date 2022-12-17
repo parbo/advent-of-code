@@ -60,7 +60,6 @@ fn tetris(
     };
 
     for i in start..end {
-        // println!("===== {} ======", i);
         let ((_w, h), rock) = &rocks[i % rocks.len()];
         let mut p = [2, miny - 3 - h];
         loop {

@@ -11,12 +11,12 @@ const NEIGHBORS: [Vec3; 6] = [
     [0, 0, 1],
 ];
 
-fn area(data: &HashSet<Vec3>) -> i64 {
+fn area(droplet: &HashSet<Vec3>) -> i64 {
     let mut exposed = 0;
-    for cube in data {
+    for cube in droplet {
         for nb in NEIGHBORS {
             let p = vec_add(*cube, nb);
-            if !data.contains(&p) {
+            if !droplet.contains(&p) {
                 exposed += 1;
             }
         }
@@ -57,18 +57,18 @@ fn fill(
     }
 }
 
-fn part1(data: &HashSet<Vec3>) -> i64 {
-    area(data)
+fn part1(droplet: &HashSet<Vec3>) -> i64 {
+    area(droplet)
 }
 
-fn part2(data: &HashSet<Vec3>) -> i64 {
-    let minx = data.iter().map(|p| p[0]).min().unwrap();
-    let maxx = data.iter().map(|p| p[0]).max().unwrap();
-    let miny = data.iter().map(|p| p[1]).min().unwrap();
-    let maxy = data.iter().map(|p| p[1]).max().unwrap();
-    let minz = data.iter().map(|p| p[2]).min().unwrap();
-    let maxz = data.iter().map(|p| p[2]).max().unwrap();
-    let mut d = data.clone();
+fn part2(droplet: &HashSet<Vec3>) -> i64 {
+    let minx = droplet.iter().map(|p| p[0]).min().unwrap();
+    let maxx = droplet.iter().map(|p| p[0]).max().unwrap();
+    let miny = droplet.iter().map(|p| p[1]).min().unwrap();
+    let maxy = droplet.iter().map(|p| p[1]).max().unwrap();
+    let minz = droplet.iter().map(|p| p[2]).min().unwrap();
+    let maxz = droplet.iter().map(|p| p[2]).max().unwrap();
+    let mut d = droplet.clone();
     for x in minx..=maxx {
         for y in miny..=maxy {
             for z in minz..=maxz {

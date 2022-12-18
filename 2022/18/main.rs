@@ -57,7 +57,7 @@ fn fill(
 }
 
 #[cfg(feature = "vis")]
-fn draw(droplet: &HashSet<Vec3>) {
+fn draw(droplet: &HashSet<Vec3>, part: usize) {
     use std::path::PathBuf;
 
     let mut window = kiss3d::window::Window::new_with_size("Day 18", 400, 400);
@@ -66,7 +66,7 @@ fn draw(droplet: &HashSet<Vec3>) {
     let at = kiss3d::nalgebra::Point3::origin();
     let mut camera = kiss3d::camera::ArcBall::new(eye, at);
     let mut frame = 0;
-    let png_path = PathBuf::from("vis/18/part1");
+    let png_path = PathBuf::from(format!("vis/18/part{}", part));
     if let Some(parent) = png_path.parent() {
         std::fs::create_dir_all(parent).expect("could not create folder");
     }
@@ -111,7 +111,7 @@ fn draw(droplet: &HashSet<Vec3>) {
 
 fn part1(droplet: &HashSet<Vec3>) -> i64 {
     #[cfg(feature = "vis")]
-    draw(droplet);
+    draw(droplet, 1);
     area(droplet)
 }
 
@@ -132,6 +132,8 @@ fn part2(droplet: &HashSet<Vec3>) -> i64 {
             }
         }
     }
+    #[cfg(feature = "vis")]
+    draw(&(&d - droplet), 2);
     area(&d)
 }
 

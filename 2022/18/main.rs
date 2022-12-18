@@ -57,7 +57,7 @@ fn fill(
 }
 
 #[cfg(feature = "vis")]
-fn draw(droplet: &HashSet<Vec3>, part: usize) {
+fn draw(droplet: &HashSet<Vec3>, holes: &HashSet<Vec3>, part: usize) {
     use std::path::PathBuf;
 
     let mut window = kiss3d::window::Window::new_with_size("Day 18", 400, 400);
@@ -74,10 +74,30 @@ fn draw(droplet: &HashSet<Vec3>, part: usize) {
     let maxx = droplet.iter().map(|p| p[0]).max().unwrap() as f32;
     let maxy = droplet.iter().map(|p| p[1]).max().unwrap() as f32;
     let maxz = droplet.iter().map(|p| p[2]).max().unwrap() as f32;
-    for cube in droplet {
+    if part != 2 {
+        for cube in droplet {
+            let sc = 2.0;
+            let mut c = window.add_cube(sc, sc, sc);
+            c.set_color(1.0, 0.3, 0.3);
+            if part == 3 {
+                // c.set_points_size(1.0);
+                c.set_lines_width(1.0);
+                c.set_surface_rendering_activation(false);
+            }
+            c.append_translation(
+                &[
+                    sc * cube[0] as f32 - maxx,
+                    sc * cube[1] as f32 - maxy,
+                    sc * cube[2] as f32 - maxz,
+                ]
+                .into(),
+            );
+        }
+    }
+    for cube in holes {
         let sc = 2.0;
         let mut c = window.add_cube(sc, sc, sc);
-        c.set_color(1.0, 0.3, 0.3);
+        c.set_color(0.3, 1.0, 0.3);
         c.append_translation(
             &[
                 sc * cube[0] as f32 - maxx,
@@ -111,7 +131,7 @@ fn draw(droplet: &HashSet<Vec3>, part: usize) {
 
 fn part1(droplet: &HashSet<Vec3>) -> i64 {
     #[cfg(feature = "vis")]
-    draw(droplet, 1);
+    draw(droplet, &HashSet::new(), 1);
     area(droplet)
 }
 
@@ -133,7 +153,10 @@ fn part2(droplet: &HashSet<Vec3>) -> i64 {
         }
     }
     #[cfg(feature = "vis")]
-    draw(&(&d - droplet), 2);
+    {
+        draw(&d, &(&d - droplet), 2);
+        draw(&d, &(&d - droplet), 3);
+    }
     area(&d)
 }
 

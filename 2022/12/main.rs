@@ -73,12 +73,28 @@ fn part1(data: &Parsed) -> Answer {
             let c = 255.0 * h / 26.0;
             hm.put_pixel(x as u32, y as u32, image::Luma([c as u8]));
         }
-        let hm = image::imageops::resize(
+        let mut hm = image::imageops::resize(
             &hm,
             (w * scale) as u32,
             (h * scale) as u32,
             image::imageops::FilterType::Triangle,
         );
+        // But make the height at the path be from the original
+        for [x, y] in &path {
+            let v = data.get_value([*x, *y]).unwrap();
+            let h = hf(v) as f32;
+            let c = 255.0 * h / 26.0;
+            let s = scale as i64;
+            for yy in 0..s {
+                for xx in 0..s {
+                    hm.put_pixel(
+                        (x * s + xx) as u32,
+                        (y * s + yy) as u32,
+                        image::Luma([c as u8]),
+                    );
+                }
+            }
+        }
 
         let mut rng = rand::thread_rng();
         for y in 0..h {

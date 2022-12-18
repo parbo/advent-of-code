@@ -56,7 +56,62 @@ fn fill(
     }
 }
 
+#[cfg(feature = "vis")]
+fn draw(droplet: &HashSet<Vec3>) {
+    use std::path::PathBuf;
+
+    let mut window = kiss3d::window::Window::new_with_size("Day 18", 400, 400);
+    window.set_light(kiss3d::light::Light::StickToCamera);
+    let eye = kiss3d::nalgebra::Point3::new(40.0f32, 0.0, 80.0);
+    let at = kiss3d::nalgebra::Point3::origin();
+    let mut camera = kiss3d::camera::ArcBall::new(eye, at);
+    let mut frame = 0;
+    let png_path = PathBuf::from("vis/18/part1");
+    if let Some(parent) = png_path.parent() {
+        std::fs::create_dir_all(parent).expect("could not create folder");
+    }
+
+    let maxx = droplet.iter().map(|p| p[0]).max().unwrap() as f32;
+    let maxy = droplet.iter().map(|p| p[1]).max().unwrap() as f32;
+    let maxz = droplet.iter().map(|p| p[2]).max().unwrap() as f32;
+    for cube in droplet {
+        let sc = 2.0;
+        let mut c = window.add_cube(sc, sc, sc);
+        c.set_color(1.0, 0.3, 0.3);
+        c.append_translation(
+            &[
+                sc * cube[0] as f32 - maxx,
+                sc * cube[1] as f32 - maxy,
+                sc * cube[2] as f32 - maxz,
+            ]
+            .into(),
+        );
+    }
+
+    let orig_curr_yaw = camera.yaw();
+    while window.render_with_camera(&mut camera) {
+        // rotate the arc-ball camera.
+        let curr_yaw = camera.yaw();
+        let new_yaw = curr_yaw + 0.01;
+        if new_yaw > orig_curr_yaw + std::f32::consts::PI {
+            break;
+        }
+        camera.set_yaw(new_yaw);
+        // Save image
+        let filename = png_path.parent().unwrap().join(&format!(
+            "{}_{:06}.png",
+            png_path.file_name().unwrap().to_str().unwrap(),
+            frame
+        ));
+        let img = window.snap_image();
+        img.save(filename).unwrap();
+        frame += 1;
+    }
+}
+
 fn part1(droplet: &HashSet<Vec3>) -> i64 {
+    #[cfg(feature = "vis")]
+    draw(droplet);
     area(droplet)
 }
 

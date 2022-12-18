@@ -12,19 +12,21 @@ use std::iter::*;
 
 type ParsedItem = i64;
 type Parsed = Vec<ParsedItem>;
-type Answer = i64;
 
-fn part1(data: &Parsed) -> Answer {
+fn part1(data: &Parsed) -> i64 {
     println!("{:?}", data);
     0
 }
 
-fn part2(_: &Parsed) -> Answer {
+fn part2(_: &Parsed) -> i64 {
     0
 }
 
 fn parse(lines: &[String]) -> Parsed {
     lines.iter().map(|x| x.parse().unwrap()).collect()
+    // lines[0].iter().map(|x| x.parse().unwrap()).collect()
+    // lines.iter().map(|x| aoc::things(x)).collect()
+    // lines[0].iter().map(|x| aoc::things(x)).collect()
 }
 
 fn main() {
@@ -34,6 +36,11 @@ fn main() {
 #[cfg(test)]
 mod tests {
     // use super::*;
+
+    // fn example() -> Vec<String> {
+    //     let s = include_str!("example.txt");
+    //     s.lines().map(|x| x.to_string()).collect()
+    // }
 
     // fn example() -> Vec<String> {
     // 	   vec![

@@ -44,8 +44,7 @@ fn fill(
             {
                 return None;
             }
-            if !ret.contains(&p) {
-                ret.insert(p);
+            if ret.insert(p) {
                 for nb in NEIGHBORS {
                     todo.push(vec_add(p, nb));
                 }

@@ -2,21 +2,19 @@ use std::{collections::HashSet, iter::*};
 
 use aoc::{vec_add, Vec3};
 
-type ParsedItem = Vec3;
-type Parsed = HashSet<ParsedItem>;
-type Answer = i64;
+const NEIGHBORS: [Vec3; 6] = [
+    [-1, 0, 0],
+    [0, -1, 0],
+    [1, 0, 0],
+    [0, 1, 0],
+    [0, 0, -1],
+    [0, 0, 1],
+];
 
-fn area(data: &Parsed) -> Answer {
+fn area(data: &HashSet<Vec3>) -> i64 {
     let mut exposed = 0;
     for cube in data {
-        for nb in [
-            [-1, 0, 0],
-            [0, -1, 0],
-            [1, 0, 0],
-            [0, 1, 0],
-            [0, 0, -1],
-            [0, 0, 1],
-        ] {
+        for nb in NEIGHBORS {
             let p = vec_add(*cube, nb);
             if !data.contains(&p) {
                 exposed += 1;
@@ -48,14 +46,7 @@ fn fill(
             }
             if !ret.contains(&p) {
                 ret.insert(p);
-                for nb in [
-                    [-1, 0, 0],
-                    [0, -1, 0],
-                    [1, 0, 0],
-                    [0, 1, 0],
-                    [0, 0, -1],
-                    [0, 0, 1],
-                ] {
+                for nb in NEIGHBORS {
                     todo.push(vec_add(p, nb));
                 }
             }
@@ -66,11 +57,11 @@ fn fill(
     }
 }
 
-fn part1(data: &Parsed) -> Answer {
+fn part1(data: &HashSet<Vec3>) -> i64 {
     area(data)
 }
 
-fn part2(data: &Parsed) -> Answer {
+fn part2(data: &HashSet<Vec3>) -> i64 {
     let minx = data.iter().map(|p| p[0]).min().unwrap();
     let maxx = data.iter().map(|p| p[0]).max().unwrap();
     let miny = data.iter().map(|p| p[1]).min().unwrap();
@@ -90,7 +81,7 @@ fn part2(data: &Parsed) -> Answer {
     area(&d)
 }
 
-fn parse(lines: &[String]) -> Parsed {
+fn parse(lines: &[String]) -> HashSet<Vec3> {
     lines
         .iter()
         .map(|x| {

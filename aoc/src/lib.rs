@@ -2458,7 +2458,7 @@ pub fn things<T>(s: &str) -> Vec<T>
 where
     T: std::str::FromStr,
 {
-    s.split(char::is_whitespace)
+    s.split(|c: char| c.is_whitespace() || [',', ';', '|'].contains(&c))
         .filter_map(|x| x.parse().ok())
         .collect()
 }

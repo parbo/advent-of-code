@@ -16,6 +16,7 @@ struct State {
     minute: u16,
 }
 
+#[allow(clippy::needless_range_loop)]
 fn geodes(blueprint: &[u16], time_cap: u16) -> u16 {
     let mut visited = aoc::FxHashSet::default();
     let mut frontier = BinaryHeap::new();
@@ -69,7 +70,6 @@ fn geodes(blueprint: &[u16], time_cap: u16) -> u16 {
             }
         }
         for (mut ns, build) in states {
-            #[allow(clippy::needless_range_loop)]
             for i in 0..4 {
                 ns.resources[i] += ns.robots[i];
                 ns.robots[i] += build[i];
@@ -79,7 +79,6 @@ fn geodes(blueprint: &[u16], time_cap: u16) -> u16 {
                 let mut res = ns.resources;
                 let mut gr = ns.robots[GEODE];
                 for i in 0..(time_cap - ns.minute) {
-                    #[allow(clippy::needless_range_loop)]
                     for r in OBSIDIAN..=ORE {
                         res[r] += ns.robots[r] + i;
                     }

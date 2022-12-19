@@ -1,4 +1,4 @@
-use std::{cmp::Reverse, collections::BinaryHeap, iter::*};
+use std::{collections::BinaryHeap, iter::*};
 
 type ParsedItem = Vec<i64>;
 type Parsed = Vec<ParsedItem>;
@@ -17,7 +17,7 @@ struct State {
     build: [i64; 4],
 }
 
-fn geodes(blueprint: &Vec<i64>, time_cap: i64) -> i64 {
+fn geodes(blueprint: &[i64], time_cap: i64) -> i64 {
     let mut visited = aoc::FxHashSet::default();
     let mut frontier = BinaryHeap::new();
     frontier.push((
@@ -91,11 +91,24 @@ fn geodes(blueprint: &Vec<i64>, time_cap: i64) -> i64 {
             ns.build = [0; 4];
             ns.minute += 1;
             if visited.insert(ns) {
-                let mut e = ns.geodes;
+                let mut ore = ns.ore;
+                let mut clay = ns.clay;
+                let mut obsidian = ns.obsidian;
+                let mut geodes = ns.geodes;
+                let mut gr = ns.geode_robots;
                 for i in 0..(time_cap - ns.minute) {
-                    e += ns.geode_robots + i;
+                    ore += ns.ore_robots + i;
+                    clay += ns.clay_robots + i;
+                    obsidian += ns.obsidian_robots + i;
+                    if geode_robot_cost.0 <= ore
+                        && geode_robot_cost.1 <= clay
+                        && geode_robot_cost.2 <= obsidian
+                    {
+                        gr += 1;
+                    }
+                    geodes += gr;
                 }
-                frontier.push((e, ns));
+                frontier.push((geodes, ns));
             } else {
                 // println!("already visited: {:?}", ns);
             }

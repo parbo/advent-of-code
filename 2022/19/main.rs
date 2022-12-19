@@ -74,7 +74,8 @@ fn geodes(blueprint: &[u16], time_cap: u16) -> u16 {
                 ns.resources[OBSIDIAN] -= obsidian_cost;
                 build[i] = 1;
                 states.push((ns, build));
-            } else if !possible
+            } else if i == GEODE
+                && !possible
                 && *ore_cost <= res[ORE]
                 && *clay_cost <= res[CLAY]
                 && *obsidian_cost <= res[OBSIDIAN]

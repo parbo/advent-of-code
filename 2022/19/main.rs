@@ -6,10 +6,7 @@ type Parsed = Vec<ParsedItem>;
 #[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash)]
 struct State {
     geodes: i64,
-    geode_robots: i64,
-    obsidian_robots: i64,
-    clay_robots: i64,
-    ore_robots: i64,
+    robots: [i64; 4],
     obsidian: i64,
     clay: i64,
     ore: i64,
@@ -27,10 +24,7 @@ fn geodes(blueprint: &[i64], time_cap: i64) -> i64 {
             obsidian: 0,
             clay: 0,
             ore: 0,
-            ore_robots: 1,
-            clay_robots: 0,
-            obsidian_robots: 0,
-            geode_robots: 0,
+            robots: [0, 0, 0, 1],
             build: [0; 4],
             minute: 0,
         },
@@ -46,6 +40,12 @@ fn geodes(blueprint: &[i64], time_cap: i64) -> i64 {
         ore_robot_cost,
     ];
     let mut best = 0;
+    let max_robots = [
+        i64::MAX,
+        costs.iter().map(|x| x.2).max().unwrap(),
+        costs.iter().map(|x| x.1).max().unwrap(),
+        costs.iter().map(|x| x.0).max().unwrap(),
+    ];
     while let Some((e, state)) = frontier.pop() {
         // if frontier.len() % 100 == 0 {
         // println!("{}", frontier.len());
@@ -71,6 +71,7 @@ fn geodes(blueprint: &[i64], time_cap: i64) -> i64 {
                 && *clay_cost <= ns.clay
                 && *obsidian_cost <= ns.obsidian
                 && ns.build.iter().all(|x| *x == 0)
+                && ns.robots[i] < max_robots[i]
             {
                 ns.ore -= ore_cost;
                 ns.clay -= clay_cost;
@@ -80,14 +81,13 @@ fn geodes(blueprint: &[i64], time_cap: i64) -> i64 {
             }
         }
         for mut ns in states {
-            ns.ore += ns.ore_robots;
-            ns.clay += ns.clay_robots;
-            ns.obsidian += ns.obsidian_robots;
-            ns.geodes += ns.geode_robots;
-            ns.ore_robots += ns.build[3];
-            ns.clay_robots += ns.build[2];
-            ns.obsidian_robots += ns.build[1];
-            ns.geode_robots += ns.build[0];
+            ns.ore += ns.robots[3];
+            ns.clay += ns.robots[2];
+            ns.obsidian += ns.robots[1];
+            ns.geodes += ns.robots[0];
+            for i in 0..4 {
+                ns.robots[i] += ns.build[i];
+            }
             ns.build = [0; 4];
             ns.minute += 1;
             if visited.insert(ns) {
@@ -95,11 +95,11 @@ fn geodes(blueprint: &[i64], time_cap: i64) -> i64 {
                 let mut clay = ns.clay;
                 let mut obsidian = ns.obsidian;
                 let mut geodes = ns.geodes;
-                let mut gr = ns.geode_robots;
+                let mut gr = ns.robots[0];
                 for i in 0..(time_cap - ns.minute) {
-                    ore += ns.ore_robots + i;
-                    clay += ns.clay_robots + i;
-                    obsidian += ns.obsidian_robots + i;
+                    ore += ns.robots[3] + i;
+                    clay += ns.robots[2] + i;
+                    obsidian += ns.robots[1] + i;
                     if geode_robot_cost.0 <= ore
                         && geode_robot_cost.1 <= clay
                         && geode_robot_cost.2 <= obsidian

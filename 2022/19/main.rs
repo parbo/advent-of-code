@@ -52,7 +52,14 @@ fn geodes(blueprint: &[u16], time_cap: u16) -> u16 {
             }
             continue;
         }
-        let mut states = vec![(state, [0; 4])];
+        let mut res = state.resources;
+        for i in 0..(time_cap - state.minute) {
+            for r in OBSIDIAN..=ORE {
+                res[r] += state.robots[r] + i;
+            }
+        }
+        let mut states = vec![];
+        let mut possible = false;
         for (i, (ore_cost, clay_cost, obsidian_cost)) in costs.iter().enumerate() {
             let mut ns = state;
             let mut build = [0; 4];
@@ -67,7 +74,17 @@ fn geodes(blueprint: &[u16], time_cap: u16) -> u16 {
                 ns.resources[OBSIDIAN] -= obsidian_cost;
                 build[i] = 1;
                 states.push((ns, build));
+            } else if !possible
+                && *ore_cost <= res[ORE]
+                && *clay_cost <= res[CLAY]
+                && *obsidian_cost <= res[OBSIDIAN]
+                && ns.robots[i] < max_robots[i]
+            {
+                possible = true;
             }
+        }
+        if possible {
+            states.push((state, [0; 4]));
         }
         for (mut ns, build) in states {
             for i in 0..4 {

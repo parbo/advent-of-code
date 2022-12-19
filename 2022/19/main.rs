@@ -109,10 +109,7 @@ fn part2(data: &Parsed) -> i64 {
 }
 
 fn parse(lines: &[String]) -> Parsed {
-    // lines.iter().map(|x| x.parse().unwrap()).collect()
-    // lines[0].iter().map(|x| x.parse().unwrap()).collect()
     lines.iter().map(|x| aoc::things(x)).collect()
-    // lines[0].iter().map(|x| aoc::things(x)).collect()
 }
 
 fn main() {
@@ -122,11 +119,6 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    // fn example() -> Vec<String> {
-    //     let s = include_str!("example.txt");
-    //     s.lines().map(|x| x.to_string()).collect()
-    // }
 
     fn example() -> Vec<String> {
         vec![
@@ -138,5 +130,11 @@ mod tests {
     #[test]
     fn test_part1() {
         assert_eq!(part1(&parse(&example())), 33);
+    }
+
+    #[test]
+    fn test_part2() {
+        assert_eq!(geodes(&parse(&example())[0], 32), 56);
+        assert_eq!(geodes(&parse(&example())[1], 32), 62);
     }
 }

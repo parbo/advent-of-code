@@ -18,6 +18,7 @@ struct State {
 fn geodes(blueprint: &[i64], time_cap: i64) -> i64 {
     let mut visited = aoc::FxHashSet::default();
     let mut frontier = BinaryHeap::new();
+    frontier.reserve(200000);
     frontier.push((
         0,
         State {
@@ -47,22 +48,15 @@ fn geodes(blueprint: &[i64], time_cap: i64) -> i64 {
         costs.iter().map(|x| x.1).max().unwrap(),
         costs.iter().map(|x| x.0).max().unwrap(),
     ];
+
     while let Some((e, state)) = frontier.pop() {
-        // if frontier.len() % 100 == 0 {
-        // println!("{}", frontier.len());
-        // println!("{:?}", state);
-        // }
         if e < best {
             break;
         }
         if state.minute == time_cap {
             if state.geodes > best {
                 best = state.geodes;
-                println!("{:?}", state);
             }
-            // if state.geodes < best {
-            //     break;
-            // }
             continue;
         }
         let mut states = vec![state];

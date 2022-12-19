@@ -13,7 +13,6 @@ const ORE: usize = 3;
 struct State {
     resources: [i64; 4],
     robots: [i64; 4],
-    build: [i64; 4],
     minute: i64,
 }
 
@@ -26,7 +25,6 @@ fn geodes(blueprint: &[i64], time_cap: i64) -> i64 {
         State {
             resources: [0, 0, 0, 0],
             robots: [0, 0, 0, 1],
-            build: [0; 4],
             minute: 0,
         },
     ));
@@ -53,28 +51,28 @@ fn geodes(blueprint: &[i64], time_cap: i64) -> i64 {
             }
             continue;
         }
-        let mut states = vec![state];
+        let mut states = vec![(state, [0; 4])];
         for (i, (ore_cost, clay_cost, obsidian_cost)) in costs.iter().enumerate() {
             let mut ns = state;
+            let mut build = [0; 4];
             if *ore_cost <= ns.resources[ORE]
                 && *clay_cost <= ns.resources[CLAY]
                 && *obsidian_cost <= ns.resources[OBSIDIAN]
-                && ns.build.iter().all(|x| *x == 0)
+                && build.iter().all(|x| *x == 0)
                 && ns.robots[i] < max_robots[i]
             {
                 ns.resources[ORE] -= ore_cost;
                 ns.resources[CLAY] -= clay_cost;
                 ns.resources[OBSIDIAN] -= obsidian_cost;
-                ns.build[i] = 1;
-                states.push(ns);
+                build[i] = 1;
+                states.push((ns, build));
             }
         }
-        for mut ns in states {
+        for (mut ns, build) in states {
             for i in 0..4 {
                 ns.resources[i] += ns.robots[i];
-                ns.robots[i] += ns.build[i];
+                ns.robots[i] += build[i];
             }
-            ns.build = [0; 4];
             ns.minute += 1;
             if visited.insert(ns) {
                 let mut res = ns.resources;

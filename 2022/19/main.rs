@@ -1,3 +1,4 @@
+use rayon::prelude::*;
 use std::{collections::BinaryHeap, iter::*};
 
 type ParsedItem = Vec<i64>;
@@ -119,11 +120,11 @@ fn geodes(blueprint: &[i64], time_cap: i64) -> i64 {
 }
 
 fn part1(data: &Parsed) -> i64 {
-    data.iter().map(|x| geodes(x, 24) * x[0]).sum()
+    data.par_iter().map(|x| geodes(x, 24) * x[0]).sum()
 }
 
 fn part2(data: &Parsed) -> i64 {
-    data.iter().take(3).map(|x| geodes(x, 32)).product()
+    data.par_iter().take(3).map(|x| geodes(x, 32)).product()
 }
 
 fn parse(lines: &[String]) -> Parsed {

@@ -14,30 +14,27 @@ struct State {
     clay: i64,
     ore: i64,
     minute: i64,
-    build_ore_robots: i64,
-    build_clay_robots: i64,
-    build_obsidian_robots: i64,
-    build_geode_robots: i64,
+    build: [i64; 4],
 }
 
-fn quality(blueprint: &Vec<i64>) -> i64 {
+fn geodes(blueprint: &Vec<i64>, time_cap: i64) -> i64 {
     let mut visited = aoc::FxHashSet::default();
     let mut frontier = BinaryHeap::new();
-    frontier.push(State {
-        geodes: 0,
-        obsidian: 0,
-        clay: 0,
-        ore: 0,
-        ore_robots: 1,
-        clay_robots: 0,
-        obsidian_robots: 0,
-        geode_robots: 0,
-        build_ore_robots: 0,
-        build_clay_robots: 0,
-        build_obsidian_robots: 0,
-        build_geode_robots: 0,
-        minute: 0,
-    });
+    frontier.push((
+        0,
+        State {
+            geodes: 0,
+            obsidian: 0,
+            clay: 0,
+            ore: 0,
+            ore_robots: 1,
+            clay_robots: 0,
+            obsidian_robots: 0,
+            geode_robots: 0,
+            build: [0; 4],
+            minute: 0,
+        },
+    ));
     let ore_robot_cost = (blueprint[1], 0, 0);
     let clay_robot_cost = (blueprint[2], 0, 0);
     let obsidian_robot_cost = (blueprint[3], blueprint[4], 0);
@@ -49,12 +46,15 @@ fn quality(blueprint: &Vec<i64>) -> i64 {
         ore_robot_cost,
     ];
     let mut best = 0;
-    while let Some(state) = frontier.pop() {
+    while let Some((e, state)) = frontier.pop() {
         // if frontier.len() % 100 == 0 {
         // println!("{}", frontier.len());
         // println!("{:?}", state);
         // }
-        if state.minute == 24 {
+        if e < best {
+            break;
+        }
+        if state.minute == time_cap {
             if state.geodes > best {
                 best = state.geodes;
                 println!("{:?}", state);
@@ -65,117 +65,52 @@ fn quality(blueprint: &Vec<i64>) -> i64 {
             continue;
         }
         let mut states = vec![state];
-        let mut next_states = vec![];
-        while let Some(mut ns) = states.pop() {
-            let (ore_cost, clay_cost, obsidian_cost) = geode_robot_cost;
-            next_states.push(ns);
-            if ore_cost <= ns.ore
-                && clay_cost <= ns.clay
-                && obsidian_cost <= ns.obsidian
-                && ns.build_geode_robots == 0
-                && ns.build_obsidian_robots == 0
-                && ns.build_clay_robots == 0
-                && ns.build_ore_robots == 0
+        for (i, (ore_cost, clay_cost, obsidian_cost)) in costs.iter().enumerate() {
+            let mut ns = state;
+            if *ore_cost <= ns.ore
+                && *clay_cost <= ns.clay
+                && *obsidian_cost <= ns.obsidian
+                && ns.build.iter().all(|x| *x == 0)
             {
                 ns.ore -= ore_cost;
                 ns.clay -= clay_cost;
                 ns.obsidian -= obsidian_cost;
-                ns.build_geode_robots += 1;
-                next_states.push(ns);
+                ns.build[i] = 1;
+                states.push(ns);
             }
         }
-        states = next_states;
-        let mut next_states = vec![];
-        while let Some(mut ns) = states.pop() {
-            let (ore_cost, clay_cost, obsidian_cost) = obsidian_robot_cost;
-            next_states.push(ns);
-            if ore_cost <= ns.ore
-                && clay_cost <= ns.clay
-                && obsidian_cost <= ns.obsidian
-                && ns.build_geode_robots == 0
-                && ns.build_obsidian_robots == 0
-                && ns.build_clay_robots == 0
-                && ns.build_ore_robots == 0
-            {
-                ns.ore -= ore_cost;
-                ns.clay -= clay_cost;
-                ns.obsidian -= obsidian_cost;
-                ns.build_obsidian_robots += 1;
-                next_states.push(ns);
-            }
-        }
-        states = next_states;
-        let mut next_states = vec![];
-        while let Some(mut ns) = states.pop() {
-            let (ore_cost, clay_cost, obsidian_cost) = clay_robot_cost;
-            next_states.push(ns);
-            if ore_cost <= ns.ore
-                && clay_cost <= ns.clay
-                && obsidian_cost <= ns.obsidian
-                && ns.build_geode_robots == 0
-                && ns.build_obsidian_robots == 0
-                && ns.build_clay_robots == 0
-                && ns.build_ore_robots == 0
-            {
-                ns.ore -= ore_cost;
-                ns.clay -= clay_cost;
-                ns.obsidian -= obsidian_cost;
-                ns.build_clay_robots += 1;
-                next_states.push(ns);
-            }
-        }
-        states = next_states;
-        let mut next_states = vec![];
-        while let Some(mut ns) = states.pop() {
-            let (ore_cost, clay_cost, obsidian_cost) = ore_robot_cost;
-            next_states.push(ns);
-            if ore_cost <= ns.ore
-                && clay_cost <= ns.clay
-                && obsidian_cost <= ns.obsidian
-                && ns.build_geode_robots == 0
-                && ns.build_obsidian_robots == 0
-                && ns.build_clay_robots == 0
-                && ns.build_ore_robots == 0
-            {
-                ns.ore -= ore_cost;
-                ns.clay -= clay_cost;
-                ns.obsidian -= obsidian_cost;
-                ns.build_ore_robots += 1;
-                next_states.push(ns);
-            }
-        }
-        states = next_states;
         for mut ns in states {
             ns.ore += ns.ore_robots;
             ns.clay += ns.clay_robots;
             ns.obsidian += ns.obsidian_robots;
             ns.geodes += ns.geode_robots;
-            ns.ore_robots += ns.build_ore_robots;
-            ns.build_ore_robots = 0;
-            ns.clay_robots += ns.build_clay_robots;
-            ns.build_clay_robots = 0;
-            ns.obsidian_robots += ns.build_obsidian_robots;
-            ns.build_obsidian_robots = 0;
-            ns.geode_robots += ns.build_geode_robots;
-            ns.build_geode_robots = 0;
+            ns.ore_robots += ns.build[3];
+            ns.clay_robots += ns.build[2];
+            ns.obsidian_robots += ns.build[1];
+            ns.geode_robots += ns.build[0];
+            ns.build = [0; 4];
             ns.minute += 1;
             if visited.insert(ns) {
-                frontier.push(ns);
+                let mut e = ns.geodes;
+                for i in 0..(time_cap - ns.minute) {
+                    e += ns.geode_robots + i;
+                }
+                frontier.push((e, ns));
             } else {
                 // println!("already visited: {:?}", ns);
             }
         }
     }
     println!("blueprint {} found {} geodes", blueprint[0], best);
-    best * blueprint[0]
+    best
 }
 
 fn part1(data: &Parsed) -> i64 {
-    data.iter().map(|x| quality(x)).sum()
+    data.iter().map(|x| geodes(x, 24) * x[0]).sum()
 }
 
-fn part2(_: &Parsed) -> i64 {
-    0
+fn part2(data: &Parsed) -> i64 {
+    data.iter().take(3).map(|x| geodes(x, 32)).product()
 }
 
 fn parse(lines: &[String]) -> Parsed {

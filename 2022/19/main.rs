@@ -1,7 +1,7 @@
 use rayon::prelude::*;
 use std::{collections::BinaryHeap, iter::*};
 
-type ParsedItem = Vec<i64>;
+type ParsedItem = Vec<u16>;
 type Parsed = Vec<ParsedItem>;
 
 const GEODE: usize = 0;
@@ -11,12 +11,12 @@ const ORE: usize = 3;
 
 #[derive(Debug, Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash)]
 struct State {
-    resources: [i64; 4],
-    robots: [i64; 4],
-    minute: i64,
+    resources: [u16; 4],
+    robots: [u16; 4],
+    minute: u16,
 }
 
-fn geodes(blueprint: &[i64], time_cap: i64) -> i64 {
+fn geodes(blueprint: &[u16], time_cap: u16) -> u16 {
     let mut visited = aoc::FxHashSet::default();
     let mut frontier = BinaryHeap::new();
     frontier.reserve(200000);
@@ -35,7 +35,7 @@ fn geodes(blueprint: &[i64], time_cap: i64) -> i64 {
         (blueprint[1], 0, 0),
     ];
     let max_robots = [
-        i64::MAX,
+        u16::MAX,
         costs.iter().map(|x| x.2).max().unwrap(),
         costs.iter().map(|x| x.1).max().unwrap(),
         costs.iter().map(|x| x.0).max().unwrap(),
@@ -69,6 +69,7 @@ fn geodes(blueprint: &[i64], time_cap: i64) -> i64 {
             }
         }
         for (mut ns, build) in states {
+            #[allow(clippy::needless_range_loop)]
             for i in 0..4 {
                 ns.resources[i] += ns.robots[i];
                 ns.robots[i] += build[i];
@@ -98,11 +99,16 @@ fn geodes(blueprint: &[i64], time_cap: i64) -> i64 {
 }
 
 fn part1(data: &Parsed) -> i64 {
-    data.par_iter().map(|x| geodes(x, 24) * x[0]).sum()
+    data.par_iter()
+        .map(|x| geodes(x, 24) as i64 * x[0] as i64)
+        .sum()
 }
 
 fn part2(data: &Parsed) -> i64 {
-    data.par_iter().take(3).map(|x| geodes(x, 32)).product()
+    data.par_iter()
+        .take(3)
+        .map(|x| geodes(x, 32) as i64)
+        .product()
 }
 
 fn parse(lines: &[String]) -> Parsed {

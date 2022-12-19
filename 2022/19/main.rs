@@ -94,7 +94,6 @@ fn geodes(blueprint: &[i64], time_cap: i64) -> i64 {
             }
         }
     }
-    println!("blueprint {} found {} geodes", blueprint[0], best);
     best
 }
 

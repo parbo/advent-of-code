@@ -15,19 +15,13 @@ fn solve(data: &Parsed, multiplier: i64, rounds: usize) -> i64 {
             let (ix, v) = mixed.remove(pos as usize);
             let sz = mixed.len() as i64;
             pos += v % sz;
-            while pos < 0 {
-                pos += sz;
-            }
-            while pos > sz {
-                pos -= sz;
-            }
+            pos = pos.rem_euclid(sz);
             mixed.insert(pos as usize, (ix, v));
         }
     }
     let pos = mixed.iter().position(|(_ix, v)| *v == 0).unwrap();
-    mixed[(pos + 1000) % mixed.len()].1
-        + mixed[(pos + 2000) % mixed.len()].1
-        + mixed[(pos + 3000) % mixed.len()].1
+    let ml = mixed.len();
+    mixed[(pos + 1000) % ml].1 + mixed[(pos + 2000) % ml].1 + mixed[(pos + 3000) % ml].1
 }
 
 fn part1(data: &Parsed) -> i64 {

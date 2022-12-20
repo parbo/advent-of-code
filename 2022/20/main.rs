@@ -14,7 +14,7 @@ fn solve(data: &Parsed, multiplier: i64, rounds: usize) -> i64 {
             let pos = mixed.iter().position(|(ix, _v)| *ix == i).unwrap();
             let (ix, v) = mixed.remove(pos);
             let sz = mixed.len() as i64;
-            mixed.insert((pos as i64 + v % sz).rem_euclid(sz) as usize, (ix, v));
+            mixed.insert((pos as i64 + v).rem_euclid(sz) as usize, (ix, v));
         }
     }
     let pos = mixed.iter().position(|(_ix, v)| *v == 0).unwrap();

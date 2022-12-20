@@ -11,12 +11,10 @@ fn solve(data: &Parsed, multiplier: i64, rounds: usize) -> i64 {
         .collect::<Vec<_>>();
     for _round in 0..rounds {
         for i in 0..mixed.len() {
-            let mut pos = mixed.iter().position(|(ix, _v)| *ix == i).unwrap() as i64;
+            let pos = mixed.iter().position(|(ix, _v)| *ix == i).unwrap() as i64;
             let (ix, v) = mixed.remove(pos as usize);
             let sz = mixed.len() as i64;
-            pos += v % sz;
-            pos = pos.rem_euclid(sz);
-            mixed.insert(pos as usize, (ix, v));
+            mixed.insert((pos + v % sz).rem_euclid(sz) as usize, (ix, v));
         }
     }
     let pos = mixed.iter().position(|(_ix, v)| *v == 0).unwrap();

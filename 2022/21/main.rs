@@ -28,35 +28,42 @@ fn calc<T: num::Num + num::FromPrimitive + Copy>(
     data: &Parsed,
     name: &str,
     cmp: fn(T, T) -> Ordering,
-) -> (T, Option<Ordering>) {
+) -> (T, Ordering) {
     for m in data {
         if m.name == name {
             match &m.op {
-                Op::Number(x) => return (T::from_i64(*x).unwrap(), None),
+                Op::Number(x) => return (T::from_i64(*x).unwrap(), Ordering::Equal),
                 Op::Add(a, b) => {
                     let aa = calc(data, a, cmp).0;
                     let bb = calc(data, b, cmp).0;
-                    if m.name == "root" {
-                        return (aa + bb, Some(cmp(aa, bb)));
-                    }
-                    return (aa + bb, None);
+                    return (aa + bb, cmp(aa, bb));
                 }
-                Op::Mult(a, b) => return (calc(data, a, cmp).0 * calc(data, b, cmp).0, None),
+                Op::Mult(a, b) => {
+                    let aa = calc(data, a, cmp).0;
+                    let bb = calc(data, b, cmp).0;
+                    return (aa * bb, cmp(aa, bb));
+                }
                 Op::Div(a, b) => {
-                    return (calc(data, a, cmp).0 / calc(data, b, cmp).0, None);
+                    let aa = calc(data, a, cmp).0;
+                    let bb = calc(data, b, cmp).0;
+                    return (aa / bb, cmp(aa, bb));
                 }
-                Op::Sub(a, b) => return (calc(data, a, cmp).0 - calc(data, b, cmp).0, None),
+                Op::Sub(a, b) => {
+                    let aa = calc(data, a, cmp).0;
+                    let bb = calc(data, b, cmp).0;
+                    return (aa - bb, cmp(aa, bb));
+                }
             }
         }
     }
-    (T::zero(), None)
+    (T::zero(), Ordering::Equal)
 }
 
 fn part1(data: &Parsed) -> i64 {
     calc::<i64>(data, "root", |_a, _b| Ordering::Equal).0
 }
 
-fn try_with(data: &Parsed, humn: i64, cmp: fn(f64, f64) -> Ordering) -> (f64, Option<Ordering>) {
+fn try_with(data: &Parsed, humn: i64, cmp: fn(f64, f64) -> Ordering) -> (f64, Ordering) {
     let mut m = data.clone();
     for mm in &mut m {
         if mm.name == "humn" {
@@ -74,17 +81,16 @@ fn binary_search(data: &Parsed, cmp: fn(f64, f64) -> Ordering) -> Option<i64> {
     while low <= high {
         let middle = (high + low) / 2;
         let (_current, ord) = try_with(data, middle, cmp);
-        if ord == Some(Ordering::Equal) {
-            return Some(middle);
-        } else if ord == Some(Ordering::Greater) {
-            if middle == 0 {
-                return None;
+        match ord {
+            Ordering::Equal => {
+                return Some(middle);
             }
-            high = middle - 1
-        } else if ord == Some(Ordering::Less) {
-            low = middle + 1
-        } else {
-            panic!();
+            Ordering::Greater => {
+                high = middle - 1;
+            }
+            Ordering::Less => {
+                low = middle + 1;
+            }
         }
     }
     None

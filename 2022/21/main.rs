@@ -1,6 +1,6 @@
 use std::{cmp::Ordering, iter::*};
 
-#[derive(parse_display::Display, parse_display::FromStr, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(parse_display::Display, parse_display::FromStr, Debug, Clone)]
 enum Op {
     #[display("{0}")]
     Number(i64),
@@ -14,7 +14,7 @@ enum Op {
     Sub(String, String),
 }
 
-#[derive(parse_display::Display, parse_display::FromStr, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(parse_display::Display, parse_display::FromStr, Debug, Clone)]
 #[display("{name}: {op}")]
 struct Monkey {
     name: String,
@@ -24,34 +24,39 @@ struct Monkey {
 type ParsedItem = Monkey;
 type Parsed = Vec<ParsedItem>;
 
-fn calc(data: &Parsed, name: &str) -> (i64, Option<Ordering>) {
+fn calc<T: num::Num + num::FromPrimitive + Copy>(
+    data: &Parsed,
+    name: &str,
+    cmp: fn(T, T) -> Ordering,
+) -> (T, Option<Ordering>) {
     for m in data {
         if m.name == name {
             match &m.op {
-                Op::Number(x) => return (*x, None),
+                Op::Number(x) => return (T::from_i64(*x).unwrap(), None),
                 Op::Add(a, b) => {
-                    let aa = calc(data, a).0;
-                    let bb = calc(data, b).0;
+                    let aa = calc(data, a, cmp).0;
+                    let bb = calc(data, b, cmp).0;
                     if m.name == "root" {
-                        println!("a: {}, b: {}, {}", aa, bb, aa - bb);
-                        return (aa + bb, Some(bb.cmp(&aa)));
+                        return (aa + bb, Some(cmp(aa, bb)));
                     }
                     return (aa + bb, None);
                 }
-                Op::Mult(a, b) => return (calc(data, a).0 * calc(data, b).0, None),
-                Op::Div(a, b) => return (calc(data, a).0 / calc(data, b).0, None),
-                Op::Sub(a, b) => return (calc(data, a).0 - calc(data, b).0, None),
+                Op::Mult(a, b) => return (calc(data, a, cmp).0 * calc(data, b, cmp).0, None),
+                Op::Div(a, b) => {
+                    return (calc(data, a, cmp).0 / calc(data, b, cmp).0, None);
+                }
+                Op::Sub(a, b) => return (calc(data, a, cmp).0 - calc(data, b, cmp).0, None),
             }
         }
     }
-    (0, None)
+    (T::zero(), None)
 }
 
 fn part1(data: &Parsed) -> i64 {
-    calc(data, "root").0
+    calc::<i64>(data, "root", |_a, _b| Ordering::Equal).0
 }
 
-fn try_with(data: &Parsed, humn: i64) -> (i64, Option<Ordering>) {
+fn try_with(data: &Parsed, humn: i64, cmp: fn(f64, f64) -> Ordering) -> (f64, Option<Ordering>) {
     let mut m = data.clone();
     for mm in &mut m {
         if mm.name == "humn" {
@@ -59,22 +64,21 @@ fn try_with(data: &Parsed, humn: i64) -> (i64, Option<Ordering>) {
             break;
         }
     }
-    calc(&m, "root")
+    calc::<f64>(&m, "root", cmp)
 }
 
-fn part2(data: &Parsed) -> i64 {
+fn binary_search(data: &Parsed, cmp: fn(f64, f64) -> Ordering) -> Option<i64> {
     let mut low = 0;
     let mut high = 10000000000000;
 
     while low <= high {
         let middle = (high + low) / 2;
-        println!("middle: {}, {}, {}", middle, low, high);
-        let (_current, ord) = try_with(data, middle);
+        let (_current, ord) = try_with(data, middle, cmp);
         if ord == Some(Ordering::Equal) {
-            return middle;
+            return Some(middle);
         } else if ord == Some(Ordering::Greater) {
             if middle == 0 {
-                panic!();
+                return None;
             }
             high = middle - 1
         } else if ord == Some(Ordering::Less) {
@@ -83,14 +87,21 @@ fn part2(data: &Parsed) -> i64 {
             panic!();
         }
     }
-    0
+    None
+}
+
+fn part2(data: &Parsed) -> i64 {
+    if let Some(v) = binary_search(data, |a, b| a.total_cmp(&b)) {
+        v
+    } else if let Some(v) = binary_search(data, |a, b| b.total_cmp(&a)) {
+        v
+    } else {
+        panic!()
+    }
 }
 
 fn parse(lines: &[String]) -> Parsed {
     lines.iter().map(|x| x.parse().unwrap()).collect()
-    // lines[0].iter().map(|x| x.parse().unwrap()).collect()
-    // lines.iter().map(|x| aoc::things(x)).collect()
-    // lines[0].iter().map(|x| aoc::things(x)).collect()
 }
 
 fn main() {

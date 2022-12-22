@@ -1236,7 +1236,7 @@ where
                 let ch = if let Some(x) = area.get_value([x, y]) {
                     self.to_char(x)
                 } else {
-                    '.'
+                    ' '
                 };
                 print!("{}", ch);
             }

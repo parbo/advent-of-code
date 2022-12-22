@@ -1,7 +1,7 @@
 use std::{collections::HashMap, iter::*};
 
 use aoc::{
-    CursesGridDrawer, GridDrawer, Point, PrintGridDrawer, DIRECTION_ROTATE_LEFT,
+    Point, DIRECTION_ROTATE_LEFT,
     DIRECTION_ROTATE_RIGHT, EAST, NORTH, SOUTH, WEST,
 };
 
@@ -14,37 +14,12 @@ enum Move {
 
 type Parsed = (HashMap<Point, char>, Vec<Move>);
 
-fn dir_c(d: Point) -> char {
-    match d {
-        EAST => '>',
-        SOUTH => 'v',
-        WEST => '<',
-        NORTH => '^',
-        _ => unreachable!(),
-    }
-}
-
-fn draw<F>(gd: &mut CursesGridDrawer<F, char>, grid: &HashMap<Point, char>, path: &[(Point, Point)])
-where
-    F: Fn(char) -> char,
-{
-    let mut g = grid.clone();
-    for (p, d) in path {
-        let c = dir_c(*d);
-        g.insert(*p, c);
-    }
-    gd.draw(&g);
-}
-
 fn part1(data: &Parsed) -> i64 {
-    // let mut gd = CursesGridDrawer::new(|c| c);
     let (grid, moves) = data;
     let mut pos = *grid.keys().filter(|p| p[1] == 0).min().unwrap();
     let mut dir = EAST;
     let mut path = vec![(pos, dir)];
-    println!("{:?}", moves);
     for m in moves {
-        println!("pos: {:?}, dir: {:?}, move: {:?}", pos, dir_c(dir), m);
         match m {
             Move::Step(x) => match dir {
                 EAST => {
@@ -69,7 +44,6 @@ fn part1(data: &Parsed) -> i64 {
                         }
                         pos = p;
                         path.push((pos, dir));
-                        // draw(&mut gd, grid, &path);
                     }
                 }
                 WEST => {
@@ -94,7 +68,6 @@ fn part1(data: &Parsed) -> i64 {
                         }
                         pos = p;
                         path.push((pos, dir));
-                        // draw(&mut gd, grid, &path);
                     }
                 }
                 NORTH => {
@@ -119,7 +92,6 @@ fn part1(data: &Parsed) -> i64 {
                         }
                         pos = p;
                         path.push((pos, dir));
-                        // draw(&mut gd, grid, &path);
                     }
                 }
                 SOUTH => {
@@ -144,7 +116,6 @@ fn part1(data: &Parsed) -> i64 {
                         }
                         pos = p;
                         path.push((pos, dir));
-                        // draw(&mut gd, grid, &path);
                     }
                 }
                 _ => unreachable!(),
@@ -210,7 +181,6 @@ fn parse(lines: &[String]) -> Parsed {
                 moves.push(Move::Right);
             }
             x => {
-                println!("{}, {}, {}", d, s, x);
                 d = (d * s) + x.to_digit(10).unwrap() as i64;
                 s *= 10;
             }
@@ -218,8 +188,6 @@ fn parse(lines: &[String]) -> Parsed {
     }
     if d != 0 {
         moves.push(Move::Step(d));
-        s = 1;
-        d = 0;
     }
     (grid, moves)
 }

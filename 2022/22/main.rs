@@ -215,6 +215,8 @@ fn part2(data: &Parsed) -> i64 {
                     let e = *extents.get(&face).unwrap();
                     let (min_x, max_x, min_y, max_y) = e;
                     let mut p = pos;
+                    let x = p[0] - min_x;
+                    let y = p[1] - min_y;
                     assert!(inside(p, e));
                     // dbg!(face, pos, dir, s);
                     let mut d = dir;
@@ -227,7 +229,7 @@ fn part2(data: &Parsed) -> i64 {
                                 d = EAST;
                                 let e = *extents.get(&f).unwrap();
                                 let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2, min_y2 + (p[1] - min_y)];
+                                p = [min_x2, min_y2 + y];
                                 assert!(inside(p, e));
                             }
                         }
@@ -238,7 +240,7 @@ fn part2(data: &Parsed) -> i64 {
                                 d = EAST;
                                 let e = *extents.get(&f).unwrap();
                                 let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2, max_y2 - (p[1] - min_y)];
+                                p = [min_x2, max_y2 - y];
                                 assert!(inside(p, e));
                             }
                         }
@@ -249,7 +251,7 @@ fn part2(data: &Parsed) -> i64 {
                                 d = EAST;
                                 let e = *extents.get(&f).unwrap();
                                 let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2, min_y2 + (p[0] - min_x)];
+                                p = [min_x2, min_y2 + x];
                                 assert!(inside(p, e));
                             }
                         }
@@ -260,7 +262,7 @@ fn part2(data: &Parsed) -> i64 {
                                 d = SOUTH;
                                 let e = *extents.get(&f).unwrap();
                                 let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2 + (p[0] - min_x), min_y2];
+                                p = [min_x2 + x, min_y2];
                                 assert!(inside(p, e));
                             }
                         }
@@ -271,7 +273,7 @@ fn part2(data: &Parsed) -> i64 {
                                 d = WEST;
                                 let e = *extents.get(&f).unwrap();
                                 let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [max_x2, max_y2 - (p[1] - min_y)];
+                                p = [max_x2, max_y2 - y];
                                 assert!(inside(p, e));
                             }
                         }
@@ -282,7 +284,7 @@ fn part2(data: &Parsed) -> i64 {
                                 d = WEST;
                                 let e = *extents.get(&f).unwrap();
                                 let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [max_x2, min_y2 + (p[1] - min_y)];
+                                p = [max_x2, min_y2 + y];
                                 assert!(inside(p, e));
                             }
                         }
@@ -293,7 +295,7 @@ fn part2(data: &Parsed) -> i64 {
                                 d = NORTH;
                                 let e = *extents.get(&f).unwrap();
                                 let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2 + (p[0] - min_x), max_y2];
+                                p = [min_x2 + x, max_y2];
                                 assert!(inside(p, e));
                             }
                         }
@@ -304,7 +306,7 @@ fn part2(data: &Parsed) -> i64 {
                                 d = WEST;
                                 let e = *extents.get(&f).unwrap();
                                 let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [max_x2, min_y2 + (p[0] - min_x)];
+                                p = [max_x2, min_y2 + x];
                                 assert!(inside(p, e));
                             }
                         }
@@ -315,7 +317,7 @@ fn part2(data: &Parsed) -> i64 {
                                 d = NORTH;
                                 let e = *extents.get(&f).unwrap();
                                 let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2 + (p[1] - min_y), max_y2];
+                                p = [min_x2 + y, max_y2];
                                 assert!(inside(p, e));
                             }
                         }
@@ -326,7 +328,7 @@ fn part2(data: &Parsed) -> i64 {
                                 d = SOUTH;
                                 let e = *extents.get(&f).unwrap();
                                 let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2 + (p[1] - min_y), min_y2];
+                                p = [min_x2 + y, min_y2];
                                 assert!(inside(p, e));
                             }
                         }
@@ -337,7 +339,7 @@ fn part2(data: &Parsed) -> i64 {
                                 d = NORTH;
                                 let e = *extents.get(&f).unwrap();
                                 let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2 + (p[0] - min_x), max_y2];
+                                p = [min_x2 + x, max_y2];
                                 assert!(inside(p, e));
                             }
                         }
@@ -348,7 +350,7 @@ fn part2(data: &Parsed) -> i64 {
                                 d = SOUTH;
                                 let e = *extents.get(&f).unwrap();
                                 let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2 + (p[0] - min_x), min_y2];
+                                p = [min_x2 + x, min_y2];
                                 assert!(inside(p, e));
                             }
                         }
@@ -359,7 +361,7 @@ fn part2(data: &Parsed) -> i64 {
                                 d = EAST;
                                 let e = *extents.get(&f).unwrap();
                                 let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2, min_y2 + (p[1] - min_y)];
+                                p = [min_x2, min_y2 + y];
                                 assert!(inside(p, e));
                             }
                         }
@@ -370,7 +372,7 @@ fn part2(data: &Parsed) -> i64 {
                                 d = EAST;
                                 let e = *extents.get(&f).unwrap();
                                 let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2, max_y2 - (p[1] - min_y)];
+                                p = [min_x2, max_y2 - y];
                                 assert!(inside(p, e));
                             }
                         }
@@ -381,7 +383,7 @@ fn part2(data: &Parsed) -> i64 {
                                 d = EAST;
                                 let e = *extents.get(&f).unwrap();
                                 let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2, min_y2 + (p[0] - min_x)];
+                                p = [min_x2, min_y2 + x];
                                 assert!(inside(p, e));
                             }
                         }
@@ -392,7 +394,7 @@ fn part2(data: &Parsed) -> i64 {
                                 d = SOUTH;
                                 let e = *extents.get(&f).unwrap();
                                 let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2 + (p[0] - min_x), min_y2];
+                                p = [min_x2 + x, min_y2];
                                 assert!(inside(p, e));
                             }
                         }
@@ -403,7 +405,7 @@ fn part2(data: &Parsed) -> i64 {
                                 d = WEST;
                                 let e = *extents.get(&f).unwrap();
                                 let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [max_x2, max_y2 - (p[1] - min_y)];
+                                p = [max_x2, max_y2 - y];
                                 assert!(inside(p, e));
                             }
                         }
@@ -414,7 +416,7 @@ fn part2(data: &Parsed) -> i64 {
                                 d = WEST;
                                 let e = *extents.get(&f).unwrap();
                                 let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [max_x2, min_y2 + (p[1] - min_y)];
+                                p = [max_x2, min_y2 + y];
                                 assert!(inside(p, e));
                             }
                         }
@@ -426,7 +428,7 @@ fn part2(data: &Parsed) -> i64 {
                                 d = NORTH;
                                 let e = *extents.get(&f).unwrap();
                                 let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2 + (p[0] - min_x), max_y2];
+                                p = [min_x2 + x, max_y2];
                                 assert!(inside(p, e));
                             }
                         }
@@ -437,7 +439,7 @@ fn part2(data: &Parsed) -> i64 {
                                 d = WEST;
                                 let e = *extents.get(&f).unwrap();
                                 let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [max_x2, min_y2 + (p[0] - min_x)];
+                                p = [max_x2, min_y2 + x];
                                 assert!(inside(p, e));
                             }
                         }
@@ -448,7 +450,7 @@ fn part2(data: &Parsed) -> i64 {
                                 d = NORTH;
                                 let e = *extents.get(&f).unwrap();
                                 let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2 + (p[1] - min_y), max_y2];
+                                p = [min_x2 + y, max_y2];
                                 assert!(inside(p, e));
                             }
                         }
@@ -459,7 +461,7 @@ fn part2(data: &Parsed) -> i64 {
                                 d = SOUTH;
                                 let e = *extents.get(&f).unwrap();
                                 let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2 + (p[1] - min_y), min_y2];
+                                p = [min_x2 + y, min_y2];
                                 assert!(inside(p, e));
                             }
                         }
@@ -470,7 +472,7 @@ fn part2(data: &Parsed) -> i64 {
                                 d = NORTH;
                                 let e = *extents.get(&f).unwrap();
                                 let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2 + (p[0] - min_x), max_y2];
+                                p = [min_x2 + x, max_y2];
                                 assert!(inside(p, e));
                             }
                         }
@@ -481,7 +483,7 @@ fn part2(data: &Parsed) -> i64 {
                                 d = SOUTH;
                                 let e = *extents.get(&f).unwrap();
                                 let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2 + (p[0] - min_x), min_y2];
+                                p = [min_x2 + x, min_y2];
                                 assert!(inside(p, e));
                             }
                         }
@@ -516,6 +518,7 @@ fn part2(data: &Parsed) -> i64 {
         }
     }
 
+    draw(grid, &path);
     let facing = match dir {
         EAST => 0,
         SOUTH => 1,

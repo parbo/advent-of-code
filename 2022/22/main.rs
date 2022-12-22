@@ -179,281 +179,259 @@ fn part2(data: &Parsed) -> i64 {
         + 1;
     let sz = sz / 2;
     let extents: HashMap<i64, (i64, i64, i64, i64)> = [
-        (1, (2 * sz, 3 * sz - 1, 0, sz - 1)),
-        (2, (0, sz - 1, sz, 2 * sz - 1)),
+        (1, (sz, 2 * sz - 1, 0, sz - 1)),
+        (2, (2 * sz, 3 * sz - 1, 0, sz - 1)),
         (3, (sz, 2 * sz - 1, sz, 2 * sz - 1)),
-        (4, (2 * sz, 3 * sz - 1, sz, 2 * sz - 1)),
-        (5, (2 * sz, 3 * sz - 1, 2 * sz, 3 * sz - 1)),
-        (6, (3 * sz, 4 * sz - 1, 2 * sz, 3 * sz - 1)),
+        (4, (0, sz - 1, 2 * sz, 3 * sz - 1)),
+        (5, (sz, 2 * sz - 1, 2 * sz, 3 * sz - 1)),
+        (6, (0, sz - 1, 3 * sz, 4 * sz - 1)),
     ]
     .into_iter()
     .collect();
-
-    // Re-map grid to match example
-    let mut g = HashMap::new();
-    // Face 1 is aa
-    let ext = (2 * sz, 3 * sz - 1, 0, sz - 1);
-    let mut gg = HashMap::new();
-    for y in ext.2..=ext.3 {
-        for x in ext.0..=ext.1 {
-            gg.insert([x - ext.0, y - ext.2], *g.get(&[x, y]).unwrap());
-        }
-    }
-    let ext1 = extents.get(&1).unwrap();
-    g.blit([0, 0], g);
+    println!("{:?}", extents);
 
     let mut face = 1;
     for m in moves {
         dbg!(m);
         match m {
             Move::Step(x) => {
-                for _ in 0..*x {
+                for s in 0..*x {
                     let (min_x, max_x, min_y, max_y) = *extents.get(&face).unwrap();
                     let mut p = pos;
-                    dbg!(face, pos, dir);
+                    dbg!(face, pos, dir, s);
                     let mut d = dir;
+                    let mut f = face;
                     match (face, dir) {
                         (1, EAST) => {
                             p[0] += 1;
                             if p[0] > max_x {
-                                face = 6;
-                                d = WEST;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&face).unwrap();
-                                p[0] = max_x;
-                                p[1] = max_y2 - (p[1] - min_y);
+                                f = 2;
+                                d = EAST;
+                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                p = [min_x2, min_y2 + (p[1] - min_y)];
                             }
                         }
                         (1, WEST) => {
                             p[0] -= 1;
                             if p[0] < min_x {
-                                face = 3;
-                                d = SOUTH;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&face).unwrap();
-                                p[0] = min_x2 + (p[1] - min_y);
-                                p[1] = min_y2;
+                                f = 4;
+                                d = EAST;
+                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                p = [min_x2, max_y2 - (p[1] - min_y)];
                             }
                         }
                         (1, NORTH) => {
                             p[1] -= 1;
                             if p[1] < min_y {
-                                face = 2;
-                                d = SOUTH;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&face).unwrap();
-                                p[0] = max_x2 - (p[0] - min_x);
-                                p[1] = min_y2;
+                                f = 6;
+                                d = EAST;
+                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                p = [min_x2, min_y2 + (p[0] - min_x)];
                             }
                         }
                         (1, SOUTH) => {
                             p[1] += 1;
                             if p[1] > max_y {
-                                face = 4;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&face).unwrap();
-                                p[1] = min_y2;
+                                face = 3;
+                                d = SOUTH;
+                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                p = [min_x2 + (p[0] - min_x), min_y2];
                             }
                         }
                         (2, EAST) => {
                             p[0] += 1;
                             if p[0] > max_x {
-                                face = 3;
-                                d = EAST;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&face).unwrap();
-                                p[0] = min_x2;
+                                f = 5;
+                                d = WEST;
+                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                p = [max_x2, max_y2 - (p[1] - min_y)];
                             }
                         }
                         (2, WEST) => {
                             p[0] -= 1;
                             if p[0] < min_x {
-                                face = 6;
-                                d = NORTH;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&face).unwrap();
-                                p[0] = max_x2 - (p[1] - min_y);
-                                p[1] = max_y2;
+                                f = 1;
+                                d = WEST;
+                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                p = [max_x2, min_y2 + (p[1] - min_y)];
                             }
                         }
                         (2, NORTH) => {
                             p[1] -= 1;
                             if p[1] < min_y {
-                                face = 1;
-                                d = SOUTH;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&face).unwrap();
-                                p[0] = max_x2 - (p[0] - min_x);
-                                p[1] = max_y2;
+                                f = 6;
+                                d = NORTH;
+                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                p = [min_x2 + (p[0] - min_x), max_y2];
                             }
                         }
                         (2, SOUTH) => {
                             p[1] += 1;
                             if p[1] > max_y {
-                                face = 5;
-                                d = NORTH;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&face).unwrap();
-                                p[0] = max_x2 - (p[0] - min_x);
-                                p[1] = max_y2;
+                                f = 3;
+                                d = WEST;
+                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                p = [max_x2, min_y2 + (p[0] - min_x)];
                             }
                         }
                         (3, EAST) => {
                             p[0] += 1;
                             if p[0] > max_x {
-                                face = 4;
-                                d = EAST;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&face).unwrap();
-                                p[0] = min_x2;
+                                f = 2;
+                                d = NORTH;
+                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                p = [min_x2 + (p[1] - min_y), max_y2];
                             }
                         }
                         (3, WEST) => {
                             p[0] -= 1;
                             if p[0] < min_x {
-                                face = 2;
-                                d = WEST;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&face).unwrap();
-                                p[0] = max_x2;
+                                f = 4;
+                                d = SOUTH;
+                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                p = [min_x2 + (p[1] - min_y), min_y2];
                             }
                         }
                         (3, NORTH) => {
                             p[1] -= 1;
                             if p[1] < min_y {
-                                face = 1;
-                                d = EAST;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&face).unwrap();
-                                p[1] = min_y2 + (p[0] - min_x);
-                                p[0] = min_x2;
+                                f = 1;
+                                d = NORTH;
+                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                p = [min_x2 + (p[0] - min_x), max_y2];
                             }
                         }
                         (3, SOUTH) => {
                             p[1] += 1;
                             if p[1] > max_y {
-                                face = 5;
-                                d = WEST;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&face).unwrap();
-                                p[1] = max_y2 - (p[0] - min_x);
-                                p[0] = min_x2;
+                                f = 5;
+                                d = SOUTH;
+                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                p = [min_x2 + (p[0] - min_x), min_y2];
                             }
                         }
                         (4, EAST) => {
                             p[0] += 1;
                             if p[0] > max_x {
-                                face = 6;
-                                d = SOUTH;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&face).unwrap();
-                                p[0] = max_x2 - (p[1] - min_y);
-                                p[1] = min_y2;
+                                f = 5;
+                                d = EAST;
+                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                p = [min_x2, min_y2 + (p[1] - min_y)];
                             }
                         }
                         (4, WEST) => {
                             p[0] -= 1;
                             if p[0] < min_x {
-                                face = 3;
-                                d = WEST;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&face).unwrap();
-                                p[0] = max_x2;
+                                f = 1;
+                                d = EAST;
+                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                p = [min_x2, max_y2 - (p[1] - min_y)];
                             }
                         }
                         (4, NORTH) => {
                             p[1] -= 1;
                             if p[1] < min_y {
-                                face = 1;
-                                d = NORTH;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&face).unwrap();
-                                p[1] = max_y2;
+                                f = 3;
+                                d = EAST;
+                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                p = [min_x2, min_y2 + (p[0] - min_x)];
                             }
                         }
                         (4, SOUTH) => {
                             p[1] += 1;
                             if p[1] > max_y {
-                                face = 5;
+                                f = 6;
                                 d = SOUTH;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&face).unwrap();
-                                p[1] = min_y2;
+                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                p = [min_x2 + (p[0] - min_x), min_y2];
                             }
                         }
                         (5, EAST) => {
                             p[0] += 1;
                             if p[0] > max_x {
-                                face = 6;
-                                d = EAST;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&face).unwrap();
-                                p[0] = min_x2;
+                                f = 2;
+                                d = WEST;
+                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                p = [max_x2, max_y2 - (p[1] - min_y)];
                             }
                         }
                         (5, WEST) => {
                             p[0] -= 1;
                             if p[0] < min_x {
-                                face = 3;
-                                d = NORTH;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&face).unwrap();
-                                p[0] = max_x2 - (p[1] - min_y);
-                                p[1] = max_y2;
+                                f = 4;
+                                d = WEST;
+                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                p = [max_x2, min_y2 + (p[1] - min_y)];
                             }
                         }
                         (5, NORTH) => {
                             let mut p = pos;
                             p[1] -= 1;
                             if p[1] < min_y {
-                                face = 4;
+                                f = 3;
                                 d = NORTH;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&face).unwrap();
-                                p[1] = max_y2;
+                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                p = [min_x2 + (p[0] - min_x), max_y2];
                             }
                         }
                         (5, SOUTH) => {
                             p[1] += 1;
                             if p[1] > max_y {
-                                face = 2;
-                                d = NORTH;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&face).unwrap();
-                                p[0] = max_x2 - (p[0] - min_x);
-                                p[1] = max_y2;
+                                f = 6;
+                                d = WEST;
+                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                p = [max_x2, min_y2 + (p[0] - min_x)];
                             }
                         }
                         (6, EAST) => {
                             p[0] += 1;
                             if p[0] > max_x {
-                                face = 1;
-                                d = WEST;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&face).unwrap();
-                                p[0] = max_x2;
-                                p[1] = max_y2 - (p[1] - min_y);
+                                f = 5;
+                                d = NORTH;
+                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                println!("min_x2: {}, p[1] - miny: {}", min_x2, (p[1] - min_y));
+                                p = [min_x2 + (p[1] - min_y), max_y2];
                             }
                         }
                         (6, WEST) => {
                             p[0] -= 1;
                             if p[0] < min_x {
-                                face = 5;
-                                d = WEST;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&face).unwrap();
-                                p[0] = max_x2;
+                                f = 1;
+                                d = SOUTH;
+                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                p = [min_x2 + (p[1] - min_y), min_y2];
                             }
                         }
                         (6, NORTH) => {
                             p[1] -= 1;
                             if p[1] < min_y {
-                                face = 4;
-                                d = WEST;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&face).unwrap();
-                                p[1] = max_y2 - (p[0] - min_x);
-                                p[0] = max_x2;
+                                f = 4;
+                                d = NORTH;
+                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                p = [min_x2 + (p[0] - min_x), min_y2];
                             }
                         }
                         (6, SOUTH) => {
                             p[1] += 1;
                             if p[1] > max_y {
-                                face = 2;
-                                d = EAST;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&face).unwrap();
-                                p[1] = max_y2 - (p[0] - min_x);
-                                p[0] = min_x2;
+                                f = 2;
+                                d = SOUTH;
+                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                p = [min_x2 + (p[0] - min_x), min_y2];
                             }
                         }
                         _ => unreachable!(),
                     }
-                    dbg!(p);
+                    dbg!(p, f, d);
                     if *grid.get(&p).unwrap() == '#' {
-                        // println!("wall!");
+                        println!("wall!");
                         break;
                     }
                     pos = p;
                     dir = d;
+                    face = f;
                     path.push((pos, dir));
-                    draw(grid, &path);
+                    // draw(grid, &path);
                 }
             }
             Move::Left => {
@@ -542,10 +520,5 @@ mod tests {
     #[test]
     fn test_part1() {
         assert_eq!(part1(&parse(&example())), 6032);
-    }
-
-    #[test]
-    fn test_part2() {
-        assert_eq!(part2(&parse(&example())), 5031);
     }
 }

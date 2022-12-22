@@ -16,106 +16,64 @@ fn part1(data: &Parsed) -> i64 {
     let mut dir = EAST;
     let mut path = vec![(pos, dir)];
     for m in moves {
+        let min_x = grid
+            .keys()
+            .filter_map(|p| if p[1] == pos[1] { Some(p[0]) } else { None })
+            .min()
+            .unwrap();
+        let max_x = grid
+            .keys()
+            .filter_map(|p| if p[1] == pos[1] { Some(p[0]) } else { None })
+            .max()
+            .unwrap();
+        let min_y = grid
+            .keys()
+            .filter_map(|p| if p[0] == pos[0] { Some(p[1]) } else { None })
+            .min()
+            .unwrap();
+        let max_y = grid
+            .keys()
+            .filter_map(|p| if p[0] == pos[0] { Some(p[1]) } else { None })
+            .max()
+            .unwrap();
         match m {
-            Move::Step(x) => match dir {
-                EAST => {
-                    let min_x = grid
-                        .keys()
-                        .filter_map(|p| if p[1] == pos[1] { Some(p[0]) } else { None })
-                        .min()
-                        .unwrap();
-                    let max_x = grid
-                        .keys()
-                        .filter_map(|p| if p[1] == pos[1] { Some(p[0]) } else { None })
-                        .max()
-                        .unwrap();
-                    for _ in 0..*x {
-                        let mut p = pos;
-                        p[0] += 1;
-                        if p[0] > max_x {
-                            p[0] = min_x;
+            Move::Step(x) => {
+                for _ in 0..*x {
+                    let mut p = pos;
+                    match dir {
+                        EAST => {
+                            p[0] += 1;
+                            if p[0] > max_x {
+                                p[0] = min_x;
+                            }
                         }
-                        if *grid.get(&p).unwrap() == '#' {
-                            break;
+                        WEST => {
+                            p[0] -= 1;
+                            if p[0] < min_x {
+                                p[0] = max_x;
+                            }
                         }
-                        pos = p;
-                        path.push((pos, dir));
+                        NORTH => {
+                            p[1] -= 1;
+                            if p[1] < min_y {
+                                p[1] = max_y;
+                            }
+                        }
+                        SOUTH => {
+                            p[1] += 1;
+                            if p[1] > max_y {
+                                p[1] = min_y;
+                            }
+                        }
+                        _ => unreachable!(),
                     }
-                }
-                WEST => {
-                    let min_x = grid
-                        .keys()
-                        .filter_map(|p| if p[1] == pos[1] { Some(p[0]) } else { None })
-                        .min()
-                        .unwrap();
-                    let max_x = grid
-                        .keys()
-                        .filter_map(|p| if p[1] == pos[1] { Some(p[0]) } else { None })
-                        .max()
-                        .unwrap();
-                    for _ in 0..*x {
-                        let mut p = pos;
-                        p[0] -= 1;
-                        if p[0] < min_x {
-                            p[0] = max_x;
-                        }
-                        if *grid.get(&p).unwrap() == '#' {
-                            break;
-                        }
-                        pos = p;
-                        path.push((pos, dir));
+                    if *grid.get(&p).unwrap() == '#' {
+                        break;
                     }
+                    pos = p;
+                    path.push((pos, dir));
                 }
-                NORTH => {
-                    let min_y = grid
-                        .keys()
-                        .filter_map(|p| if p[0] == pos[0] { Some(p[1]) } else { None })
-                        .min()
-                        .unwrap();
-                    let max_y = grid
-                        .keys()
-                        .filter_map(|p| if p[0] == pos[0] { Some(p[1]) } else { None })
-                        .max()
-                        .unwrap();
-                    for _ in 0..*x {
-                        let mut p = pos;
-                        p[1] -= 1;
-                        if p[1] < min_y {
-                            p[1] = max_y;
-                        }
-                        if *grid.get(&p).unwrap() == '#' {
-                            break;
-                        }
-                        pos = p;
-                        path.push((pos, dir));
-                    }
-                }
-                SOUTH => {
-                    let min_y = grid
-                        .keys()
-                        .filter_map(|p| if p[0] == pos[0] { Some(p[1]) } else { None })
-                        .min()
-                        .unwrap();
-                    let max_y = grid
-                        .keys()
-                        .filter_map(|p| if p[0] == pos[0] { Some(p[1]) } else { None })
-                        .max()
-                        .unwrap();
-                    for _ in 0..*x {
-                        let mut p = pos;
-                        p[1] += 1;
-                        if p[1] > max_y {
-                            p[1] = min_y;
-                        }
-                        if *grid.get(&p).unwrap() == '#' {
-                            break;
-                        }
-                        pos = p;
-                        path.push((pos, dir));
-                    }
-                }
-                _ => unreachable!(),
-            },
+            }
             Move::Left => {
                 dir = *DIRECTION_ROTATE_LEFT.get(&dir).unwrap();
                 path.push((pos, dir));

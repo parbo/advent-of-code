@@ -389,7 +389,6 @@ fn part2(data: &Parsed) -> i64 {
                                 f = 5;
                                 d = NORTH;
                                 let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
-                                println!("min_x2: {}, p[1] - miny: {}", min_x2, (p[1] - min_y));
                                 p = [min_x2 + (p[1] - min_y), max_y2];
                             }
                         }
@@ -408,7 +407,7 @@ fn part2(data: &Parsed) -> i64 {
                                 f = 4;
                                 d = NORTH;
                                 let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
-                                p = [min_x2 + (p[0] - min_x), min_y2];
+                                p = [min_x2 + (p[0] - min_x), max_y2];
                             }
                         }
                         (6, SOUTH) => {

@@ -1,4 +1,6 @@
-use aoc::{Point, DIRECTION_ROTATE_LEFT, DIRECTION_ROTATE_RIGHT, EAST, NORTH, SOUTH, WEST};
+use aoc::{
+    point_add, Point, DIRECTION_ROTATE_LEFT, DIRECTION_ROTATE_RIGHT, EAST, NORTH, SOUTH, WEST,
+};
 use std::{collections::HashMap, iter::*};
 
 #[derive(Debug, Copy, Clone)]
@@ -39,33 +41,15 @@ fn part1(data: &Parsed) -> i64 {
         match m {
             Move::Step(x) => {
                 for _ in 0..*x {
-                    let mut p = pos;
-                    match dir {
-                        EAST => {
-                            p[0] += 1;
-                            if p[0] > max_x {
-                                p[0] = min_x;
-                            }
-                        }
-                        WEST => {
-                            p[0] -= 1;
-                            if p[0] < min_x {
-                                p[0] = max_x;
-                            }
-                        }
-                        NORTH => {
-                            p[1] -= 1;
-                            if p[1] < min_y {
-                                p[1] = max_y;
-                            }
-                        }
-                        SOUTH => {
-                            p[1] += 1;
-                            if p[1] > max_y {
-                                p[1] = min_y;
-                            }
-                        }
-                        _ => unreachable!(),
+                    let mut p = point_add(pos, dir);
+                    if p[0] > max_x {
+                        p[0] = min_x;
+                    } else if p[0] < min_x {
+                        p[0] = max_x;
+                    } else if p[1] < min_y {
+                        p[1] = max_y;
+                    } else if p[1] > max_y {
+                        p[1] = min_y;
                     }
                     if *grid.get(&p).unwrap() == '#' {
                         break;
@@ -162,39 +146,14 @@ fn part2(data: &Parsed) -> i64 {
             Move::Step(x) => {
                 for _ in 0..*x {
                     let e = *extents.get(&face).unwrap();
-                    let (min_x, max_x, min_y, max_y) = e;
-                    let mut p = pos;
-                    let x = p[0] - min_x;
-                    let y = p[1] - min_y;
-                    assert!(inside(p, e));
+                    let (min_x, _max_x, min_y, _max_y) = e;
+                    let x = pos[0] - min_x;
+                    let y = pos[1] - min_y;
+                    let mut p = point_add(pos, dir);
                     let mut d = dir;
                     let mut f = face;
-                    match dir {
-                        EAST => {
-                            p[0] += 1;
-                            if p[0] > max_x {
-                                (f, d, p) = transition(face, dir, [x, y], &extents);
-                            }
-                        }
-                        WEST => {
-                            p[0] -= 1;
-                            if p[0] < min_x {
-                                (f, d, p) = transition(face, dir, [x, y], &extents);
-                            }
-                        }
-                        NORTH => {
-                            p[1] -= 1;
-                            if p[1] < min_y {
-                                (f, d, p) = transition(face, dir, [x, y], &extents);
-                            }
-                        }
-                        SOUTH => {
-                            p[1] += 1;
-                            if p[1] > max_y {
-                                (f, d, p) = transition(face, dir, [x, y], &extents);
-                            }
-                        }
-                        _ => unreachable!(),
+                    if !inside(p, e) {
+                        (f, d, p) = transition(face, dir, [x, y], &extents);
                     }
                     if *grid.get(&p).unwrap() == '#' {
                         break;

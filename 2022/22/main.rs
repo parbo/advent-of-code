@@ -1,9 +1,9 @@
-use std::{collections::HashMap, iter::*};
-
 use aoc::{
     Grid, GridDrawer, Point, PrintGridDrawer, DIRECTION_ROTATE_LEFT, DIRECTION_ROTATE_RIGHT, EAST,
     NORTH, SOUTH, WEST,
 };
+use std::io::{Read, Write};
+use std::{collections::HashMap, iter::*};
 
 #[derive(Debug, Copy, Clone)]
 enum Move {
@@ -157,11 +157,22 @@ fn draw(grid: &HashMap<Point, char>, path: &[(Point, Point)]) {
         let c = dir_c(*d);
         g.insert(*p, c);
     }
+    for (p, d) in &path[(path.len() - 10).max(0)..path.len()] {
+        let c = dir_c(*d);
+        g.insert(*p, '@');
+    }
     gd.draw(&g);
 }
 
 fn inside(p: Point, e: (i64, i64, i64, i64)) -> bool {
     p[0] >= e.0 && p[0] <= e.1 && p[1] >= e.2 && p[1] <= e.3
+}
+
+fn pause() {
+    let mut stdin = std::io::stdin();
+
+    // Read a single byte and discard
+    let _ = stdin.read(&mut [0u8]).unwrap();
 }
 
 fn part2(data: &Parsed) -> i64 {
@@ -196,13 +207,16 @@ fn part2(data: &Parsed) -> i64 {
 
     let mut face = 1;
     for m in moves {
-        dbg!(m);
+        println!("{:?}", m);
+        // dbg!(m);
         match m {
             Move::Step(x) => {
                 for s in 0..*x {
-                    let (min_x, max_x, min_y, max_y) = *extents.get(&face).unwrap();
+                    let e = *extents.get(&face).unwrap();
+                    let (min_x, max_x, min_y, max_y) = e;
                     let mut p = pos;
-                    dbg!(face, pos, dir, s);
+                    assert!(inside(p, e));
+                    // dbg!(face, pos, dir, s);
                     let mut d = dir;
                     let mut f = face;
                     match (face, dir) {
@@ -473,17 +487,23 @@ fn part2(data: &Parsed) -> i64 {
                         }
                         _ => unreachable!(),
                     }
-                    dbg!(p, f, d);
+                    // dbg!(p, f, d);
                     if *grid.get(&p).unwrap() == '#' {
-                        println!("wall!");
+                        // println!("wall!");
                         break;
                     }
                     pos = p;
                     dir = d;
+                    let fchg = face != f;
                     face = f;
                     path.push((pos, dir));
-                    // draw(grid, &path);
+                    if fchg {
+                        // draw(grid, &path);
+                        // pause();
+                    }
                 }
+                // draw(grid, &path);
+                // pause();
             }
             Move::Left => {
                 dir = *DIRECTION_ROTATE_LEFT.get(&dir).unwrap();

@@ -1,8 +1,4 @@
-use aoc::{
-    Grid, GridDrawer, Point, PrintGridDrawer, DIRECTION_ROTATE_LEFT, DIRECTION_ROTATE_RIGHT, EAST,
-    NORTH, SOUTH, WEST,
-};
-use std::io::{Read, Write};
+use aoc::{Point, DIRECTION_ROTATE_LEFT, DIRECTION_ROTATE_RIGHT, EAST, NORTH, SOUTH, WEST};
 use std::{collections::HashMap, iter::*};
 
 #[derive(Debug, Copy, Clone)]
@@ -140,39 +136,48 @@ fn part1(data: &Parsed) -> i64 {
     1000 * (pos[1] + 1) + 4 * (pos[0] + 1) + facing
 }
 
-fn dir_c(d: Point) -> char {
-    match d {
-        EAST => '>',
-        SOUTH => 'v',
-        WEST => '<',
-        NORTH => '^',
-        _ => unreachable!(),
-    }
-}
-
-fn draw(grid: &HashMap<Point, char>, path: &[(Point, Point)]) {
-    let mut gd = PrintGridDrawer::new(|c| c);
-    let mut g = grid.clone();
-    for (p, d) in path {
-        let c = dir_c(*d);
-        g.insert(*p, c);
-    }
-    for (p, d) in &path[(path.len() - 10).max(0)..path.len()] {
-        let c = dir_c(*d);
-        g.insert(*p, '@');
-    }
-    gd.draw(&g);
-}
-
 fn inside(p: Point, e: (i64, i64, i64, i64)) -> bool {
     p[0] >= e.0 && p[0] <= e.1 && p[1] >= e.2 && p[1] <= e.3
 }
 
-fn pause() {
-    let mut stdin = std::io::stdin();
-
-    // Read a single byte and discard
-    let _ = stdin.read(&mut [0u8]).unwrap();
+fn transition(
+    face: i64,
+    dir: Point,
+    pos: Point,
+    extents: &HashMap<i64, (i64, i64, i64, i64)>,
+) -> (i64, Point, Point) {
+    let [x, y] = pos;
+    let (f, d, dp) = match (face, dir) {
+        (0, EAST) => (1, EAST, [0, y]),
+        (0, WEST) => (3, EAST, [0, 49 - y]),
+        (0, NORTH) => (5, EAST, [0, x]),
+        (0, SOUTH) => (2, SOUTH, [x, 0]),
+        (1, EAST) => (4, WEST, [49, 49 - y]),
+        (1, WEST) => (0, WEST, [49, y]),
+        (1, NORTH) => (5, NORTH, [x, 49]),
+        (1, SOUTH) => (2, WEST, [49, x]),
+        (2, EAST) => (1, NORTH, [y, 49]),
+        (2, WEST) => (3, SOUTH, [y, 0]),
+        (2, NORTH) => (0, NORTH, [x, 49]),
+        (2, SOUTH) => (4, SOUTH, [x, 0]),
+        (3, EAST) => (4, EAST, [0, y]),
+        (3, WEST) => (0, EAST, [0, 49 - y]),
+        (3, NORTH) => (2, EAST, [0, x]),
+        (3, SOUTH) => (5, SOUTH, [x, 0]),
+        (4, EAST) => (1, WEST, [49, 49 - y]),
+        (4, WEST) => (3, WEST, [49, y]),
+        (4, NORTH) => (2, NORTH, [x, 49]),
+        (4, SOUTH) => (5, WEST, [49, x]),
+        (5, EAST) => (4, NORTH, [y, 49]),
+        (5, WEST) => (0, SOUTH, [y, 0]),
+        (5, NORTH) => (3, NORTH, [x, 49]),
+        (5, SOUTH) => (1, SOUTH, [x, 0]),
+        _ => unreachable!(),
+    };
+    let e = *extents.get(&f).unwrap();
+    let p = [e.0 + dp[0], e.2 + dp[1]];
+    assert!(inside(p, e));
+    (f, d, p)
 }
 
 fn part2(data: &Parsed) -> i64 {
@@ -194,318 +199,64 @@ fn part2(data: &Parsed) -> i64 {
         + 1;
     let sz = sz / 2;
     let extents: HashMap<i64, (i64, i64, i64, i64)> = [
-        (1, (sz, 2 * sz - 1, 0, sz - 1)),
-        (2, (2 * sz, 3 * sz - 1, 0, sz - 1)),
-        (3, (sz, 2 * sz - 1, sz, 2 * sz - 1)),
-        (4, (0, sz - 1, 2 * sz, 3 * sz - 1)),
-        (5, (sz, 2 * sz - 1, 2 * sz, 3 * sz - 1)),
-        (6, (0, sz - 1, 3 * sz, 4 * sz - 1)),
+        (0, (sz, 2 * sz - 1, 0, sz - 1)),
+        (1, (2 * sz, 3 * sz - 1, 0, sz - 1)),
+        (2, (sz, 2 * sz - 1, sz, 2 * sz - 1)),
+        (3, (0, sz - 1, 2 * sz, 3 * sz - 1)),
+        (4, (sz, 2 * sz - 1, 2 * sz, 3 * sz - 1)),
+        (5, (0, sz - 1, 3 * sz, 4 * sz - 1)),
     ]
     .into_iter()
     .collect();
-    println!("{:?}", extents);
 
-    let mut face = 1;
+    let mut face = 0;
     for m in moves {
-        println!("{:?}", m);
-        // dbg!(m);
         match m {
             Move::Step(x) => {
-                for s in 0..*x {
+                for _ in 0..*x {
                     let e = *extents.get(&face).unwrap();
                     let (min_x, max_x, min_y, max_y) = e;
                     let mut p = pos;
                     let x = p[0] - min_x;
                     let y = p[1] - min_y;
                     assert!(inside(p, e));
-                    // dbg!(face, pos, dir, s);
                     let mut d = dir;
                     let mut f = face;
-                    match (face, dir) {
-                        (1, EAST) => {
+                    match dir {
+                        EAST => {
                             p[0] += 1;
                             if p[0] > max_x {
-                                f = 2;
-                                d = EAST;
-                                let e = *extents.get(&f).unwrap();
-                                let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2, min_y2 + y];
-                                assert!(inside(p, e));
+                                (f, d, p) = transition(face, dir, [x, y], &extents);
                             }
                         }
-                        (1, WEST) => {
+                        WEST => {
                             p[0] -= 1;
                             if p[0] < min_x {
-                                f = 4;
-                                d = EAST;
-                                let e = *extents.get(&f).unwrap();
-                                let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2, max_y2 - y];
-                                assert!(inside(p, e));
+                                (f, d, p) = transition(face, dir, [x, y], &extents);
                             }
                         }
-                        (1, NORTH) => {
+                        NORTH => {
                             p[1] -= 1;
                             if p[1] < min_y {
-                                f = 6;
-                                d = EAST;
-                                let e = *extents.get(&f).unwrap();
-                                let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2, min_y2 + x];
-                                assert!(inside(p, e));
+                                (f, d, p) = transition(face, dir, [x, y], &extents);
                             }
                         }
-                        (1, SOUTH) => {
+                        SOUTH => {
                             p[1] += 1;
                             if p[1] > max_y {
-                                f = 3;
-                                d = SOUTH;
-                                let e = *extents.get(&f).unwrap();
-                                let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2 + x, min_y2];
-                                assert!(inside(p, e));
-                            }
-                        }
-                        (2, EAST) => {
-                            p[0] += 1;
-                            if p[0] > max_x {
-                                f = 5;
-                                d = WEST;
-                                let e = *extents.get(&f).unwrap();
-                                let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [max_x2, max_y2 - y];
-                                assert!(inside(p, e));
-                            }
-                        }
-                        (2, WEST) => {
-                            p[0] -= 1;
-                            if p[0] < min_x {
-                                f = 1;
-                                d = WEST;
-                                let e = *extents.get(&f).unwrap();
-                                let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [max_x2, min_y2 + y];
-                                assert!(inside(p, e));
-                            }
-                        }
-                        (2, NORTH) => {
-                            p[1] -= 1;
-                            if p[1] < min_y {
-                                f = 6;
-                                d = NORTH;
-                                let e = *extents.get(&f).unwrap();
-                                let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2 + x, max_y2];
-                                assert!(inside(p, e));
-                            }
-                        }
-                        (2, SOUTH) => {
-                            p[1] += 1;
-                            if p[1] > max_y {
-                                f = 3;
-                                d = WEST;
-                                let e = *extents.get(&f).unwrap();
-                                let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [max_x2, min_y2 + x];
-                                assert!(inside(p, e));
-                            }
-                        }
-                        (3, EAST) => {
-                            p[0] += 1;
-                            if p[0] > max_x {
-                                f = 2;
-                                d = NORTH;
-                                let e = *extents.get(&f).unwrap();
-                                let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2 + y, max_y2];
-                                assert!(inside(p, e));
-                            }
-                        }
-                        (3, WEST) => {
-                            p[0] -= 1;
-                            if p[0] < min_x {
-                                f = 4;
-                                d = SOUTH;
-                                let e = *extents.get(&f).unwrap();
-                                let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2 + y, min_y2];
-                                assert!(inside(p, e));
-                            }
-                        }
-                        (3, NORTH) => {
-                            p[1] -= 1;
-                            if p[1] < min_y {
-                                f = 1;
-                                d = NORTH;
-                                let e = *extents.get(&f).unwrap();
-                                let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2 + x, max_y2];
-                                assert!(inside(p, e));
-                            }
-                        }
-                        (3, SOUTH) => {
-                            p[1] += 1;
-                            if p[1] > max_y {
-                                f = 5;
-                                d = SOUTH;
-                                let e = *extents.get(&f).unwrap();
-                                let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2 + x, min_y2];
-                                assert!(inside(p, e));
-                            }
-                        }
-                        (4, EAST) => {
-                            p[0] += 1;
-                            if p[0] > max_x {
-                                f = 5;
-                                d = EAST;
-                                let e = *extents.get(&f).unwrap();
-                                let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2, min_y2 + y];
-                                assert!(inside(p, e));
-                            }
-                        }
-                        (4, WEST) => {
-                            p[0] -= 1;
-                            if p[0] < min_x {
-                                f = 1;
-                                d = EAST;
-                                let e = *extents.get(&f).unwrap();
-                                let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2, max_y2 - y];
-                                assert!(inside(p, e));
-                            }
-                        }
-                        (4, NORTH) => {
-                            p[1] -= 1;
-                            if p[1] < min_y {
-                                f = 3;
-                                d = EAST;
-                                let e = *extents.get(&f).unwrap();
-                                let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2, min_y2 + x];
-                                assert!(inside(p, e));
-                            }
-                        }
-                        (4, SOUTH) => {
-                            p[1] += 1;
-                            if p[1] > max_y {
-                                f = 6;
-                                d = SOUTH;
-                                let e = *extents.get(&f).unwrap();
-                                let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2 + x, min_y2];
-                                assert!(inside(p, e));
-                            }
-                        }
-                        (5, EAST) => {
-                            p[0] += 1;
-                            if p[0] > max_x {
-                                f = 2;
-                                d = WEST;
-                                let e = *extents.get(&f).unwrap();
-                                let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [max_x2, max_y2 - y];
-                                assert!(inside(p, e));
-                            }
-                        }
-                        (5, WEST) => {
-                            p[0] -= 1;
-                            if p[0] < min_x {
-                                f = 4;
-                                d = WEST;
-                                let e = *extents.get(&f).unwrap();
-                                let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [max_x2, min_y2 + y];
-                                assert!(inside(p, e));
-                            }
-                        }
-                        (5, NORTH) => {
-                            let mut p = pos;
-                            p[1] -= 1;
-                            if p[1] < min_y {
-                                f = 3;
-                                d = NORTH;
-                                let e = *extents.get(&f).unwrap();
-                                let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2 + x, max_y2];
-                                assert!(inside(p, e));
-                            }
-                        }
-                        (5, SOUTH) => {
-                            p[1] += 1;
-                            if p[1] > max_y {
-                                f = 6;
-                                d = WEST;
-                                let e = *extents.get(&f).unwrap();
-                                let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [max_x2, min_y2 + x];
-                                assert!(inside(p, e));
-                            }
-                        }
-                        (6, EAST) => {
-                            p[0] += 1;
-                            if p[0] > max_x {
-                                f = 5;
-                                d = NORTH;
-                                let e = *extents.get(&f).unwrap();
-                                let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2 + y, max_y2];
-                                assert!(inside(p, e));
-                            }
-                        }
-                        (6, WEST) => {
-                            p[0] -= 1;
-                            if p[0] < min_x {
-                                f = 1;
-                                d = SOUTH;
-                                let e = *extents.get(&f).unwrap();
-                                let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2 + y, min_y2];
-                                assert!(inside(p, e));
-                            }
-                        }
-                        (6, NORTH) => {
-                            p[1] -= 1;
-                            if p[1] < min_y {
-                                f = 4;
-                                d = NORTH;
-                                let e = *extents.get(&f).unwrap();
-                                let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2 + x, max_y2];
-                                assert!(inside(p, e));
-                            }
-                        }
-                        (6, SOUTH) => {
-                            p[1] += 1;
-                            if p[1] > max_y {
-                                f = 2;
-                                d = SOUTH;
-                                let e = *extents.get(&f).unwrap();
-                                let (min_x2, max_x2, min_y2, max_y2) = e;
-                                p = [min_x2 + x, min_y2];
-                                assert!(inside(p, e));
+                                (f, d, p) = transition(face, dir, [x, y], &extents);
                             }
                         }
                         _ => unreachable!(),
                     }
-                    // dbg!(p, f, d);
                     if *grid.get(&p).unwrap() == '#' {
-                        // println!("wall!");
                         break;
                     }
                     pos = p;
                     dir = d;
-                    let fchg = face != f;
                     face = f;
                     path.push((pos, dir));
-                    if fchg {
-                        // draw(grid, &path);
-                        // pause();
-                    }
                 }
-                // draw(grid, &path);
-                // pause();
             }
             Move::Left => {
                 dir = *DIRECTION_ROTATE_LEFT.get(&dir).unwrap();
@@ -518,7 +269,6 @@ fn part2(data: &Parsed) -> i64 {
         }
     }
 
-    draw(grid, &path);
     let facing = match dir {
         EAST => 0,
         SOUTH => 1,
@@ -526,7 +276,6 @@ fn part2(data: &Parsed) -> i64 {
         NORTH => 3,
         _ => unreachable!(),
     };
-    dbg!(pos, facing);
     1000 * (pos[1] + 1) + 4 * (pos[0] + 1) + facing
 }
 

@@ -186,18 +186,7 @@ fn part2(data: &Parsed) -> i64 {
     let mut pos = *grid.keys().filter(|p| p[1] == 0).min().unwrap();
     let mut dir = EAST;
     let mut path = vec![(pos, dir)];
-    let sz = grid
-        .keys()
-        .filter_map(|p| if p[1] == 0 { Some(p[0]) } else { None })
-        .max()
-        .unwrap()
-        - grid
-            .keys()
-            .filter_map(|p| if p[1] == 0 { Some(p[0]) } else { None })
-            .min()
-            .unwrap()
-        + 1;
-    let sz = sz / 2;
+    let sz = 50;
     let extents: HashMap<i64, (i64, i64, i64, i64)> = [
         (0, (sz, 2 * sz - 1, 0, sz - 1)),
         (1, (2 * sz, 3 * sz - 1, 0, sz - 1)),

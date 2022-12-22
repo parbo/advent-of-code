@@ -160,6 +160,10 @@ fn draw(grid: &HashMap<Point, char>, path: &[(Point, Point)]) {
     gd.draw(&g);
 }
 
+fn inside(p: Point, e: (i64, i64, i64, i64)) -> bool {
+    p[0] >= e.0 && p[0] <= e.1 && p[1] >= e.2 && p[1] <= e.3
+}
+
 fn part2(data: &Parsed) -> i64 {
     let (grid, moves) = data;
 
@@ -207,8 +211,10 @@ fn part2(data: &Parsed) -> i64 {
                             if p[0] > max_x {
                                 f = 2;
                                 d = EAST;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                let e = *extents.get(&f).unwrap();
+                                let (min_x2, max_x2, min_y2, max_y2) = e;
                                 p = [min_x2, min_y2 + (p[1] - min_y)];
+                                assert!(inside(p, e));
                             }
                         }
                         (1, WEST) => {
@@ -216,8 +222,10 @@ fn part2(data: &Parsed) -> i64 {
                             if p[0] < min_x {
                                 f = 4;
                                 d = EAST;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                let e = *extents.get(&f).unwrap();
+                                let (min_x2, max_x2, min_y2, max_y2) = e;
                                 p = [min_x2, max_y2 - (p[1] - min_y)];
+                                assert!(inside(p, e));
                             }
                         }
                         (1, NORTH) => {
@@ -225,17 +233,21 @@ fn part2(data: &Parsed) -> i64 {
                             if p[1] < min_y {
                                 f = 6;
                                 d = EAST;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                let e = *extents.get(&f).unwrap();
+                                let (min_x2, max_x2, min_y2, max_y2) = e;
                                 p = [min_x2, min_y2 + (p[0] - min_x)];
+                                assert!(inside(p, e));
                             }
                         }
                         (1, SOUTH) => {
                             p[1] += 1;
                             if p[1] > max_y {
-                                face = 3;
+                                f = 3;
                                 d = SOUTH;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                let e = *extents.get(&f).unwrap();
+                                let (min_x2, max_x2, min_y2, max_y2) = e;
                                 p = [min_x2 + (p[0] - min_x), min_y2];
+                                assert!(inside(p, e));
                             }
                         }
                         (2, EAST) => {
@@ -243,8 +255,10 @@ fn part2(data: &Parsed) -> i64 {
                             if p[0] > max_x {
                                 f = 5;
                                 d = WEST;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                let e = *extents.get(&f).unwrap();
+                                let (min_x2, max_x2, min_y2, max_y2) = e;
                                 p = [max_x2, max_y2 - (p[1] - min_y)];
+                                assert!(inside(p, e));
                             }
                         }
                         (2, WEST) => {
@@ -252,8 +266,10 @@ fn part2(data: &Parsed) -> i64 {
                             if p[0] < min_x {
                                 f = 1;
                                 d = WEST;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                let e = *extents.get(&f).unwrap();
+                                let (min_x2, max_x2, min_y2, max_y2) = e;
                                 p = [max_x2, min_y2 + (p[1] - min_y)];
+                                assert!(inside(p, e));
                             }
                         }
                         (2, NORTH) => {
@@ -261,8 +277,10 @@ fn part2(data: &Parsed) -> i64 {
                             if p[1] < min_y {
                                 f = 6;
                                 d = NORTH;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                let e = *extents.get(&f).unwrap();
+                                let (min_x2, max_x2, min_y2, max_y2) = e;
                                 p = [min_x2 + (p[0] - min_x), max_y2];
+                                assert!(inside(p, e));
                             }
                         }
                         (2, SOUTH) => {
@@ -270,8 +288,10 @@ fn part2(data: &Parsed) -> i64 {
                             if p[1] > max_y {
                                 f = 3;
                                 d = WEST;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                let e = *extents.get(&f).unwrap();
+                                let (min_x2, max_x2, min_y2, max_y2) = e;
                                 p = [max_x2, min_y2 + (p[0] - min_x)];
+                                assert!(inside(p, e));
                             }
                         }
                         (3, EAST) => {
@@ -279,8 +299,10 @@ fn part2(data: &Parsed) -> i64 {
                             if p[0] > max_x {
                                 f = 2;
                                 d = NORTH;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                let e = *extents.get(&f).unwrap();
+                                let (min_x2, max_x2, min_y2, max_y2) = e;
                                 p = [min_x2 + (p[1] - min_y), max_y2];
+                                assert!(inside(p, e));
                             }
                         }
                         (3, WEST) => {
@@ -288,8 +310,10 @@ fn part2(data: &Parsed) -> i64 {
                             if p[0] < min_x {
                                 f = 4;
                                 d = SOUTH;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                let e = *extents.get(&f).unwrap();
+                                let (min_x2, max_x2, min_y2, max_y2) = e;
                                 p = [min_x2 + (p[1] - min_y), min_y2];
+                                assert!(inside(p, e));
                             }
                         }
                         (3, NORTH) => {
@@ -297,8 +321,10 @@ fn part2(data: &Parsed) -> i64 {
                             if p[1] < min_y {
                                 f = 1;
                                 d = NORTH;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                let e = *extents.get(&f).unwrap();
+                                let (min_x2, max_x2, min_y2, max_y2) = e;
                                 p = [min_x2 + (p[0] - min_x), max_y2];
+                                assert!(inside(p, e));
                             }
                         }
                         (3, SOUTH) => {
@@ -306,8 +332,10 @@ fn part2(data: &Parsed) -> i64 {
                             if p[1] > max_y {
                                 f = 5;
                                 d = SOUTH;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                let e = *extents.get(&f).unwrap();
+                                let (min_x2, max_x2, min_y2, max_y2) = e;
                                 p = [min_x2 + (p[0] - min_x), min_y2];
+                                assert!(inside(p, e));
                             }
                         }
                         (4, EAST) => {
@@ -315,8 +343,10 @@ fn part2(data: &Parsed) -> i64 {
                             if p[0] > max_x {
                                 f = 5;
                                 d = EAST;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                let e = *extents.get(&f).unwrap();
+                                let (min_x2, max_x2, min_y2, max_y2) = e;
                                 p = [min_x2, min_y2 + (p[1] - min_y)];
+                                assert!(inside(p, e));
                             }
                         }
                         (4, WEST) => {
@@ -324,8 +354,10 @@ fn part2(data: &Parsed) -> i64 {
                             if p[0] < min_x {
                                 f = 1;
                                 d = EAST;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                let e = *extents.get(&f).unwrap();
+                                let (min_x2, max_x2, min_y2, max_y2) = e;
                                 p = [min_x2, max_y2 - (p[1] - min_y)];
+                                assert!(inside(p, e));
                             }
                         }
                         (4, NORTH) => {
@@ -333,8 +365,10 @@ fn part2(data: &Parsed) -> i64 {
                             if p[1] < min_y {
                                 f = 3;
                                 d = EAST;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                let e = *extents.get(&f).unwrap();
+                                let (min_x2, max_x2, min_y2, max_y2) = e;
                                 p = [min_x2, min_y2 + (p[0] - min_x)];
+                                assert!(inside(p, e));
                             }
                         }
                         (4, SOUTH) => {
@@ -342,8 +376,10 @@ fn part2(data: &Parsed) -> i64 {
                             if p[1] > max_y {
                                 f = 6;
                                 d = SOUTH;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                let e = *extents.get(&f).unwrap();
+                                let (min_x2, max_x2, min_y2, max_y2) = e;
                                 p = [min_x2 + (p[0] - min_x), min_y2];
+                                assert!(inside(p, e));
                             }
                         }
                         (5, EAST) => {
@@ -351,8 +387,10 @@ fn part2(data: &Parsed) -> i64 {
                             if p[0] > max_x {
                                 f = 2;
                                 d = WEST;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                let e = *extents.get(&f).unwrap();
+                                let (min_x2, max_x2, min_y2, max_y2) = e;
                                 p = [max_x2, max_y2 - (p[1] - min_y)];
+                                assert!(inside(p, e));
                             }
                         }
                         (5, WEST) => {
@@ -360,8 +398,10 @@ fn part2(data: &Parsed) -> i64 {
                             if p[0] < min_x {
                                 f = 4;
                                 d = WEST;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                let e = *extents.get(&f).unwrap();
+                                let (min_x2, max_x2, min_y2, max_y2) = e;
                                 p = [max_x2, min_y2 + (p[1] - min_y)];
+                                assert!(inside(p, e));
                             }
                         }
                         (5, NORTH) => {
@@ -370,8 +410,10 @@ fn part2(data: &Parsed) -> i64 {
                             if p[1] < min_y {
                                 f = 3;
                                 d = NORTH;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                let e = *extents.get(&f).unwrap();
+                                let (min_x2, max_x2, min_y2, max_y2) = e;
                                 p = [min_x2 + (p[0] - min_x), max_y2];
+                                assert!(inside(p, e));
                             }
                         }
                         (5, SOUTH) => {
@@ -379,8 +421,10 @@ fn part2(data: &Parsed) -> i64 {
                             if p[1] > max_y {
                                 f = 6;
                                 d = WEST;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                let e = *extents.get(&f).unwrap();
+                                let (min_x2, max_x2, min_y2, max_y2) = e;
                                 p = [max_x2, min_y2 + (p[0] - min_x)];
+                                assert!(inside(p, e));
                             }
                         }
                         (6, EAST) => {
@@ -388,8 +432,10 @@ fn part2(data: &Parsed) -> i64 {
                             if p[0] > max_x {
                                 f = 5;
                                 d = NORTH;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                let e = *extents.get(&f).unwrap();
+                                let (min_x2, max_x2, min_y2, max_y2) = e;
                                 p = [min_x2 + (p[1] - min_y), max_y2];
+                                assert!(inside(p, e));
                             }
                         }
                         (6, WEST) => {
@@ -397,8 +443,10 @@ fn part2(data: &Parsed) -> i64 {
                             if p[0] < min_x {
                                 f = 1;
                                 d = SOUTH;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                let e = *extents.get(&f).unwrap();
+                                let (min_x2, max_x2, min_y2, max_y2) = e;
                                 p = [min_x2 + (p[1] - min_y), min_y2];
+                                assert!(inside(p, e));
                             }
                         }
                         (6, NORTH) => {
@@ -406,8 +454,10 @@ fn part2(data: &Parsed) -> i64 {
                             if p[1] < min_y {
                                 f = 4;
                                 d = NORTH;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                let e = *extents.get(&f).unwrap();
+                                let (min_x2, max_x2, min_y2, max_y2) = e;
                                 p = [min_x2 + (p[0] - min_x), max_y2];
+                                assert!(inside(p, e));
                             }
                         }
                         (6, SOUTH) => {
@@ -415,8 +465,10 @@ fn part2(data: &Parsed) -> i64 {
                             if p[1] > max_y {
                                 f = 2;
                                 d = SOUTH;
-                                let (min_x2, max_x2, min_y2, max_y2) = *extents.get(&f).unwrap();
+                                let e = *extents.get(&f).unwrap();
+                                let (min_x2, max_x2, min_y2, max_y2) = e;
                                 p = [min_x2 + (p[0] - min_x), min_y2];
+                                assert!(inside(p, e));
                             }
                         }
                         _ => unreachable!(),

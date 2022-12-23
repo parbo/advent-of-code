@@ -1,6 +1,6 @@
 use aoc::{
-    neighbors_incl_diagonals, point_add, Grid, Point, EAST, NORTH, NORTH_EAST, NORTH_WEST, SOUTH,
-    SOUTH_EAST, SOUTH_WEST, WEST,
+    neighbors_incl_diagonals, point_add, Grid, Point, SmallVec, EAST, NORTH, NORTH_EAST,
+    NORTH_WEST, SOUTH, SOUTH_EAST, SOUTH_WEST, WEST,
 };
 use std::{collections::HashMap, iter::*};
 
@@ -67,7 +67,7 @@ fn solve(data: &Parsed, max: Option<usize>) -> (usize, usize) {
     let mut drawer = vis::Drawer::new(&format!("vis/23/part{}", if max.is_none() { 2 } else { 1 }));
     let mut rounds = 0;
     loop {
-        let mut proposed: HashMap<Point, Vec<Point>> = HashMap::new();
+        let mut proposed: HashMap<Point, SmallVec<[Point; 2]>> = HashMap::new();
         for p in g.keys() {
             if neighbors_incl_diagonals(*p).any(|n| g.get_value(n).is_some()) {
                 for (nb, d) in &rules {

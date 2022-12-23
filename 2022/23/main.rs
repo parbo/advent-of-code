@@ -1,6 +1,6 @@
 use aoc::{
-    neighbors_incl_diagonals, point_add, Grid, GridDrawer, Point, PrintGridDrawer, EAST, NORTH,
-    NORTH_EAST, NORTH_WEST, SOUTH, SOUTH_EAST, SOUTH_WEST, WEST,
+    neighbors_incl_diagonals, point_add, Grid, Point, EAST, NORTH, NORTH_EAST, NORTH_WEST, SOUTH,
+    SOUTH_EAST, SOUTH_WEST, WEST,
 };
 use std::{collections::HashMap, iter::*};
 
@@ -93,8 +93,7 @@ fn solve(data: &Parsed, max: Option<usize>) -> (i64, usize) {
                 g.insert(*to, '#');
             }
         }
-        let r = rules.remove(0);
-        rules.push(r);
+        rules.rotate_left(1);
         #[cfg(feature = "vis")]
         drawer.draw(&g);
         if let Some(x) = max {

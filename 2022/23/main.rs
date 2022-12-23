@@ -55,7 +55,7 @@ mod vis {
     }
 }
 
-fn solve(data: &Parsed, max: Option<usize>) -> (i64, usize) {
+fn solve(data: &Parsed, max: Option<usize>) -> (usize, usize) {
     let mut rules = vec![
         ([NORTH, NORTH_EAST, NORTH_WEST], NORTH),
         ([SOUTH, SOUTH_EAST, SOUTH_WEST], SOUTH),
@@ -96,19 +96,20 @@ fn solve(data: &Parsed, max: Option<usize>) -> (i64, usize) {
             break;
         }
     }
-    let ([min_x, min_y], [max_x, max_y]) = g.extents();
-    let mut empty = 0;
-    for y in min_y..=max_y {
-        for x in min_x..=max_x {
-            if g.get_value([x, y]).is_none() {
-                empty += 1;
+    let empty = g
+        .points()
+        .filter_map(|p| {
+            if g.get_value(p).is_none() {
+                Some(true)
+            } else {
+                None
             }
-        }
-    }
+        })
+        .count();
     (empty, rounds)
 }
 
-fn part1(data: &Parsed) -> i64 {
+fn part1(data: &Parsed) -> usize {
     solve(data, Some(10)).0
 }
 fn part2(data: &Parsed) -> usize {

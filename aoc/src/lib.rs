@@ -77,6 +77,8 @@ pub use self::vecmath::vec4_add;
 pub use self::vecmath::vec4_neg;
 pub use self::vecmath::vec4_sub;
 
+pub use smallvec::{smallvec, SmallVec};
+
 mod asciiset;
 pub use asciiset::*;
 

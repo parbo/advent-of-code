@@ -71,12 +71,8 @@ fn solve(data: &Parsed, max: Option<usize>) -> (i64, usize) {
         for p in g.keys() {
             if neighbors_incl_diagonals(*p).any(|n| g.get_value(n).is_some()) {
                 for (nb, d) in &rules {
-                    if nb.iter().all(|n| {
-                        let pp = point_add(*p, *n);
-                        g.get_value(pp).is_none()
-                    }) {
-                        let pp = point_add(*p, *d);
-                        proposed.entry(pp).or_default().push(*p);
+                    if nb.iter().all(|n| g.get_value(point_add(*p, *n)).is_none()) {
+                        proposed.entry(point_add(*p, *d)).or_default().push(*p);
                         break;
                     }
                 }

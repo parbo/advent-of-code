@@ -6,6 +6,55 @@ use std::{collections::HashMap, iter::*};
 
 type Parsed = HashMap<Point, char>;
 
+#[cfg(feature = "vis")]
+mod vis {
+    use super::*;
+
+    pub struct Drawer {
+        drawer: Box<dyn aoc::GridDrawer<HashMap<aoc::Point, char>, char>>,
+        grids: Vec<HashMap<Point, char>>,
+    }
+
+    fn make_col(c: char) -> [u8; 3] {
+        if c == '#' {
+            [255, 255, 255]
+        } else {
+            [0, 0, 0]
+        }
+    }
+
+    impl Drawer {
+        pub fn new(name: &str) -> Drawer {
+            let mut drawer = aoc::BitmapGridDrawer::new(make_col, name);
+            drawer.set_bg([0, 0, 0]);
+            Drawer {
+                drawer: Box::new(drawer),
+                grids: vec![],
+            }
+        }
+
+        pub fn draw(&mut self, grid: &HashMap<Point, char>) {
+            self.grids.push(grid.clone());
+        }
+    }
+
+    impl Drop for Drawer {
+        fn drop(&mut self) {
+            let extents = self.grids.iter().map(|g| g.extents()).collect::<Vec<_>>();
+            let minx = extents.iter().map(|(minp, _)| minp[0]).min().unwrap();
+            let maxx = extents.iter().map(|(_, maxp)| maxp[0]).max().unwrap();
+            let miny = extents.iter().map(|(minp, _)| minp[1]).min().unwrap();
+            let maxy = extents.iter().map(|(_, maxp)| maxp[1]).max().unwrap();
+            for grid in &self.grids {
+                let mut g = grid.clone();
+                g.insert([minx, miny], ' ');
+                g.insert([maxx, maxy], ' ');
+                self.drawer.draw(&g);
+            }
+        }
+    }
+}
+
 fn solve(data: &Parsed, max: Option<usize>) -> (i64, usize) {
     let mut rules = vec![
         ([NORTH, NORTH_EAST, NORTH_WEST], NORTH),
@@ -14,7 +63,8 @@ fn solve(data: &Parsed, max: Option<usize>) -> (i64, usize) {
         ([EAST, NORTH_EAST, SOUTH_EAST], EAST),
     ];
     let mut g = data.clone();
-    let mut gd = PrintGridDrawer::new(|c| c);
+    #[cfg(feature = "vis")]
+    let mut drawer = vis::Drawer::new(&format!("vis/23/part{}", if max.is_none() { 2 } else { 1 }));
     let mut rounds = 0;
     loop {
         let mut proposed: HashMap<Point, Vec<Point>> = HashMap::new();
@@ -45,8 +95,8 @@ fn solve(data: &Parsed, max: Option<usize>) -> (i64, usize) {
         }
         let r = rules.remove(0);
         rules.push(r);
-        // gd.draw(&g);
-        // println!();
+        #[cfg(feature = "vis")]
+        drawer.draw(&g);
         if let Some(x) = max {
             if x == rounds {
                 break;

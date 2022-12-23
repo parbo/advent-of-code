@@ -84,8 +84,7 @@ fn solve(data: &Parsed, max: Option<usize>) -> (usize, usize) {
         }
         for (to, from) in &proposed {
             if from.len() == 1 {
-                let r = g.remove(&from[0]);
-                assert!(r.is_some());
+                g.remove(&from[0]);
                 g.insert(*to, '#');
             }
         }

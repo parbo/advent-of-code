@@ -96,10 +96,8 @@ fn solve(data: &Parsed, max: Option<usize>) -> (i64, usize) {
         rules.rotate_left(1);
         #[cfg(feature = "vis")]
         drawer.draw(&g);
-        if let Some(x) = max {
-            if x == rounds {
-                break;
-            }
+        if Some(rounds) == max {
+            break;
         }
     }
     let ([min_x, min_y], [max_x, max_y]) = g.extents();

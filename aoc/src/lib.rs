@@ -2403,12 +2403,31 @@ fn find_repo_root(starting_directory: &Path) -> Option<PathBuf> {
     loop {
         path.push(file);
 
-        if path.is_file() {
+        if path.is_dir() {
+            path.pop();
             break Some(path);
         }
 
         if !(path.pop() && path.pop()) {
             // remove file && remove parent
+            break None;
+        }
+    }
+}
+
+fn find_year(starting_directory: &Path) -> Option<usize> {
+    let mut path: PathBuf = starting_directory.into();
+
+    loop {
+        if let Some(file) = path.file_name() {
+            if path.is_dir() && file.len() == 4 {
+                if let Some(year) = file.to_str().and_then(|x| x.parse::<usize>().ok()) {
+                    break Some(year);
+                }
+            }
+        }
+
+        if !path.pop() {
             break None;
         }
     }
@@ -2426,10 +2445,16 @@ pub fn read_lines() -> (i32, Vec<String>) {
     let filename = if args.len() > 2 {
         PathBuf::from(&args[2])
     } else {
-        if let Some(root) = find_repo_root(bin) {
-            root.join(day).join("input.txt")
-        } else {
-            PathBuf::from(day).join("input.txt")
+        let bin = std::fs::canonicalize(bin).unwrap_or_else(|_| bin.to_path_buf());
+        let root = find_repo_root(&bin);
+        let year = find_year(&bin);
+        match (root, year) {
+            (Some(root), Some(year)) => root
+                .join("inputs")
+                .join(year.to_string())
+                .join(day)
+                .join("input.txt"),
+            _ => PathBuf::from(day).join("input.txt"),
         }
     };
     println!("reading from {}", filename.display());

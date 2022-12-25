@@ -1,0 +1,15 @@
+[package]
+name = 'day24'
+version = '0.0.1'
+edition = '2021'
+
+[dependencies]
+aoc = {path = "../aoc"}
+parse-display = "0.6.0"
+
+[[bin]]
+name = 'day24'
+path = 'main.rs'
+
+[features]
+vis = []

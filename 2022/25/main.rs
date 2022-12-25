@@ -5,24 +5,23 @@ type Parsed = Vec<String>;
 const SNAFU: [char; 5] = ['=', '-', '0', '1', '2'];
 
 fn from_snafu(s: &str) -> i64 {
-    s.chars()
-        .fold(0, |acc, c| 
-                acc * 5 + (SNAFU.iter().position(|x| c == *x).unwrap() as i64 - 2)
-       )
+    s.chars().fold(0, |acc, c| {
+        acc * 5 + (SNAFU.iter().position(|x| c == *x).unwrap() as i64 - 2)
+    })
 }
 
 fn to_snafu(mut d: i64) -> String {
-    let mut snafu = vec![];
+    let mut snafu = String::new();
     loop {
         let fives = (d + 2) / 5;
         let v = (d + 2) - 5 * fives;
         d = (d + 5 - v) / 5;
-        snafu.push(SNAFU[v as usize]);
+        snafu.insert(0, SNAFU[v as usize]);
         if fives == 0 {
             break;
         }
     }
-    snafu.iter().rev().collect()
+    snafu
 }
 
 fn part1(data: &Parsed) -> String {

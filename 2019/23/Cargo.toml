@@ -1,0 +1,12 @@
+[package]
+name = 'day23'
+version = '0.0.1'
+edition = '2018'
+
+[dependencies]
+aoc = {path = "../aoc"}
+intcode = {path = "../intcode"}
+
+[[bin]]
+name = 'day23'
+path = 'main.rs'

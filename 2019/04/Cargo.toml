@@ -1,0 +1,11 @@
+[package]
+name = 'day04'
+version = '0.0.1'
+edition = '2018'
+
+[dependencies]
+itertools = "0.8.2"
+
+[[bin]]
+name = 'day04'
+path = 'main.rs'

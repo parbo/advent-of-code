@@ -1,0 +1,12 @@
+[package]
+name = 'template'
+version = '0.0.1'
+edition = '2018'
+
+[dependencies]
+aoc = {path = "../aoc"}
+intcode = {path = "../intcode"}
+
+[[bin]]
+name = 'template'
+path = 'main.rs'

@@ -1,0 +1,13 @@
+[package]
+name = 'day14'
+version = '0.0.1'
+edition = '2018'
+
+[dependencies]
+aoc = {path = "../aoc"}
+intcode = {path = "../intcode"}
+serde = { version = "1.0.103", features = ["derive"] }
+
+[[bin]]
+name = 'day14'
+path = 'main.rs'

@@ -1,11 +1,13 @@
 use aoc::Grid;
 use aoc::*;
 
+type Parsed = Vec<Vec<char>>;
+
 static DG: [u8; 3] = [0, 100, 0];
 static LG: [u8; 3] = [0, 255, 0];
 static OW: [u8; 3] = [200, 200, 200];
 
-fn part1(grid: &[Vec<char>], d: bool) -> usize {
+fn part1(grid: &Parsed, d: bool) -> usize {
     let mut g = grid.to_owned();
     let mut gd = aoc::BitmapSpriteGridDrawer::new(
         (2, 2),
@@ -55,7 +57,7 @@ fn part1(grid: &[Vec<char>], d: bool) -> usize {
     g.points().filter(|p| g.get_value(*p) == Some('#')).count()
 }
 
-fn part2(grid: &[Vec<char>], d: bool) -> usize {
+fn part2(grid: &Parsed, d: bool) -> usize {
     let mut g = grid.to_owned();
     let mut gd = aoc::BitmapSpriteGridDrawer::new(
         (2, 2),
@@ -112,7 +114,7 @@ fn part2(grid: &[Vec<char>], d: bool) -> usize {
     g.points().filter(|p| g.get_value(*p) == Some('#')).count()
 }
 
-fn parse(lines: &[String]) -> Vec<Vec<char>> {
+fn parse(lines: &[String]) -> Parsed {
     aoc::parse_grid(lines)
 }
 

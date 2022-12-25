@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::iter::*;
 
+type Parsed = Vec<i64>;
+
 fn find(numbers: &[i64], ix: usize) -> i64 {
     let mut seen = HashMap::new();
     let mut spoken = numbers.to_owned();
@@ -20,15 +22,15 @@ fn find(numbers: &[i64], ix: usize) -> i64 {
     *spoken.last().unwrap()
 }
 
-fn part1(numbers: &[i64]) -> i64 {
+fn part1(numbers: &Parsed) -> i64 {
     find(numbers, 2020)
 }
 
-fn part2(numbers: &[i64]) -> i64 {
+fn part2(numbers: &Parsed) -> i64 {
     find(numbers, 30000000)
 }
 
-fn parse(lines: &[String]) -> Vec<i64> {
+fn parse(lines: &[String]) -> Parsed {
     aoc::split_ch(&lines[0], ',')
         .iter()
         .map(|x| x.parse().unwrap())
@@ -36,14 +38,7 @@ fn parse(lines: &[String]) -> Vec<i64> {
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

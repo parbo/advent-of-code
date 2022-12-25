@@ -1,6 +1,8 @@
 use std::collections::HashSet;
 use std::iter::*;
 
+type Parsed = Vec<(String, i64)>;
+
 fn run(program: &[(String, i64)]) -> (bool, i64) {
     let mut accumulator = 0;
     let mut pc: i64 = 0;
@@ -26,11 +28,11 @@ fn run(program: &[(String, i64)]) -> (bool, i64) {
     (pc as usize == program.len(), accumulator)
 }
 
-fn part1(program: &[(String, i64)]) -> i64 {
+fn part1(program: &Parsed) -> i64 {
     run(program).1
 }
 
-fn part2(program: &[(String, i64)]) -> i64 {
+fn part2(program: &Parsed) -> i64 {
     let l = program.len();
     for m in 0..l {
         let mut p: Vec<_> = program.to_vec();
@@ -48,7 +50,7 @@ fn part2(program: &[(String, i64)]) -> i64 {
     0
 }
 
-fn parse(lines: &[String]) -> Vec<(String, i64)> {
+fn parse(lines: &[String]) -> Parsed {
     lines
         .iter()
         .map(|x| {
@@ -59,14 +61,7 @@ fn parse(lines: &[String]) -> Vec<(String, i64)> {
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

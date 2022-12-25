@@ -29,12 +29,12 @@ fn solve(lengths: &[u8], max: u8, rounds: usize) -> Vec<u8> {
     data
 }
 
-fn part1(data: &[ParsedItem]) -> Answer {
+fn part1(data: &Parsed) -> Answer {
     let res = solve(data, 255, 1);
     (res[0] as usize) * (res[1] as usize)
 }
 
-fn part2(data: &[ParsedItem]) -> String {
+fn part2(data: &Parsed) -> String {
     let mut data = data.to_vec();
     data.extend(vec![17, 31, 73, 47, 23]);
     let h = solve(&data, 255, 64);
@@ -71,21 +71,8 @@ fn parse(lines: &[String]) -> Parsed {
         .collect()
 }
 
-fn parse2(lines: &[String]) -> Parsed {
-    lines[0].as_bytes().to_vec()
-}
-
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    if part == 1 {
-        let parsed = parse(&lines);
-        let result = part1(&parsed);
-        println!("{}", result);
-    } else {
-        let parsed = parse2(&lines);
-        let result = part2(&parsed);
-        println!("{}", result);
-    };
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

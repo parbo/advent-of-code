@@ -111,7 +111,7 @@ fn parse_thing(x: &str) -> (i64, String) {
     aoc::from_str(x).unwrap()
 }
 
-fn parse(lines: &Vec<String>) -> HashMap<Material, (i64, Vec<Product>)> {
+fn parse(lines: &[String]) -> HashMap<Material, (i64, Vec<Product>)> {
     let mut requirements = HashMap::new();
     for line in lines {
         let sides: Vec<&str> = line.split("=>").collect();
@@ -135,14 +135,7 @@ fn parse(lines: &Vec<String>) -> HashMap<Material, (i64, Vec<Product>)> {
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

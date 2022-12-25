@@ -5,6 +5,8 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::iter::*;
 
+type Parsed = Vec<Vec<char>>;
+
 #[derive(Clone, Eq, PartialEq)]
 struct State {
     cost: usize,
@@ -253,7 +255,7 @@ fn find_portals(
     (start, end, portals)
 }
 
-fn part1(map: &Vec<Vec<char>>) -> usize {
+fn part1(map: &Parsed) -> usize {
     let (start, end, portals) = find_portals(&map);
     let mut m = Map::new(map, &portals, false);
     if let Some(res) = shortest_path(&mut m, (start.0, start.1, 0), (end.0, end.1, 0)) {
@@ -277,7 +279,7 @@ fn part1(map: &Vec<Vec<char>>) -> usize {
     }
 }
 
-fn part2(map: &Vec<Vec<char>>) -> usize {
+fn part2(map: &Parsed) -> usize {
     let (start, end, portals) = find_portals(&map);
     let mut m = Map::new(map, &portals, true);
     if let Some(res) = shortest_path(&mut m, (start.0, start.1, 0), (end.0, end.1, 0)) {
@@ -287,20 +289,12 @@ fn part2(map: &Vec<Vec<char>>) -> usize {
     }
 }
 
-fn parse(lines: &Vec<String>) -> Vec<Vec<char>> {
+fn parse(lines: &[String]) -> Parsed {
     lines.iter().map(|x| x.chars().collect()).collect()
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    //let parsed = intcode::parse_intcode(&lines);
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

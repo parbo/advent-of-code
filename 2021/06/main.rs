@@ -14,11 +14,11 @@ fn solve(f: &[ParsedItem], days: i32) -> Answer {
     fish.iter().sum::<i64>()
 }
 
-fn part1(f: &[ParsedItem]) -> Answer {
+fn part1(f: &Parsed) -> Answer {
     solve(f, 80)
 }
 
-fn part2(f: &[ParsedItem]) -> Answer {
+fn part2(f: &Parsed) -> Answer {
     solve(f, 256)
 }
 
@@ -30,14 +30,7 @@ fn parse(lines: &[String]) -> Parsed {
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

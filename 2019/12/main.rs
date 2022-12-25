@@ -78,7 +78,7 @@ fn part2(m: &Vec<Vec<i64>>) -> i64 {
     aoc::lcm(cycles[0], aoc::lcm(cycles[1], cycles[2]))
 }
 
-fn parse(lines: &Vec<String>) -> Vec<Vec<i64>> {
+fn parse(lines: &[String]) -> Vec<Vec<i64>> {
     lines
         .iter()
         .map(|line| {
@@ -89,14 +89,7 @@ fn parse(lines: &Vec<String>) -> Vec<Vec<i64>> {
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

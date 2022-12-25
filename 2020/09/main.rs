@@ -1,5 +1,7 @@
 use std::iter::*;
 
+type Parsed = Vec<i64>;
+
 fn is_valid(input: &[i64], num: usize, ix: usize) -> bool {
     for j in 0..num {
         for k in 0..num {
@@ -23,7 +25,7 @@ fn get_first_non_valid(input: &[i64], pl: usize) -> i64 {
     -1
 }
 
-fn part1(input: &[i64]) -> i64 {
+fn part1(input: &Parsed) -> i64 {
     get_first_non_valid(input, 25)
 }
 
@@ -43,23 +45,16 @@ fn find_weakness(input: &[i64], pl: usize) -> i64 {
     0
 }
 
-fn part2(input: &[i64]) -> i64 {
+fn part2(input: &Parsed) -> i64 {
     find_weakness(input, 25)
 }
 
-fn parse(lines: &[String]) -> Vec<i64> {
+fn parse(lines: &[String]) -> Parsed {
     lines.iter().map(|x| x.parse().unwrap()).collect()
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

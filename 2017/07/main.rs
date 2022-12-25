@@ -13,7 +13,7 @@ type ParsedItem = Program;
 type Parsed = Vec<ParsedItem>;
 type Answer = String;
 
-fn part1(data: &[ParsedItem]) -> Answer {
+fn part1(data: &Parsed) -> Answer {
     let names: HashSet<String> = data.iter().map(|x| x.name.clone()).collect();
     let supported: HashSet<String> = data.iter().flat_map(|x| x.supports.clone()).collect();
     let unsupported: Vec<&String> = names.difference(&supported).collect();
@@ -38,7 +38,7 @@ fn get_weight(data: &[ParsedItem], name: &str) -> u64 {
     0
 }
 
-fn part2(data: &[ParsedItem]) -> Answer {
+fn part2(data: &Parsed) -> Answer {
     let mut unbalanced = HashMap::new();
     for d in data {
         let weights: Vec<u64> = d.supports.iter().map(|n| get_weight(data, n)).collect();
@@ -102,24 +102,7 @@ fn parse(lines: &[String]) -> Parsed {
 }
 
 fn main() {
-    let start_time = Instant::now();
-    let (part, lines) = aoc::read_lines();
-    let io_time = Instant::now();
-    let parsed = parse(&lines);
-    let parse_time = Instant::now();
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    let done_time = Instant::now();
-    println!(
-        "read: {:?}, parse: {:?}, solve: {:?}\n",
-        io_time.duration_since(start_time),
-        parse_time.duration_since(io_time),
-        done_time.duration_since(parse_time)
-    );
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

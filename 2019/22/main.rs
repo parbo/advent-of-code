@@ -94,7 +94,7 @@ fn part2(input: &Vec<Shuffle>) -> i128 {
     pos_mod(ans, len)
 }
 
-fn parse(lines: &Vec<String>) -> Vec<Shuffle> {
+fn parse(lines: &[String]) -> Vec<Shuffle> {
     let mut res = vec![];
     for line in lines {
         if line == "deal into new stack" {
@@ -111,15 +111,7 @@ fn parse(lines: &Vec<String>) -> Vec<Shuffle> {
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    //let parsed = intcode::parse_intcode(&lines);
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

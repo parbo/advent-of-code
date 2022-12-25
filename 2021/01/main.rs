@@ -4,11 +4,11 @@ type ParsedItem = i64;
 type Parsed = Vec<ParsedItem>;
 type Answer = i64;
 
-fn part1(data: &[ParsedItem]) -> Answer {
+fn part1(data: &Parsed) -> Answer {
     data.windows(2).filter(|a| a[1] > a[0]).count() as i64
 }
 
-fn part2(data: &[ParsedItem]) -> Answer {
+fn part2(data: &Parsed) -> Answer {
     let sliding: Vec<_> = data.windows(3).map(|a| a.iter().sum()).collect();
     part1(&sliding)
 }
@@ -18,14 +18,7 @@ fn parse(lines: &[String]) -> Parsed {
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

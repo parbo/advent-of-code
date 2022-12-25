@@ -42,7 +42,7 @@ fn part2(layers: &Vec<Vec<u32>>) -> usize {
     0
 }
 
-fn parse(lines: &Vec<String>) -> Vec<Vec<u32>> {
+fn parse(lines: &[String]) -> Vec<Vec<u32>> {
     let image: Vec<_> = lines[0].chars().map(|x| x.to_digit(10).unwrap()).collect();
     let mut layers = vec![];
     let mut iter = image.into_iter();
@@ -62,14 +62,7 @@ fn parse(lines: &Vec<String>) -> Vec<Vec<u32>> {
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

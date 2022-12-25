@@ -1,6 +1,8 @@
 use std::iter::*;
 
-fn part1(rules: &[(String, Vec<(usize, String)>)]) -> i64 {
+type Parsed = Vec<(String, Vec<(usize, String)>)>;
+
+fn part1(rules: &Parsed) -> i64 {
     let mut graph = aoc::GraphMap::<&String, i32, aoc::Directed>::new();
     for (node, neighbors) in rules {
         let gp = graph.add_node(node);
@@ -20,7 +22,7 @@ fn part1(rules: &[(String, Vec<(usize, String)>)]) -> i64 {
     with_path
 }
 
-fn sum_bags(bag: &str, rules: &[(String, Vec<(usize, String)>)]) -> usize {
+fn sum_bags(bag: &str, rules: &Parsed) -> usize {
     for (node, neighbors) in rules {
         if node == bag {
             let mut tot = 1;
@@ -33,12 +35,12 @@ fn sum_bags(bag: &str, rules: &[(String, Vec<(usize, String)>)]) -> usize {
     0
 }
 
-fn part2(rules: &[(String, Vec<(usize, String)>)]) -> i64 {
+fn part2(rules: &Parsed) -> i64 {
     // - 1 as we're not counting the "shiny gold" bag
     sum_bags("shiny gold", rules) as i64 - 1
 }
 
-fn parse(lines: &[String]) -> Vec<(String, Vec<(usize, String)>)> {
+fn parse(lines: &[String]) -> Parsed {
     let rx1 = regex::Regex::new(r"^(.*) bags contain").unwrap();
     let rx2 = regex::Regex::new(r"(\d+) (.+?) bags?").unwrap();
     lines
@@ -64,14 +66,7 @@ fn parse(lines: &[String]) -> Vec<(String, Vec<(usize, String)>)> {
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

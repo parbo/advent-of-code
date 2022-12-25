@@ -204,14 +204,14 @@ fn gen_nums(program: &[ParsedItem], ix: usize, digs: &[i64], max: &mut i64, min:
     }
 }
 
-fn part1(program: &[ParsedItem]) -> Answer {
+fn part1(program: &Parsed) -> Answer {
     let mut max = 0;
     let mut min = 0;
     gen_nums(program, 0, &[], &mut max, &mut min);
     max
 }
 
-fn part2(program: &[ParsedItem]) -> Answer {
+fn part2(program: &Parsed) -> Answer {
     let mut max = 0;
     let mut min = i64::MAX;
     gen_nums(program, 0, &[], &mut max, &mut min);
@@ -223,24 +223,7 @@ fn parse(lines: &[String]) -> Parsed {
 }
 
 fn main() {
-    let start_time = Instant::now();
-    let (part, lines) = aoc::read_lines();
-    let io_time = Instant::now();
-    let parsed = parse(&lines);
-    let parse_time = Instant::now();
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    let done_time = Instant::now();
-    println!(
-        "read: {:?}, parse: {:?}, solve: {:?}\n",
-        io_time.duration_since(start_time),
-        parse_time.duration_since(io_time),
-        done_time.duration_since(parse_time)
-    );
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

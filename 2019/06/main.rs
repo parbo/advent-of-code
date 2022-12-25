@@ -69,7 +69,7 @@ fn part2(tree: &Tree) -> i64 {
         - 2
 }
 
-fn parse(lines: &Vec<String>) -> Tree {
+fn parse(lines: &[String]) -> Tree {
     let mut tree = Tree::new();
     lines
         .iter()
@@ -79,14 +79,7 @@ fn parse(lines: &Vec<String>) -> Tree {
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

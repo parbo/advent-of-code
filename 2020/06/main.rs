@@ -1,18 +1,20 @@
 use std::collections::HashMap;
 use std::iter::*;
 
-fn part1(groups: &[(usize, HashMap<char, usize>)]) -> usize {
+type Parsed = Vec<(usize, HashMap<char, usize>)>;
+
+fn part1(groups: &Parsed) -> usize {
     groups.iter().map(|(_c, m)| m.len()).sum()
 }
 
-fn part2(groups: &[(usize, HashMap<char, usize>)]) -> usize {
+fn part2(groups: &Parsed) -> usize {
     groups
         .iter()
         .map(|(c, m)| m.iter().filter(|(_k, v)| *v == c).count())
         .sum()
 }
 
-fn parse(lines: &[String]) -> Vec<(usize, HashMap<char, usize>)> {
+fn parse(lines: &[String]) -> Parsed {
     aoc::split_by_empty_line(lines)
         .iter()
         .map(|group| {
@@ -28,14 +30,7 @@ fn parse(lines: &[String]) -> Vec<(usize, HashMap<char, usize>)> {
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

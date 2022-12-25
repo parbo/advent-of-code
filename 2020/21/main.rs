@@ -126,15 +126,7 @@ fn parse(lines: &[String]) -> Parsed {
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    if part == 1 {
-        let res = part1(&parsed);
-        println!("{}", res)
-    } else {
-        let res = part2(&parsed);
-        println!("{}", res)
-    }
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

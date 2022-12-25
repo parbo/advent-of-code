@@ -4,7 +4,7 @@ type ParsedItem = Vec<char>;
 type Parsed = Vec<ParsedItem>;
 type Answer = i64;
 
-fn part1(numbers: &[ParsedItem]) -> Answer {
+fn part1(numbers: &Parsed) -> Answer {
     let bits = numbers[0].len();
     let mut gamma = 0;
     let mut epsilon = 0;
@@ -42,7 +42,7 @@ fn find(nums: &[ParsedItem], most: bool) -> Answer {
         .sum()
 }
 
-fn part2(numbers: &[ParsedItem]) -> Answer {
+fn part2(numbers: &Parsed) -> Answer {
     let o2r = find(numbers, true);
     let co2 = find(numbers, false);
     o2r * co2
@@ -53,14 +53,7 @@ fn parse(lines: &[String]) -> Parsed {
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

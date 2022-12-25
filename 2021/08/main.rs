@@ -1,10 +1,10 @@
 use std::{collections::HashMap, iter::*};
 
-type ParsedItem<'a> = (Vec<&'a str>, Vec<&'a str>);
-type Parsed<'a> = Vec<ParsedItem<'a>>;
+type ParsedItem = (Vec<String>, Vec<String>);
+type Parsed = Vec<ParsedItem>;
 type Answer = i64;
 
-fn part1(patterns: &[ParsedItem]) -> Answer {
+fn part1(patterns: &Parsed) -> Answer {
     patterns
         .iter()
         .map(|(_, output)| {
@@ -16,7 +16,7 @@ fn part1(patterns: &[ParsedItem]) -> Answer {
         .sum::<usize>() as Answer
 }
 
-fn part2(patterns: &[ParsedItem]) -> Answer {
+fn part2(patterns: &Parsed) -> Answer {
     let mut sum = 0;
     for (pattern, output) in patterns {
         let mut mappings = HashMap::new();
@@ -97,19 +97,17 @@ fn parse(lines: &[String]) -> Parsed {
     lines
         .iter()
         .map(|x| aoc::split_ch(x, '|'))
-        .map(|x| (aoc::split_w(x[0]), aoc::split_w(x[1])))
+        .map(|x| {
+            (
+                aoc::split_w(x[0]).into_iter().map(String::from).collect(),
+                aoc::split_w(x[1]).into_iter().map(String::from).collect(),
+            )
+        })
         .collect()
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

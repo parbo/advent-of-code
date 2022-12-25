@@ -38,7 +38,7 @@ fn score_line(line: &[char]) -> (bool, i64) {
     }
 }
 
-fn part1(lines: &[ParsedItem]) -> Answer {
+fn part1(lines: &Parsed) -> Answer {
     lines
         .iter()
         .map(|line| score_line(line))
@@ -46,7 +46,7 @@ fn part1(lines: &[ParsedItem]) -> Answer {
         .sum()
 }
 
-fn part2(lines: &[ParsedItem]) -> Answer {
+fn part2(lines: &Parsed) -> Answer {
     let mut scores: Vec<_> = lines
         .iter()
         .map(|line| score_line(line))
@@ -61,14 +61,7 @@ fn parse(lines: &[String]) -> Parsed {
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

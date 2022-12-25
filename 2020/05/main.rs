@@ -1,5 +1,7 @@
 use std::iter::*;
 
+type Parsed = Vec<Vec<char>>;
+
 fn find_seat(bp: &[char]) -> (i64, i64) {
     let mut start = 0;
     let mut end = 128;
@@ -22,7 +24,7 @@ fn find_seat(bp: &[char]) -> (i64, i64) {
     (start, cstart)
 }
 
-fn part1(bps: &[Vec<char>]) -> i64 {
+fn part1(bps: &Parsed) -> i64 {
     bps.iter()
         .map(|bp| {
             let seat = find_seat(&bp);
@@ -32,7 +34,7 @@ fn part1(bps: &[Vec<char>]) -> i64 {
         .unwrap()
 }
 
-fn part2(bps: &[Vec<char>]) -> i64 {
+fn part2(bps: &Parsed) -> i64 {
     let mut ids: Vec<_> = bps
         .iter()
         .map(|bp| {
@@ -58,14 +60,7 @@ fn parse(lines: &[String]) -> Vec<Vec<char>> {
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

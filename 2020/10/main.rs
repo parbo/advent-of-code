@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::iter::*;
 
+type Parsed = Vec<i64>;
+
 fn make_graph(adapters: &[i64]) -> (i64, i64, aoc::GraphMap<i64, i32, aoc::Directed>) {
     let mut graph = aoc::GraphMap::<i64, i32, aoc::Directed>::new();
     let outlet: i64 = 0;
@@ -48,7 +50,7 @@ fn longest_path(
     }
 }
 
-fn part1(adapters: &[i64]) -> i64 {
+fn part1(adapters: &Parsed) -> i64 {
     let (outlet, device, graph) = make_graph(adapters);
     let mut dist = HashMap::new();
     let path = longest_path(&graph, outlet, device, &mut dist);
@@ -85,7 +87,7 @@ fn find_npaths(
     }
 }
 
-fn part2(adapters: &[i64]) -> i64 {
+fn part2(adapters: &Parsed) -> i64 {
     let (outlet, device, graph) = make_graph(adapters);
     let mut npaths = HashMap::new();
     find_npaths(&graph, outlet, device, &mut npaths)
@@ -96,14 +98,7 @@ fn parse(lines: &[String]) -> Vec<i64> {
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

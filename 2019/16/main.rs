@@ -53,7 +53,7 @@ fn part2(input: &Vec<i64>) -> i64 {
     calc(&inp, 100, digs_to_num(input, 7) as usize)
 }
 
-fn parse(lines: &Vec<String>) -> Vec<i64> {
+fn parse(lines: &[String]) -> Vec<i64> {
     lines[0]
         .chars()
         .map(|x| x.to_digit(10).unwrap() as i64)
@@ -61,14 +61,7 @@ fn parse(lines: &Vec<String>) -> Vec<i64> {
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

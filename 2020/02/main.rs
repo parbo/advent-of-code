@@ -1,5 +1,7 @@
 use std::iter::*;
 
+type Parsed = Vec<Policy>;
+
 #[derive(parse_display::Display, parse_display::FromStr, Debug)]
 #[display("{min}-{max} {c}: {password}")]
 struct Policy {
@@ -21,11 +23,11 @@ impl Policy {
     }
 }
 
-fn part1(passwords: &[Policy]) -> usize {
+fn part1(passwords: &Parsed) -> usize {
     passwords.iter().filter(|p| p.is_valid()).count()
 }
 
-fn part2(passwords: &[Policy]) -> usize {
+fn part2(passwords: &Parsed) -> usize {
     passwords.iter().filter(|p| p.is_valid_updated()).count()
 }
 
@@ -34,12 +36,5 @@ fn parse(lines: &[String]) -> Vec<Policy> {
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }

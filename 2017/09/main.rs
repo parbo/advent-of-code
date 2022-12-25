@@ -2,16 +2,7 @@ use std::iter::*;
 use std::ops::Range;
 use std::time::Instant;
 
-// #[derive(parse_display::Display, parse_display::FromStr, Debug, Clone, PartialEq, Eq, Hash)]
-// #[display("{thing}: {al}-{ah} or {bl}-{bh}")]
-// struct Rule {
-//     thing: String,
-//     al: i64,
-//     ah: i64,
-//     bl: i64,
-//     bh: i64,
-// }
-
+type Parsed = Vec<char>;
 type Answer = i64;
 
 fn parse_garbage(stream: &[char], rg: Range<usize>) -> Option<(usize, usize)> {
@@ -66,39 +57,22 @@ fn parse_group(stream: &[char], rg: Range<usize>, level: usize) -> (usize, usize
     (rg.end, score, garbage)
 }
 
-fn part1(stream: &[char]) -> Answer {
+fn part1(stream: &Parsed) -> Answer {
     let (_end, score, _garbage) = parse_group(stream, 0..stream.len(), 0);
     score as i64
 }
 
-fn part2(stream: &[char]) -> Answer {
+fn part2(stream: &Parsed) -> Answer {
     let (_end, _score, garbage) = parse_group(stream, 0..stream.len(), 0);
     garbage as i64
 }
 
-fn parse(lines: &[String]) -> Vec<char> {
+fn parse(lines: &[String]) -> Parsed {
     lines[0].chars().collect()
 }
 
 fn main() {
-    let start_time = Instant::now();
-    let (part, lines) = aoc::read_lines();
-    let io_time = Instant::now();
-    let parsed = parse(&lines);
-    let parse_time = Instant::now();
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    let done_time = Instant::now();
-    println!(
-        "read: {:?}, parse: {:?}, solve: {:?}\n",
-        io_time.duration_since(start_time),
-        parse_time.duration_since(io_time),
-        done_time.duration_since(parse_time)
-    );
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

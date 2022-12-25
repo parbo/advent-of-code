@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use std::iter::*;
 use std::time::Instant;
 
+type Parsed = String;
+
 // From day 10
 fn knot_hash(data: &[u8]) -> Vec<u8> {
     fn reverse(data: &mut [u8], pos: usize, length: usize) {
@@ -60,7 +62,7 @@ fn knot_hash(data: &[u8]) -> Vec<u8> {
 
 type Answer = i64;
 
-fn part1(key: &str) -> Answer {
+fn part1(key: &String) -> Answer {
     let mut used = 0;
     for i in 0..128 {
         let hash = knot_hash(format!("{}-{}", key, i).as_bytes());
@@ -71,7 +73,7 @@ fn part1(key: &str) -> Answer {
     used as i64
 }
 
-fn part2(key: &str) -> Answer {
+fn part2(key: &String) -> Answer {
     let mut grid = HashMap::new();
     for row in 0..128 {
         let hash = knot_hash(format!("{}-{}", key, row).as_bytes());
@@ -103,24 +105,7 @@ fn parse(lines: &[String]) -> String {
 }
 
 fn main() {
-    let start_time = Instant::now();
-    let (part, lines) = aoc::read_lines();
-    let io_time = Instant::now();
-    let parsed = parse(&lines);
-    let parse_time = Instant::now();
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    let done_time = Instant::now();
-    println!(
-        "read: {:?}, parse: {:?}, solve: {:?}\n",
-        io_time.duration_since(start_time),
-        parse_time.duration_since(io_time),
-        done_time.duration_since(parse_time)
-    );
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]
@@ -129,11 +114,11 @@ mod tests {
 
     #[test]
     fn test_part1() {
-        assert_eq!(part1("flqrgnkx"), 8108);
+        assert_eq!(part1(&"flqrgnkx".to_string()), 8108);
     }
 
     #[test]
     fn test_part2() {
-        assert_eq!(part2("flqrgnkx"), 1242);
+        assert_eq!(part2(&"flqrgnkx".to_string()), 1242);
     }
 }

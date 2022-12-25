@@ -1,6 +1,5 @@
 use aoc::FxHashMap;
 use std::iter::*;
-use std::time::Instant;
 
 #[derive(
     parse_display::Display, parse_display::FromStr, Debug, Copy, Clone, PartialEq, Eq, Hash,
@@ -50,7 +49,7 @@ type ParsedItem = Cuboid;
 type Parsed = Vec<ParsedItem>;
 type Answer = i64;
 
-fn part1(cuboids: &[ParsedItem]) -> Answer {
+fn part1(cuboids: &Parsed) -> Answer {
     let mut cubes = FxHashMap::default();
     for c in cuboids {
         if c.minx < -50 || c.maxx > 50 || c.miny < -50 || c.maxy > 50 || c.minz < -50 || c.maxz > 50
@@ -347,7 +346,7 @@ fn solve(cuboids: &[ParsedItem], d: bool) -> Answer {
         .sum::<i64>()
 }
 
-fn part2(cuboids: &[ParsedItem]) -> Answer {
+fn part2(cuboids: &Parsed) -> Answer {
     solve(cuboids, false)
 }
 
@@ -356,26 +355,7 @@ fn parse(lines: &[String]) -> Parsed {
 }
 
 fn main() {
-    let start_time = Instant::now();
-    let (part, lines) = aoc::read_lines();
-    let io_time = Instant::now();
-    let parsed = parse(&lines);
-    let parse_time = Instant::now();
-    let result = if part == 1 {
-        part1(&parsed)
-    } else if part == 2 {
-        part2(&parsed)
-    } else {
-        solve(&parsed, true)
-    };
-    let done_time = Instant::now();
-    println!(
-        "read: {:?}, parse: {:?}, solve: {:?}\n",
-        io_time.duration_since(start_time),
-        parse_time.duration_since(io_time),
-        done_time.duration_since(parse_time)
-    );
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

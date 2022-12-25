@@ -4,7 +4,7 @@ type ParsedItem = i64;
 type Parsed = Vec<ParsedItem>;
 type Answer = i64;
 
-fn part1(crabs: &[ParsedItem]) -> Answer {
+fn part1(crabs: &Parsed) -> Answer {
     let s = *crabs.iter().min().unwrap();
     let e = *crabs.iter().max().unwrap();
     (s..e)
@@ -13,7 +13,7 @@ fn part1(crabs: &[ParsedItem]) -> Answer {
         .unwrap()
 }
 
-fn part2(crabs: &[ParsedItem]) -> Answer {
+fn part2(crabs: &Parsed) -> Answer {
     let s = *crabs.iter().min().unwrap();
     let e = *crabs.iter().max().unwrap();
     (s..e)
@@ -35,14 +35,7 @@ fn parse(lines: &[String]) -> Parsed {
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

@@ -23,7 +23,7 @@ fn get_groups(connections: &[ParsedItem]) -> Vec<Vec<&String>> {
     aoc::algo::kosaraju_scc(&graph)
 }
 
-fn part1(connections: &[ParsedItem]) -> Answer {
+fn part1(connections: &Parsed) -> Answer {
     let groups = get_groups(connections);
     for c in groups {
         if c.contains(&&"0".to_string()) {
@@ -33,7 +33,7 @@ fn part1(connections: &[ParsedItem]) -> Answer {
     panic!()
 }
 
-fn part2(connections: &[ParsedItem]) -> Answer {
+fn part2(connections: &Parsed) -> Answer {
     let groups = get_groups(connections);
     groups.len() as i64
 }
@@ -54,22 +54,5 @@ fn parse(lines: &[String]) -> Parsed {
 }
 
 fn main() {
-    let start_time = Instant::now();
-    let (part, lines) = aoc::read_lines();
-    let io_time = Instant::now();
-    let parsed = parse(&lines);
-    let parse_time = Instant::now();
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    let done_time = Instant::now();
-    println!(
-        "read: {:?}, parse: {:?}, solve: {:?}\n",
-        io_time.duration_since(start_time),
-        parse_time.duration_since(io_time),
-        done_time.duration_since(parse_time)
-    );
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }

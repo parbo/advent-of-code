@@ -2,6 +2,8 @@ use aoc::*;
 use std::collections::HashMap;
 use std::iter::*;
 
+type Parsed = Vec<(char, i64)>;
+
 fn draw(orig_path: &[(Point, Point)], s: &str, scale: i64) {
     let mut minx = 0;
     let mut miny = 0;
@@ -91,7 +93,7 @@ fn draw(orig_path: &[(Point, Point)], s: &str, scale: i64) {
     }
 }
 
-fn part1(moves: &[(char, i64)], d: bool) -> i64 {
+fn part1(moves: &Parsed, d: bool) -> i64 {
     let mut curr = [0, 0];
     let mut facing = EAST;
     let mut path = vec![(curr, facing)];
@@ -122,7 +124,7 @@ fn part1(moves: &[(char, i64)], d: bool) -> i64 {
     curr[0].abs() + curr[1].abs()
 }
 
-fn part2(moves: &[(char, i64)], d: bool) -> i64 {
+fn part2(moves: &Parsed, d: bool) -> i64 {
     let mut waypoint = [10, -1];
     let mut ship = [0, 0];
     let mut path = vec![(ship, waypoint)];
@@ -153,7 +155,7 @@ fn part2(moves: &[(char, i64)], d: bool) -> i64 {
     ship[0].abs() + ship[1].abs()
 }
 
-fn parse(lines: &[String]) -> Vec<(char, i64)> {
+fn parse(lines: &[String]) -> Parsed {
     lines
         .iter()
         .map(|x| (x.chars().next().unwrap(), x[1..].parse().unwrap()))

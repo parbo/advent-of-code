@@ -128,19 +128,12 @@ fn part2(things: &Vec<Vec<char>>) -> i64 {
     solve_part2(things, x, y)
 }
 
-fn parse(lines: &Vec<String>) -> Vec<Vec<char>> {
+fn parse(lines: &[String]) -> Vec<Vec<char>> {
     lines.into_iter().map(|x| x.chars().collect()).collect()
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+type Parsed = Vec<HashMap<String, String>>;
+
 fn is_valid(p: &HashMap<String, String>) -> bool {
     if p.len() == 8 {
         true
@@ -43,15 +45,15 @@ fn is_valid_details(p: &HashMap<String, String>) -> bool {
         })
 }
 
-fn part1(passports: &[HashMap<String, String>]) -> usize {
+fn part1(passports: &Parsed) -> usize {
     passports.iter().filter(|x| is_valid(x)).count()
 }
 
-fn part2(passports: &[HashMap<String, String>]) -> usize {
+fn part2(passports: &Parsed) -> usize {
     passports.iter().filter(|x| is_valid_details(x)).count()
 }
 
-fn parse(lines: &[String]) -> Vec<HashMap<String, String>> {
+fn parse(lines: &[String]) -> Parsed {
     aoc::split_by_empty_line(lines)
         .iter()
         .map(|group| group.join(" "))
@@ -68,14 +70,7 @@ fn parse(lines: &[String]) -> Vec<HashMap<String, String>> {
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

@@ -14,7 +14,7 @@ fn roll(d: i64) -> i64 {
     }
 }
 
-fn part1(players: &[ParsedItem]) -> Answer {
+fn part1(players: &Parsed) -> Answer {
     let mut p = players.to_owned();
     let mut s = vec![0; p.len()];
     let mut die = 0;
@@ -36,7 +36,7 @@ fn part1(players: &[ParsedItem]) -> Answer {
     rolls * s.iter().min().unwrap()
 }
 
-fn part2(players: &[ParsedItem]) -> Answer {
+fn part2(players: &Parsed) -> Answer {
     let mut games = HashMap::new();
     games.insert((players[0], players[1], 0, 0), 1i64);
 
@@ -107,24 +107,7 @@ fn parse(lines: &[String]) -> Parsed {
 }
 
 fn main() {
-    let start_time = Instant::now();
-    let (part, lines) = aoc::read_lines();
-    let io_time = Instant::now();
-    let parsed = parse(&lines);
-    let parse_time = Instant::now();
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    let done_time = Instant::now();
-    println!(
-        "read: {:?}, parse: {:?}, solve: {:?}\n",
-        io_time.duration_since(start_time),
-        parse_time.duration_since(io_time),
-        done_time.duration_since(parse_time)
-    );
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

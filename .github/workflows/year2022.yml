@@ -26,4 +26,5 @@ jobs:
       run: cargo clippy --manifest-path=2022/Cargo.toml
     - name: Check formatting of Rust code with rustfmt
       uses: actions-rust-lang/rustfmt@V1.1.0
-      manifest-path: 2022/Cargo.toml
+      with:
+        manifest-path: 2022/Cargo.toml

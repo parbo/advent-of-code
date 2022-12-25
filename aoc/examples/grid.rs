@@ -1,4 +1,4 @@
-use aoc::GridDrawer;
+use aoc::{Grid, GridDrawer};
 
 fn make_grid() -> Vec<String> {
     vec![
@@ -315,9 +315,20 @@ fn save_ppm() {
     gd.draw(&grid);
 }
 
+fn print_string(a: &str) {
+    let mut g = vec![
+        vec![' '; a.len() * aoc::SMALLFONT.glyph_size().0 as usize];
+        aoc::SMALLFONT.glyph_size().1 as usize
+    ];
+    g.text(a, [0, 0], '#');
+    let mut gd = aoc::PrintGridDrawer::new(|c| c);
+    gd.draw(&g);
+}
+
 fn main() {
     print_i64();
     println!();
     print_char();
     save_ppm();
+    print_string("Testar lite");
 }

@@ -20,10 +20,10 @@ extern crate lazy_static;
 
 extern crate vecmath;
 
+pub use fnv::FnvHashMap;
+pub use fnv::FnvHashSet;
 pub use itertools::Itertools;
 pub use mod_exp::mod_exp;
-pub use num::integer::*;
-pub use pancurses::*;
 pub use petgraph::algo;
 pub use petgraph::graph::DiGraph;
 pub use petgraph::graph::Graph;
@@ -33,15 +33,10 @@ pub use petgraph::graphmap::GraphMap;
 pub use petgraph::graphmap::UnGraphMap;
 pub use petgraph::visit;
 pub use petgraph::Direction::Outgoing;
-pub use petgraph::*;
-pub use regex::*;
-pub use serde_scan::from_str;
-pub use serde_scan::scan;
-
-pub use fnv::FnvHashMap;
-pub use fnv::FnvHashSet;
 pub use rustc_hash::FxHashMap;
 pub use rustc_hash::FxHashSet;
+pub use serde_scan::from_str;
+pub use serde_scan::scan;
 
 pub type Point = self::vecmath::Vector2<i64>;
 pub type FPoint = self::vecmath::Vector2<f64>;
@@ -81,6 +76,11 @@ pub use self::vecmath::vec3_sub as vec_sub;
 pub use self::vecmath::vec4_add;
 pub use self::vecmath::vec4_neg;
 pub use self::vecmath::vec4_sub;
+
+pub use smallvec::{smallvec, SmallVec};
+
+mod asciiset;
+pub use asciiset::*;
 
 pub fn length(v: FVec3) -> f64 {
     vec_square_length(v).sqrt()
@@ -399,7 +399,7 @@ where
 
     for y in min[1]..=max[1] {
         for x in min[0]..=max[0] {
-            let p: Point = [x as i64, y as i64];
+            let p: Point = [x, y];
             if let Some(c) = grid.get_value(p) {
                 if is_node(&p, &c) {
                     let gp = graph.add_node(p);
@@ -449,7 +449,7 @@ where
 
     for y in min[1]..=max[1] {
         for x in min[0]..=max[0] {
-            let p: Point = [x as i64, y as i64];
+            let p: Point = [x, y];
             if let Some(c) = grid.get_value(p) {
                 if is_node(&p, &c) {
                     let gp = graph.add_node(p);
@@ -795,6 +795,31 @@ where
                     self.set_value([xxx, yyy], v);
                 }
             }
+        }
+    }
+    fn text_ch(&mut self, c: char, pos: Point, value: T) {
+        let mut tmp = [0u8; 4];
+        let s = c.encode_utf8(&mut tmp);
+        self.text(s, pos, value);
+    }
+
+    fn text(&mut self, a: &str, mut pos: Point, value: T) {
+        let (w, h) = SMALLFONT.glyph_size();
+        for c in a.chars() {
+            if let Some(glyph) = SMALLFONT.glyph(c as u32) {
+                for y in 0..h {
+                    for x in 0..w {
+                        let byte = y + (x / 8);
+                        let bit = 7 - (x % 8);
+                        if (glyph[byte as usize] & (1 << bit)) == 0 {
+                            // Do nothing
+                        } else {
+                            self.set_value(point_add(pos, [x as i64, y as i64]), value);
+                        }
+                    }
+                }
+            }
+            pos[0] += w as i64;
         }
     }
 }
@@ -1359,7 +1384,7 @@ where
     pub fn save_image(&self) {
         let path = Path::new(&self.basename);
         let filename = if let Some(parent) = path.parent() {
-            parent.join(&format!(
+            parent.join(format!(
                 "{}_{:06}.png",
                 path.file_name().unwrap().to_str().unwrap(),
                 self.frame
@@ -1502,7 +1527,7 @@ where
     pub fn save_image(&self) {
         let path = Path::new(&self.basename);
         let filename = if let Some(parent) = path.parent() {
-            parent.join(&format!(
+            parent.join(format!(
                 "{}_{:06}.png",
                 path.file_name().unwrap().to_str().unwrap(),
                 self.frame
@@ -1528,22 +1553,14 @@ where
         let width = max_x - min_x + 1;
         let height = max_y - min_y + 1;
         // Default bg is white
-        let mut buffer = vec![255; (3 * width * height) as usize];
-        buffer.chunks_mut(3).for_each(|c| {
-            c[0] = self.bg[0];
-            c[1] = self.bg[1];
-            c[2] = self.bg[2]
-        });
-        let mut image = RgbImage::from_raw(width as u32, height as u32, buffer).unwrap();
-        for y in min_y..=max_y {
-            for x in min_x..=max_x {
-                if let Some(value) = area.get_value([x, y]) {
-                    let color = self.to_color(value);
-                    let yy = y - min_y;
-                    let xx = x - min_x;
-                    let rgb = Rgb(color);
-                    image.put_pixel(xx as u32, yy as u32, rgb);
-                }
+        let mut image = RgbImage::from_pixel(width as u32, height as u32, image::Rgb(self.bg));
+        for [x, y] in area.points() {
+            if let Some(value) = area.get_value([x, y]) {
+                let color = self.to_color(value);
+                let yy = y - min_y;
+                let xx = x - min_x;
+                let rgb = Rgb(color);
+                image.put_pixel(xx as u32, yy as u32, rgb);
             }
         }
         self.image = Some(image);
@@ -1990,7 +2007,7 @@ where
                 print!("  ");
             }
             for x in min_x..=max_x {
-                let p = [x as i64, y as i64];
+                let p = [x, y];
                 let d = T::default();
                 let c = g.get(&p).unwrap_or(&d);
                 print!("| {} ", self.to_char(*c));
@@ -2088,8 +2105,8 @@ where
         let hh = (2 * (max_y - min_y + 1)) as i32;
         let xoffs = (self.w - ww) / 2;
         let yoffs = (self.h - hh) / 2;
-        let mut xx = xoffs as i32;
-        let mut yy = yoffs as i32;
+        let mut xx = xoffs;
+        let mut yy = yoffs;
         if min_y.rem_euclid(2) == 0 {
             self.put(xx, yy, ' ');
             xx += 1;
@@ -2118,7 +2135,7 @@ where
                 xx += 2;
             }
             for x in min_x..=max_x {
-                let p = [x as i64, y as i64];
+                let p = [x, y];
                 let d = T::default();
                 let c = grid.get(&p).unwrap_or(&d);
                 let s = format!("| {} ", self.to_char(*c));
@@ -2220,7 +2237,7 @@ where
     pub fn save_image(&self) {
         let path = Path::new(&self.basename);
         let filename = if let Some(parent) = path.parent() {
-            parent.join(&format!(
+            parent.join(format!(
                 "{}_{:06}.png",
                 path.file_name().unwrap().to_str().unwrap(),
                 self.frame
@@ -2247,10 +2264,7 @@ where
             let (xoffs, yoffs) = if y.rem_euclid(2) != 0 { (3, 0) } else { (0, 0) };
             for x in min_x..=max_x {
                 image.blit(
-                    [
-                        ((x - min_x) * 6 + xoffs) as i64,
-                        ((y - min_y) * 5 + yoffs) as i64,
-                    ],
+                    [(x - min_x) * 6 + xoffs, (y - min_y) * 5 + yoffs],
                     &self.hexagon,
                 );
             }
@@ -2259,13 +2273,10 @@ where
         for y in min_y..=max_y {
             let (xoffs, yoffs) = if y.rem_euclid(2) != 0 { (3, 0) } else { (0, 0) };
             for x in min_x..=max_x {
-                let p = [x as i64, y as i64];
+                let p = [x, y];
                 if let Some(c) = g.get(&p) {
                     image.fill(
-                        [
-                            ((x - min_x) * 6 + xoffs + 3) as i64,
-                            ((y - min_y) * 5 + yoffs + 3) as i64,
-                        ],
+                        [(x - min_x) * 6 + xoffs + 3, (y - min_y) * 5 + yoffs + 3],
                         (self.to_color)(*c),
                     );
                 }
@@ -2295,6 +2306,76 @@ where
         self.draw_grid(area);
         self.save_image();
     }
+}
+
+// psf font parser from https://gist.github.com/hinzundcode/0480c5c8aa220cd43cc8da634119a3c0
+const PSF2_MAGIC: [u8; 4] = [0x72, 0xb5, 0x4a, 0x86];
+
+#[derive(Debug)]
+pub enum FontError {
+    OutOfBounds,
+    InvalidMagic,
+}
+
+#[repr(C, packed)]
+struct PSF2Header {
+    magic: [u8; 4],
+    version: u32,
+    header_size: u32,
+    flags: u32,
+    length: u32,
+    char_size: u32,
+    height: u32,
+    width: u32,
+}
+
+pub struct PSF2Font<'a> {
+    data: &'a [u8],
+    header: &'a PSF2Header,
+}
+
+impl<'a> PSF2Font<'a> {
+    pub fn parse(data: &'a [u8]) -> Result<Self, FontError> {
+        if data.len() < std::mem::size_of::<PSF2Header>() {
+            return Err(FontError::OutOfBounds);
+        }
+
+        let header = unsafe { &(*(data.as_ptr() as *const PSF2Header)) };
+
+        if header.magic != PSF2_MAGIC {
+            return Err(FontError::InvalidMagic);
+        }
+
+        let last_glyph_pos = header.header_size + header.char_size * (header.length - 1);
+        if data.len() < last_glyph_pos as usize {
+            return Err(FontError::OutOfBounds);
+        }
+
+        Ok(PSF2Font { data, header })
+    }
+
+    pub fn glyph_size(&self) -> (u32, u32) {
+        (self.header.width, self.header.height)
+    }
+
+    pub fn glyph_count(&self) -> u32 {
+        self.header.length
+    }
+
+    pub fn glyph(&self, index: u32) -> Option<&[u8]> {
+        if index >= self.header.length {
+            return None;
+        }
+
+        let length = self.header.char_size as usize;
+        let offset = self.header.header_size as usize + index as usize * length;
+        Some(&self.data[offset..(offset + length)])
+    }
+}
+
+lazy_static! {
+    pub static ref SMALLFONT: PSF2Font<'static> =
+        PSF2Font::parse(include_bytes!("../fonts/Tamsyn5x9r.psf")).unwrap();
 }
 
 pub fn read_lines_from(filename: &str) -> Vec<String> {
@@ -2375,6 +2456,15 @@ pub fn to_hex(data: &[u8]) -> String {
     s
 }
 
+pub fn things<T>(s: &str) -> Vec<T>
+where
+    T: std::str::FromStr,
+{
+    s.split(|c: char| c.is_whitespace() || [',', ';', ':', '|'].contains(&c))
+        .filter_map(|x| x.parse().ok())
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2449,7 +2539,7 @@ mod tests {
     #[test]
     fn test_parse_point_ok() {
         let parsed = parse_point("12,42");
-        assert!(!parsed.is_err());
+        assert!(parsed.is_ok());
         assert_eq!(parsed.unwrap(), [12, 42]);
     }
 
@@ -2460,5 +2550,16 @@ mod tests {
         assert!(parse_point("12,42,").is_err());
         assert!(parse_point("12,a2").is_err());
         assert!(parse_point("a2,42").is_err());
+    }
+
+    #[test]
+    fn test_things() {
+        let [a,b,c,d] = things::<i64>("apa 1 giraff 3 elefant 5 6")[..] else {
+            unreachable!()
+        };
+        assert_eq!(a, 1);
+        assert_eq!(b, 3);
+        assert_eq!(c, 5);
+        assert_eq!(d, 6);
     }
 }

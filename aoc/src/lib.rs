@@ -2386,14 +2386,32 @@ lazy_static! {
         PSF2Font::parse(include_bytes!("../fonts/Tamsyn5x9r.psf")).unwrap();
 }
 
-pub fn read_lines_from(filename: &str) -> Vec<String> {
-    let input = File::open(Path::new(filename)).unwrap();
+pub fn read_lines_from<P: AsRef<Path>>(filename: P) -> Vec<String> {
+    let input = File::open(filename).unwrap();
     let buffered = BufReader::new(input);
     buffered
         .lines()
         .filter_map(Result::ok)
         .map(|x| x.trim_end_matches('\n').to_string())
         .collect()
+}
+
+fn find_repo_root(starting_directory: &Path) -> Option<PathBuf> {
+    let mut path: PathBuf = starting_directory.into();
+    let file = Path::new(".git");
+
+    loop {
+        path.push(file);
+
+        if path.is_file() {
+            break Some(path);
+        }
+
+        if !(path.pop() && path.pop()) {
+            // remove file && remove parent
+            break None;
+        }
+    }
 }
 
 pub fn read_lines() -> (i32, Vec<String>) {
@@ -2406,11 +2424,15 @@ pub fn read_lines() -> (i32, Vec<String>) {
         -1
     };
     let filename = if args.len() > 2 {
-        args[2].to_string()
+        PathBuf::from(&args[2])
     } else {
-        format!("{}/input.txt", day)
+        if let Some(root) = find_repo_root(bin) {
+            root.join(day).join("input.txt")
+        } else {
+            PathBuf::from(day).join("input.txt")
+        }
     };
-    println!("reading from {}", filename);
+    println!("reading from {}", filename.display());
 
     (part, read_lines_from(&filename))
 }

@@ -1,17 +1,19 @@
 [package]
 name = 'aoc'
 version = '0.0.1'
-edition = '2018'
+edition = '2021'
 
 [dependencies]
 num = "0.2.0"
 serde_scan = "0.3.2"
 mod_exp = "1.0.1"
 lazy_static = "1.4.0"
-petgraph = "0.5.1"
+petgraph = "0.6.0"
 itertools = "0.8.0"
 regex = "1.4.2"
 image = "0.23.12"
+fnv = "1.0.7"
+rustc-hash = "1.1.0"
 
 [dependencies.pancurses]
 version = "0.16"

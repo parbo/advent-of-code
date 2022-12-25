@@ -1,5 +1,6 @@
 use image::{GenericImageView, Rgb, RgbImage};
-use std::collections::HashMap;
+use std::cmp::Reverse;
+use std::collections::{BTreeMap, BinaryHeap, HashMap, HashSet};
 use std::env;
 use std::error;
 use std::fmt;
@@ -22,15 +23,23 @@ pub use mod_exp::mod_exp;
 pub use num::integer::*;
 pub use pancurses::*;
 pub use petgraph::algo;
+pub use petgraph::graph::DiGraph;
 pub use petgraph::graph::Graph;
 pub use petgraph::graph::UnGraph;
+pub use petgraph::graphmap::DiGraphMap;
 pub use petgraph::graphmap::GraphMap;
 pub use petgraph::graphmap::UnGraphMap;
 pub use petgraph::visit;
+pub use petgraph::Direction::Outgoing;
 pub use petgraph::*;
-pub use regex::Regex;
+pub use regex::*;
 pub use serde_scan::from_str;
 pub use serde_scan::scan;
+
+pub use fnv::FnvHashMap;
+pub use fnv::FnvHashSet;
+pub use rustc_hash::FxHashMap;
+pub use rustc_hash::FxHashSet;
 
 pub type Point = self::vecmath::Vector2<i64>;
 pub type FPoint = self::vecmath::Vector2<f64>;
@@ -45,6 +54,7 @@ pub type Mat3 = self::vecmath::Matrix3<i64>;
 pub use self::vecmath::mat3_id;
 pub use self::vecmath::mat3_inv;
 pub use self::vecmath::mat4_id as mat_identity;
+pub use self::vecmath::mat4_inv as mat_inv;
 pub use self::vecmath::mat4_transposed as mat_transpose;
 pub use self::vecmath::row_mat3_mul;
 pub use self::vecmath::row_mat3_transform_pos2;
@@ -67,6 +77,8 @@ pub use self::vecmath::vec3_scale as vec_mul;
 pub use self::vecmath::vec3_square_len as vec_square_length;
 pub use self::vecmath::vec3_sub as vec_sub;
 pub use self::vecmath::vec4_add;
+pub use self::vecmath::vec4_neg;
+pub use self::vecmath::vec4_sub;
 
 pub fn length(v: FVec3) -> f64 {
     vec_square_length(v).sqrt()
@@ -82,6 +94,14 @@ pub fn cmul2(v1: Point, v2: Point) -> Point {
     let [x1, y1] = v1;
     let [x2, y2] = v2;
     [x1 * x2, y1 * y2]
+}
+
+pub fn inside_extent(p: Point, extent: (Point, Point)) -> bool {
+    let min_x = extent.0[0];
+    let min_y = extent.0[1];
+    let max_x = extent.1[0];
+    let max_y = extent.1[1];
+    p[0] >= min_x && p[0] <= max_x && p[1] >= min_y && p[1] <= max_y
 }
 
 pub const NORTH: Point = [0, -1];
@@ -114,6 +134,21 @@ pub const DIRECTIONS_INCL_DIAGONALS: [Point; 8] = [
     NORTH, NORTH_EAST, EAST, SOUTH_EAST, SOUTH, SOUTH_WEST, WEST, NORTH_WEST,
 ];
 pub const HEX_DIRECTIONS: [Vec3; 6] = [HEX_E, HEX_W, HEX_SW, HEX_SE, HEX_NW, HEX_NE];
+
+pub fn neighbors(p: Point) -> impl Iterator<Item = Point> {
+    let mut diter = DIRECTIONS.iter();
+    from_fn(move || diter.next().map(|d| point_add(p, *d)))
+}
+
+pub fn neighbors_incl_diagonals(p: Point) -> impl Iterator<Item = Point> {
+    let mut diter = DIRECTIONS_INCL_DIAGONALS.iter();
+    from_fn(move || diter.next().map(|d| point_add(p, *d)))
+}
+
+pub fn hex_neighbors(p: Vec3) -> impl Iterator<Item = Vec3> {
+    let mut diter = HEX_DIRECTIONS.iter();
+    from_fn(move || diter.next().map(|d| vec_add(p, *d)))
+}
 
 lazy_static! {
     pub static ref DIRECTION_MAP: HashMap<&'static str, Point> = {
@@ -166,6 +201,13 @@ impl From<ParseIntError> for ParseError {
 
 pub fn split(s: &str, pred: fn(char) -> bool) -> Vec<&str> {
     s.split(pred)
+        .map(|w| w.trim())
+        .filter(|x| !x.is_empty())
+        .collect()
+}
+
+pub fn split_w(s: &str) -> Vec<&str> {
+    s.split(|c: char| c.is_whitespace())
         .map(|w| w.trim())
         .filter(|x| !x.is_empty())
         .collect()
@@ -255,10 +297,10 @@ where
     grid
 }
 
-pub fn grid_to_graph<T>(
+pub fn grid_to_undirected_graph<T>(
     grid: &dyn Grid<T>,
     is_node: fn(&Point, &T) -> bool,
-    get_edge: fn(&Point, &T, &Point, &T) -> Option<i64>,
+    get_edge_cost: fn(&Point, &T, &Point, &T) -> Option<i64>,
     directions: usize,
 ) -> UnGraphMap<Point, i64>
 where
@@ -285,7 +327,57 @@ where
                         {
                             if let Some(nc) = grid.get_value(np) {
                                 if is_node(&np, &nc) {
-                                    if let Some(e) = get_edge(&p, &c, &np, &nc) {
+                                    if let Some(e) = get_edge_cost(&p, &c, &np, &nc) {
+                                        let gnp = graph.add_node(np);
+                                        // Make sure it's an undirected graph
+                                        if let Some(ew) = graph.edge_weight(gp, gnp) {
+                                            assert_eq!(e, *ew);
+                                        }
+                                        graph.add_edge(gp, gnp, e);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    graph
+}
+
+pub fn grid_to_directed_graph<T>(
+    grid: &dyn Grid<T>,
+    is_node: fn(&Point, &T) -> bool,
+    get_edge_cost: fn(&Point, &T, &Point, &T) -> Option<i64>,
+    directions: usize,
+) -> DiGraphMap<Point, i64>
+where
+    T: PartialEq + Copy,
+{
+    let directions = match directions {
+        4 => DIRECTIONS.to_vec(),
+        8 => DIRECTIONS_INCL_DIAGONALS.to_vec(),
+        _ => panic!(),
+    };
+
+    let mut graph = DiGraphMap::new();
+    let (min, max) = grid.extents();
+
+    for y in min[1]..=max[1] {
+        for x in min[0]..=max[0] {
+            let p: Point = [x as i64, y as i64];
+            if let Some(c) = grid.get_value(p) {
+                if is_node(&p, &c) {
+                    let gp = graph.add_node(p);
+                    for d in &directions {
+                        let np = point_add(p, *d);
+                        if np[0] >= min[0] && np[0] <= max[0] && np[1] >= min[1] && np[1] <= max[1]
+                        {
+                            if let Some(nc) = grid.get_value(np) {
+                                if is_node(&np, &nc) {
+                                    if let Some(e) = get_edge_cost(&p, &c, &np, &nc) {
                                         let gnp = graph.add_node(np);
                                         graph.add_edge(gp, gnp, e);
                                     }
@@ -301,8 +393,8 @@ where
     graph
 }
 
-pub fn astar(
-    graph: &UnGraphMap<Point, i64>,
+pub fn astar_graph<T: petgraph::EdgeType>(
+    graph: &GraphMap<Point, i64, T>,
     start: Point,
     goal: Point,
 ) -> Option<(i64, Vec<Point>)> {
@@ -315,12 +407,126 @@ pub fn astar(
     )
 }
 
+pub fn manhattan(n: Point, goal: Point) -> i64 {
+    (goal[0] - n[0]).abs() + (goal[1] - n[1]).abs()
+}
+
+pub fn manhattan_vec4(n: Vec4, goal: Vec4) -> i64 {
+    (goal[0] - n[0]).abs() + (goal[1] - n[1]).abs() + (goal[2] - n[2]).abs()
+}
+
+pub fn astar_grid<T>(
+    grid: &dyn Grid<T>,
+    is_node: fn(&Point, &T) -> bool,
+    get_edge_cost: fn(&Point, &T, &Point, &T) -> Option<i64>,
+    start: Point,
+    goal: Point,
+) -> Option<(i64, Vec<Point>)>
+where
+    T: PartialEq + Copy,
+{
+    let mut frontier = BinaryHeap::new();
+    let mut came_from = HashMap::new();
+    let mut gscore = HashMap::new();
+    let mut fscore = HashMap::new();
+    gscore.insert(start, 0);
+    fscore.insert(start, manhattan(start, goal));
+    frontier.push(Reverse((manhattan(start, goal), start)));
+    while let Some(Reverse((_est, current))) = frontier.pop() {
+        if current == goal {
+            let mut path = vec![goal];
+            let mut curr = goal;
+            while curr != start {
+                curr = came_from[&curr];
+                path.push(curr)
+            }
+            return Some((gscore.get_value(goal).unwrap(), path));
+        }
+        let g = *gscore.entry(current).or_insert(i64::MAX);
+        let curr_val = grid.get_value(current).unwrap();
+        for nb in neighbors(current) {
+            if let Some(value) = grid.get_value(nb) {
+                if is_node(&nb, &value) {
+                    if let Some(edge_cost) = get_edge_cost(&current, &curr_val, &nb, &value) {
+                        let new_g = g + edge_cost;
+                        let nb_g = gscore.entry(nb).or_insert(i64::MAX);
+                        if new_g < *nb_g {
+                            came_from.insert(nb, current);
+                            *nb_g = new_g;
+                            let new_f = new_g + manhattan(goal, nb);
+                            *fscore.entry(nb).or_insert(i64::MAX) = new_f;
+                            frontier.push(Reverse((new_f, nb)));
+                        }
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
+pub fn dijkstra_grid<T>(
+    grid: &dyn Grid<T>,
+    is_node: fn(&Point, &T) -> bool,
+    get_edge_cost: fn(&Point, &T, &Point, &T) -> Option<i64>,
+    start: Point,
+    goal: Point,
+) -> Option<(i64, Vec<Point>)>
+where
+    T: PartialEq + Copy,
+{
+    let mut frontier = BinaryHeap::new();
+    let mut visited: HashSet<Point> = HashSet::new();
+    let mut came_from = HashMap::new();
+    frontier.push(Reverse((0, start)));
+    while let Some(Reverse((score, current))) = frontier.pop() {
+        if visited.contains(&current) {
+            continue;
+        }
+        if current == goal {
+            let mut path = vec![goal];
+            let mut curr = goal;
+            while curr != start {
+                curr = came_from[&curr];
+                path.push(curr)
+            }
+            return Some((score, path.into_iter().rev().collect()));
+        }
+        let curr_val = grid.get_value(current).unwrap();
+        for nb in neighbors(current) {
+            if visited.contains(&nb) {
+                continue;
+            }
+            if let Some(value) = grid.get_value(nb) {
+                if is_node(&nb, &value) {
+                    if let Some(edge_cost) = get_edge_cost(&current, &curr_val, &nb, &value) {
+                        let new_score = score + edge_cost;
+                        came_from.insert(nb, current);
+                        frontier.push(Reverse((new_score, nb)));
+                    }
+                }
+            }
+        }
+        visited.insert(current);
+    }
+    None
+}
+
 pub fn get_char(s: &str, ix: usize) -> Option<char> {
     s.chars().nth(ix)
 }
 
 pub fn parse_char(s: &str, ix: usize) -> Result<char, ParseError> {
     get_char(s, ix).ok_or(ParseError::Generic)
+}
+
+pub fn parse_point(s: &str) -> Result<Point, ParseError> {
+    let parts: Vec<&str> = s.split(|x| x == ',').map(|w| w.trim()).collect();
+    if parts.len() == 2 {
+        Ok([parts[0].parse()?, parts[1].parse()?])
+    } else {
+        Err(ParseError::Generic)
+    }
 }
 
 pub fn cum_sum<T: num::Num + Copy>(a: &[T]) -> Vec<T> {
@@ -376,12 +582,7 @@ where
 
 pub fn chinese_remainder<'a, T>(residues: &[T], modulii: &'a [T]) -> Option<T>
 where
-    T: 'a
-        + std::cmp::PartialEq
-        + num::Signed
-        + Copy
-        + std::iter::Product<&'a T>
-        + std::ops::AddAssign,
+    T: 'a + std::cmp::PartialEq + num::Signed + Copy + std::iter::Product<&'a T>,
 {
     let prod = modulii.iter().product::<T>();
 
@@ -389,7 +590,7 @@ where
 
     for (&residue, &modulus) in residues.iter().zip(modulii) {
         let p = prod / modulus;
-        sum += residue * mod_inv(p, modulus)? * p
+        sum = sum + residue * mod_inv(p, modulus)? * p
     }
 
     Some(sum % prod)
@@ -635,11 +836,60 @@ where
     T: Clone + Copy + Default + PartialEq,
 {
     fn get_value(&self, pos: Point) -> Option<T> {
-        if let Some(x) = self.get(&pos) {
-            Some(*x)
-        } else {
-            None
+        self.get(&pos).copied()
+    }
+    fn set_value(&mut self, pos: Point, value: T) {
+        *self.entry(pos).or_insert(value) = value;
+    }
+    fn extents(&self) -> (Point, Point) {
+        let min_x = self.iter().map(|(p, _v)| p[0]).min().unwrap_or(0);
+        let min_y = self.iter().map(|(p, _v)| p[1]).min().unwrap_or(0);
+        let max_x = self.iter().map(|(p, _v)| p[0]).max().unwrap_or(0);
+        let max_y = self.iter().map(|(p, _v)| p[1]).max().unwrap_or(0);
+        ([min_x, min_y], [max_x, max_y])
+    }
+    fn flip_horizontal(&mut self) {
+        let ([min_x, _min_y], [max_x, _max_y]) = self.extents();
+        let mut new_grid = HashMap::new();
+        for ([x, y], v) in self.iter() {
+            let new_x = max_x - (x - min_x);
+            new_grid.insert([new_x, *y], *v);
         }
+        self.clear();
+        for (k, v) in new_grid {
+            self.insert(k, v);
+        }
+    }
+    fn flip_vertical(&mut self) {
+        let ([_min_x, min_y], [_max_x, max_y]) = self.extents();
+        let mut new_grid = HashMap::new();
+        for ([x, y], v) in self.iter() {
+            let new_y = max_y - (y - min_y);
+            new_grid.insert([*x, new_y], *v);
+        }
+        self.clear();
+        for (k, v) in new_grid {
+            self.insert(k, v);
+        }
+    }
+    fn transpose(&mut self) {
+        let mut new_grid = HashMap::new();
+        for ([x, y], v) in self.iter() {
+            new_grid.insert([*y, *x], *v);
+        }
+        self.clear();
+        for (k, v) in new_grid {
+            self.insert(k, v);
+        }
+    }
+}
+
+impl<T> Grid<T> for BTreeMap<Point, T>
+where
+    T: Clone + Copy + Default + PartialEq,
+{
+    fn get_value(&self, pos: Point) -> Option<T> {
+        self.get(&pos).copied()
     }
     fn set_value(&mut self, pos: Point, value: T) {
         *self.entry(pos).or_insert(value) = value;
@@ -960,6 +1210,8 @@ where
     basename: String,
     frame: usize,
     rect: Option<(Point, Point)>,
+    bg: [u8; 3],
+    unset: Option<T>,
     image: Option<RgbImage>,
     phantom: PhantomData<T>,
     phantom_g: PhantomData<G>,
@@ -967,7 +1219,7 @@ where
 
 // These can be converted to movies with:
 // ffmpeg -i "basename_%06d.png" -filter_complex "[0:v] palettegen" basename_palette.png
-// ffmpeg -framerate 25 -i "basename_%06d.png" -i basename.png -filter_complex "[0:v][1:v] paletteuse" basename.gif
+// ffmpeg -framerate 25 -i "basename_%06d.png" -i basename_palette.png -filter_complex "[0:v][1:v] paletteuse" basename.gif
 // You can change the start number with the -start_number input option.
 impl<F, G, T> BitmapSpriteGridDrawer<F, G, T>
 where
@@ -991,6 +1243,8 @@ where
             frame: 0,
             basename: basename.into(),
             rect: None,
+            bg: [255, 255, 255],
+            unset: None,
             image: None,
             phantom: PhantomData,
             phantom_g: PhantomData,
@@ -999,6 +1253,14 @@ where
 
     pub fn set_rect(&mut self, r: (Point, Point)) {
         self.rect = Some(r);
+    }
+
+    pub fn set_bg(&mut self, bg: [u8; 3]) {
+        self.bg = bg;
+    }
+
+    pub fn set_unset(&mut self, unset: T) {
+        self.unset = Some(unset);
     }
 
     pub fn save_image(&self) {
@@ -1031,12 +1293,21 @@ where
         let height = max_y - min_y + 1;
         let pixelw = width * self.sprite_dimension.0;
         let pixelh = height * self.sprite_dimension.1;
-        // Default bg is white
-        let buffer = vec![255; (3 * pixelw * pixelh) as usize];
+        let mut buffer = vec![255; (3 * pixelw * pixelh) as usize];
+        buffer.chunks_mut(3).for_each(|c| {
+            c[0] = self.bg[0];
+            c[1] = self.bg[1];
+            c[2] = self.bg[2]
+        });
         let mut image = RgbImage::from_raw(pixelw as u32, pixelh as u32, buffer).unwrap();
         for y in min_y..=max_y {
             for x in min_x..=max_x {
-                if let Some(value) = area.get_value([x, y]) {
+                let val = if let Some(v) = area.get_value([x, y]) {
+                    Some(v)
+                } else {
+                    self.unset
+                };
+                if let Some(value) = val {
                     let sprite = self.to_sprite(value);
                     let mut yy = (y - min_y) * self.sprite_dimension.1;
                     let mut xx = (x - min_x) * self.sprite_dimension.0;
@@ -1046,7 +1317,7 @@ where
                         image.put_pixel(xx as u32, yy as u32, rgb);
                         xx += 1;
                         if xx - xxx >= self.sprite_dimension.0 {
-                            xx = x * self.sprite_dimension.0;
+                            xx = (x - min_x) * self.sprite_dimension.0;
                             yy += 1
                         }
                     }
@@ -1093,6 +1364,7 @@ where
     basename: String,
     frame: usize,
     rect: Option<(Point, Point)>,
+    bg: [u8; 3],
     image: Option<RgbImage>,
     phantom: PhantomData<T>,
     phantom_g: PhantomData<G>,
@@ -1100,7 +1372,7 @@ where
 
 // These can be converted to movies with:
 // ffmpeg -i "basename_%06d.png" -filter_complex "[0:v] palettegen" basename_palette.png
-// ffmpeg -framerate 25 -i "basename_%06d.png" -i basename.png -filter_complex "[0:v][1:v] paletteuse" basename.gif
+// ffmpeg -framerate 25 -i "basename_%06d.png" -i basename_palette.png -filter_complex "[0:v][1:v] paletteuse" basename.gif
 // You can change the start number with the -start_number input option.
 impl<F, G, T> BitmapGridDrawer<F, G, T>
 where
@@ -1119,6 +1391,7 @@ where
             frame: 0,
             basename: basename.into(),
             rect: None,
+            bg: [255, 255, 255],
             image: None,
             phantom: PhantomData,
             phantom_g: PhantomData,
@@ -1127,6 +1400,10 @@ where
 
     pub fn set_rect(&mut self, r: (Point, Point)) {
         self.rect = Some(r);
+    }
+
+    pub fn set_bg(&mut self, bg: [u8; 3]) {
+        self.bg = bg;
     }
 
     pub fn save_image(&self) {
@@ -1158,7 +1435,12 @@ where
         let width = max_x - min_x + 1;
         let height = max_y - min_y + 1;
         // Default bg is white
-        let buffer = vec![255; (3 * width * height) as usize];
+        let mut buffer = vec![255; (3 * width * height) as usize];
+        buffer.chunks_mut(3).for_each(|c| {
+            c[0] = self.bg[0];
+            c[1] = self.bg[1];
+            c[2] = self.bg[2]
+        });
         let mut image = RgbImage::from_raw(width as u32, height as u32, buffer).unwrap();
         for y in min_y..=max_y {
             for x in min_x..=max_x {
@@ -1252,7 +1534,7 @@ impl Iterator for HexGridIteratorHelper {
             };
             let curr = self.curr;
             self.curr = c;
-            curr.and_then(|x| Some(axial_to_cube(x)))
+            curr.map(axial_to_cube)
         } else {
             None
         }
@@ -1286,65 +1568,6 @@ where
     fn rotate_180_cw(&mut self);
     fn rotate_240_cw(&mut self);
     fn rotate_300_cw(&mut self);
-    // fn fill(&mut self, pos: Vec3, value: T) {
-    //     let ([min_x, min_y, min_z], [max_x, max_y, max_z]) = self.extents();
-    //     if let Some(old) = self.get_value(pos) {
-    //         if value != old {
-    //             let mut todo = vec![];
-    //             todo.push(pos);
-    //             while let Some(p) = todo.pop() {
-    //                 if let Some(curr) = self.get_value(p) {
-    //                     if curr == old {
-    //                         self.set_value(p, value);
-    //                         if p[0] > min_x {
-    //                             todo.push([p[0] - 1, p[1], p[2]]);
-    //                         }
-    //                         if p[0] < max_x {
-    //                             todo.push([p[0] + 1, p[1], p[2]]);
-    //                         }
-    //                         if p[1] > min_y {
-    //                             todo.push([p[0], p[1] - 1, p[2]]);
-    //                         }
-    //                         if p[1] < max_y {
-    //                             todo.push([p[0], p[1] + 1, p[2]]);
-    //                         }
-    //                         if p[2] > min_z {
-    //                             todo.push([p[0], p[1], p[2] - 1]);
-    //                         }
-    //                         if p[2] < max_z {
-    //                             todo.push([p[0], p[1], p[2] + 1]);
-    //                         }
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-    // fn line(&mut self, a: Vec3, b: Vec3, value: T);
-    // fn blit(&mut self, pos: Vec3, g: &dyn HexGrid<T>) {
-    //     let (start, end) = g.extents();
-    //     self.blit_rect(pos, g, start, end);
-    // }
-    // // pos is position to blit to, start/end is the rect to copy from grid
-    // fn blit_rect(&mut self, pos: Vec3, g: &dyn HexGrid<T>, start: Vec3, end: Vec3) {
-    //     let ([min_x, min_y, min_z], [max_x, max_y, max_z]) = g.extents();
-    //     let min_xx = min_x.max(start[0]);
-    //     let min_yy = min_y.max(start[1]);
-    //     let min_zz = min_z.max(start[2]);
-    //     let max_xx = max_x.min(end[0]);
-    //     let max_yy = max_y.min(end[1]);
-    //     let max_zz = max_z.min(end[2]);
-    //     for (dy, yy) in (min_yy..=max_yy).enumerate() {
-    //         for (dx, xx) in (min_xx..=max_xx).enumerate() {
-    // 		for (dz, zz) in (min_zz..=max_zz).enumerate() {
-    //                 let [xxx, yyy, zzz] = vec_add(pos, [dx as i64, dy as i64, dz as i64]);
-    //                 if let Some(v) = g.get_value([xx, yy, zz]) {
-    // 			self.set_value([xxx, yyy, zzz], v);
-    //                 }
-    // 		}
-    //         }
-    //     }
-    // }
 }
 
 impl<S: ::std::hash::BuildHasher, T> HexGrid<T> for HashMap<Vec3, T, S>
@@ -1352,11 +1575,7 @@ where
     T: Clone + Copy + Default + PartialEq,
 {
     fn get_value(&self, pos: Vec3) -> Option<T> {
-        if let Some(x) = self.get(&pos) {
-            Some(*x)
-        } else {
-            None
-        }
+        self.get(&pos).copied()
     }
     fn set_value(&mut self, pos: Vec3, value: T) {
         *self.entry(pos).or_insert(value) = value;
@@ -1575,7 +1794,7 @@ pub fn axial_to_cube(axial: Point) -> Vec3 {
 pub fn cube_to_axial(cube: Vec3) -> Point {
     let q = cube[0];
     let r = cube[2];
-    return [q, r];
+    [q, r]
 }
 
 pub fn cube_to_oddr(cube: Vec3) -> Point {
@@ -1768,8 +1987,8 @@ where
 {
     fn draw(&mut self, area: &G) {
         self.window.clear();
-        let g = self.convert(area);
-        let ([min_x, min_y], [max_x, max_y]) = g.extents();
+        let grid = self.convert(area);
+        let ([min_x, min_y], [max_x, max_y]) = grid.extents();
         self.w = self.window.get_max_x();
         self.h = self.window.get_max_y();
         let ww = (4 * (max_x - min_x + 1) + 3) as i32;
@@ -1808,7 +2027,7 @@ where
             for x in min_x..=max_x {
                 let p = [x as i64, y as i64];
                 let d = T::default();
-                let c = g.get(&p).unwrap_or(&d);
+                let c = grid.get(&p).unwrap_or(&d);
                 let s = format!("| {} ", self.to_char(*c));
                 self.put_str(xx, yy, &s);
                 xx += s.len() as i32;
@@ -1860,7 +2079,7 @@ where
 
 // These can be converted to movies with:
 // ffmpeg -i "basename_%06d.png" -filter_complex "[0:v] palettegen" basename_palette.png
-// ffmpeg -framerate 25 -i "basename_%06d.png" -i basename.png -filter_complex "[0:v][1:v] paletteuse" basename.gif
+// ffmpeg -framerate 25 -i "basename_%06d.png" -i basename_palette.png -filter_complex "[0:v][1:v] paletteuse" basename.gif
 // You can change the start number with the -start_number input option.
 impl<F, G, T> BitmapHexGridDrawer<F, G, T>
 where
@@ -2034,7 +2253,7 @@ mod tests {
         let expected: Vec<Vec<char>> = vec!["#   ".chars().collect(), "####".chars().collect()];
         g.flip_vertical();
         assert_eq!(g, expected);
-        let mut g = orig_g.clone();
+        let mut g = orig_g;
         let expected: Vec<Vec<char>> = vec!["####".chars().collect(), "   #".chars().collect()];
         g.flip_horizontal();
         assert_eq!(g, expected);
@@ -2060,7 +2279,7 @@ mod tests {
         .collect();
         g.flip_vertical();
         assert_eq!(g, expected);
-        let mut g = orig_g.clone();
+        let mut g = orig_g;
         let expected: HashMap<Point, char> = vec![
             ([-1, 0], '#'),
             ([0, 0], '#'),
@@ -2072,5 +2291,21 @@ mod tests {
         .collect();
         g.flip_horizontal();
         assert_eq!(g, expected);
+    }
+
+    #[test]
+    fn test_parse_point_ok() {
+        let parsed = parse_point("12,42");
+        assert!(!parsed.is_err());
+        assert_eq!(parsed.unwrap(), [12, 42]);
+    }
+
+    #[test]
+    fn test_parse_point_fail() {
+        assert!(parse_point("1242").is_err());
+        assert!(parse_point("12,,42").is_err());
+        assert!(parse_point("12,42,").is_err());
+        assert!(parse_point("12,a2").is_err());
+        assert!(parse_point("a2,42").is_err());
     }
 }

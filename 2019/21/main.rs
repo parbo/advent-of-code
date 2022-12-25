@@ -295,28 +295,28 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::{possible, validate, Instruction};
+    // use super::{possible, validate, Instruction};
 
-    #[test]
-    fn test_valudate() {
-        let p = possible();
-        assert_eq!(
-            validate(
-                &p,
-                &vec![
-                    (Instruction::NOT, 'A', 'J'),
-                    (Instruction::NOT, 'B', 'T'),
-                    (Instruction::OR, 'T', 'J'),
-                    (Instruction::NOT, 'C', 'T'),
-                    (Instruction::OR, 'T', 'J'),
-                    (Instruction::AND, 'D', 'J'),
-                    (Instruction::NOT, 'E', 'T'),
-                    (Instruction::NOT, 'T', 'T'),
-                    (Instruction::OR, 'H', 'T'),
-                    (Instruction::AND, 'T', 'J'),
-                ]
-            ),
-            true
-        );
-    }
+    // #[test]
+    // fn test_valudate() {
+    //     let p = possible();
+    //     assert_eq!(
+    //         validate(
+    //             &p,
+    //             &vec![
+    //                 (Instruction::NOT, 'A', 'J'),
+    //                 (Instruction::NOT, 'B', 'T'),
+    //                 (Instruction::OR, 'T', 'J'),
+    //                 (Instruction::NOT, 'C', 'T'),
+    //                 (Instruction::OR, 'T', 'J'),
+    //                 (Instruction::AND, 'D', 'J'),
+    //                 (Instruction::NOT, 'E', 'T'),
+    //                 (Instruction::NOT, 'T', 'T'),
+    //                 (Instruction::OR, 'H', 'T'),
+    //                 (Instruction::AND, 'T', 'J'),
+    //             ]
+    //         ),
+    //         true
+    //     );
+    // }
 }

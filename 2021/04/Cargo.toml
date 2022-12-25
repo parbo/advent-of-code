@@ -1,0 +1,16 @@
+[package]
+name = 'day04'
+version = '0.0.1'
+edition = '2021'
+
+[dependencies]
+aoc = {path = "../aoc"}
+parse-display = "0.4.0"
+
+[dependencies.pancurses]
+version = "0.16"
+features = ["win32"]
+
+[[bin]]
+name = 'day04'
+path = 'main.rs'

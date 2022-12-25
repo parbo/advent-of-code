@@ -98,11 +98,10 @@ fn dijkstra_neighbours(state: &Map, pos: (usize, usize)) -> Vec<(usize, usize)> 
         let ch = state.map[p.0][p.1];
         if ch == '#' {
             // No action
-        } else if ch == '.' {
-            n.push((*ny as usize, *nx as usize));
-        } else if ch.is_ascii_lowercase() {
-            n.push((*ny as usize, *nx as usize));
-        } else if ch.is_ascii_uppercase() && state.key_state.get(ch.to_ascii_lowercase()) {
+        } else if ch == '.'
+            || ch.is_ascii_lowercase()
+            || ch.is_ascii_uppercase() && state.key_state.get(ch.to_ascii_lowercase())
+        {
             n.push((*ny as usize, *nx as usize));
         }
     }

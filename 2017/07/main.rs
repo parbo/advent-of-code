@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::iter::*;
-use std::time::Instant;
+
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Program {

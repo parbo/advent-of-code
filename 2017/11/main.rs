@@ -1,5 +1,5 @@
 use std::iter::*;
-use std::time::Instant;
+
 
 type ParsedItem = aoc::Vec3;
 type Parsed = Vec<ParsedItem>;

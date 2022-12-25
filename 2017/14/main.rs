@@ -1,9 +1,6 @@
 use aoc::Grid;
 use std::collections::HashMap;
 use std::iter::*;
-use std::time::Instant;
-
-type Parsed = String;
 
 // From day 10
 fn knot_hash(data: &[u8]) -> Vec<u8> {

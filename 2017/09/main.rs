@@ -1,6 +1,6 @@
 use std::iter::*;
 use std::ops::Range;
-use std::time::Instant;
+
 
 type Parsed = Vec<char>;
 type Answer = i64;

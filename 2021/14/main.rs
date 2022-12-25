@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::iter::*;
-use std::time::Instant;
+
 
 #[derive(Debug)]
 struct Polymer {

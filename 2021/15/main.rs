@@ -1,7 +1,7 @@
 #![allow(clippy::ptr_arg)]
 
 use aoc::Grid;
-use std::time::Instant;
+
 
 type ParsedItem = Vec<i64>;
 type Parsed = Vec<ParsedItem>;

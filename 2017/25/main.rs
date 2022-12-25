@@ -60,7 +60,7 @@ fn parse(lines: &[String]) -> Parsed {
             name: aoc::split_w(def[0])[2][0..1].chars().next().unwrap(),
             actions: [
                 Rule {
-                    value: if def[2].ends_with("1.") { 1 } else { 0 },
+                    value: usize::from(def[2].ends_with("1.")),
                     step: if def[3].ends_with("right.") {
                         Step::Right
                     } else {
@@ -69,7 +69,7 @@ fn parse(lines: &[String]) -> Parsed {
                     next: def[4][26..27].chars().next().unwrap(),
                 },
                 Rule {
-                    value: if def[6].ends_with("1.") { 1 } else { 0 },
+                    value: usize::from(def[6].ends_with("1.")),
                     step: if def[7].ends_with("right.") {
                         Step::Right
                     } else {

@@ -1,5 +1,5 @@
 use aoc::{Grid, GridDrawer, Point};
-use std::time::Instant;
+
 use std::{collections::HashMap, iter::*};
 
 struct Manual {

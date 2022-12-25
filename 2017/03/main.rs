@@ -1,4 +1,4 @@
-use std::{collections::HashMap, time::Instant};
+use std::{collections::HashMap};
 
 type Parsed = i64;
 type Answer = i64;

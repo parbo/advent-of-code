@@ -1,0 +1,12 @@
+[package]
+name = 'day06'
+version = '0.0.1'
+edition = '2021'
+
+[dependencies]
+aoc = {path = "../aoc"}
+parse-display = "0.4.0"
+
+[[bin]]
+name = 'day06'
+path = 'main.rs'

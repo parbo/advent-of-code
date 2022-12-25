@@ -1,3 +1,4 @@
+use core::fmt::Write;
 use image::{GenericImageView, Rgb, RgbImage};
 use std::cmp::Reverse;
 use std::collections::{BTreeMap, BinaryHeap, HashMap, HashSet};
@@ -12,6 +13,7 @@ use std::marker::PhantomData;
 use std::num::ParseIntError;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use std::time::Instant;
 
 #[macro_use]
 extern crate lazy_static;
@@ -122,12 +124,20 @@ pub const NORTH_WEST: Point = [-1, -1];
 pub const UP_LEFT: Point = NORTH_WEST;
 
 // Hex directions
+// https://www.redblobgames.com/grids/hexagons/
 pub const HEX_E: Vec3 = [1, -1, 0];
 pub const HEX_W: Vec3 = [-1, 1, 0];
 pub const HEX_SE: Vec3 = [0, -1, 1];
 pub const HEX_SW: Vec3 = [-1, 0, 1];
 pub const HEX_NW: Vec3 = [0, 1, -1];
 pub const HEX_NE: Vec3 = [1, 0, -1];
+
+pub const HEX_ALT_SE: Vec3 = [1, -1, 0];
+pub const HEX_ALT_NW: Vec3 = [-1, 1, 0];
+pub const HEX_ALT_S: Vec3 = [0, -1, 1];
+pub const HEX_ALT_SW: Vec3 = [-1, 0, 1];
+pub const HEX_ALT_N: Vec3 = [0, 1, -1];
+pub const HEX_ALT_NE: Vec3 = [1, 0, -1];
 
 pub const DIRECTIONS: [Point; 4] = [NORTH, EAST, SOUTH, WEST];
 pub const DIRECTIONS_INCL_DIAGONALS: [Point; 8] = [
@@ -151,20 +161,92 @@ pub fn hex_neighbors(p: Vec3) -> impl Iterator<Item = Vec3> {
 }
 
 lazy_static! {
+    pub static ref DIRECTION_ROTATE_LEFT: HashMap<Point, Point> = {
+        let mut map = HashMap::new();
+        map.insert(NORTH, WEST);
+        map.insert(WEST, SOUTH);
+        map.insert(SOUTH, EAST);
+        map.insert(EAST, NORTH);
+        map
+    };
+}
+
+lazy_static! {
+    pub static ref DIRECTION_ROTATE_RIGHT: HashMap<Point, Point> = {
+        let mut map = HashMap::new();
+        map.insert(NORTH, EAST);
+        map.insert(EAST, SOUTH);
+        map.insert(SOUTH, WEST);
+        map.insert(WEST, NORTH);
+        map
+    };
+}
+
+lazy_static! {
     pub static ref DIRECTION_MAP: HashMap<&'static str, Point> = {
         let mut map = HashMap::new();
         map.insert("U", NORTH);
+        map.insert("u", NORTH);
         map.insert("D", SOUTH);
+        map.insert("d", SOUTH);
         map.insert("R", EAST);
+        map.insert("r", EAST);
         map.insert("L", WEST);
+        map.insert("l", WEST);
         map.insert("N", NORTH);
+        map.insert("n", NORTH);
         map.insert("S", SOUTH);
+        map.insert("s", SOUTH);
         map.insert("E", EAST);
+        map.insert("e", EAST);
         map.insert("W", WEST);
+        map.insert("w", WEST);
         map.insert("NW", NORTH_WEST);
+        map.insert("nw", NORTH_WEST);
         map.insert("SW", SOUTH_WEST);
+        map.insert("sw", SOUTH_WEST);
         map.insert("NE", NORTH_WEST);
+        map.insert("ne", NORTH_WEST);
         map.insert("SE", SOUTH_EAST);
+        map.insert("se", SOUTH_EAST);
+        map
+    };
+}
+
+lazy_static! {
+    pub static ref HEX_DIRECTION_MAP: HashMap<&'static str, Vec3> = {
+        let mut map = HashMap::new();
+        map.insert("E", HEX_E);
+        map.insert("e", HEX_E);
+        map.insert("W", HEX_W);
+        map.insert("w", HEX_W);
+        map.insert("NW", HEX_NW);
+        map.insert("nw", HEX_NW);
+        map.insert("SW", HEX_SW);
+        map.insert("sw", HEX_SW);
+        map.insert("NE", HEX_NW);
+        map.insert("ne", HEX_NW);
+        map.insert("SE", HEX_SE);
+        map.insert("se", HEX_SE);
+        map
+    };
+}
+
+lazy_static! {
+    pub static ref HEX_ALT_DIRECTION_MAP: HashMap<&'static str, Vec3> = {
+        let mut map = HashMap::new();
+        map.insert("N", HEX_ALT_N);
+        map.insert("n", HEX_ALT_N);
+        map.insert("S", HEX_ALT_S);
+        map.insert("s", HEX_ALT_S);
+        map.insert("NW", HEX_ALT_NW);
+        map.insert("nw", HEX_ALT_NW);
+        map.insert("SW", HEX_ALT_SW);
+        map.insert("sw", HEX_ALT_SW);
+        map.insert("NE", HEX_ALT_NE);
+        map.insert("ne", HEX_ALT_NE);
+        map.insert("SE", HEX_ALT_SE);
+        map.insert("se", HEX_ALT_SE);
         map
     };
 }
@@ -411,8 +493,19 @@ pub fn manhattan(n: Point, goal: Point) -> i64 {
     (goal[0] - n[0]).abs() + (goal[1] - n[1]).abs()
 }
 
-pub fn manhattan_vec4(n: Vec4, goal: Vec4) -> i64 {
+pub fn manhattan_vec3(n: Vec3, goal: Vec3) -> i64 {
     (goal[0] - n[0]).abs() + (goal[1] - n[1]).abs() + (goal[2] - n[2]).abs()
+}
+
+pub fn manhattan_vec4(n: Vec4, goal: Vec4) -> i64 {
+    (goal[0] - n[0]).abs()
+        + (goal[1] - n[1]).abs()
+        + (goal[2] - n[2]).abs()
+        + (goal[3] - n[3]).abs()
+}
+
+pub fn manhattan_hex_cube(n: Vec3, goal: Vec3) -> i64 {
+    ((goal[0] - n[0]).abs() + (goal[1] - n[1]).abs() + (goal[2] - n[2]).abs()) / 2
 }
 
 pub fn astar_grid<T>(
@@ -1120,7 +1213,7 @@ where
                 let ch = if let Some(x) = area.get_value([x, y]) {
                     self.to_char(x)
                 } else {
-                    ' '
+                    '.'
                 };
                 print!("{}", ch);
             }
@@ -2216,10 +2309,70 @@ pub fn read_lines_from(filename: &str) -> Vec<String> {
 
 pub fn read_lines() -> (i32, Vec<String>) {
     let args: Vec<String> = env::args().collect();
-    let part = args[1].parse::<i32>().unwrap();
-    let filename = &args[2];
+    let bin = Path::new(&args[0]);
+    let day = &bin.file_stem().unwrap().to_str().unwrap()[3..];
+    let part = if args.len() > 1 {
+        args[1].parse::<i32>().unwrap()
+    } else {
+        -1
+    };
+    let filename = if args.len() > 2 {
+        args[2].to_string()
+    } else {
+        format!("{}/input.txt", day)
+    };
+    println!("reading from {}", filename);
 
-    (part, read_lines_from(filename))
+    (part, read_lines_from(&filename))
+}
+
+pub fn run_main<T, F, G, H, A, B>(parse: F, part1: G, part2: H)
+where
+    F: Fn(&[String]) -> T,
+    G: Fn(&T) -> A,
+    H: Fn(&T) -> B,
+    A: std::fmt::Display,
+    B: std::fmt::Display,
+{
+    let start_time = Instant::now();
+    let (part, lines) = read_lines();
+    let io_time = Instant::now();
+    let parsed = parse(&lines);
+    let parse_time = Instant::now();
+    let parts = if part > 0 { vec![part] } else { vec![1, 2] };
+    println!(
+        "read: {:?}, parse: {:?}\n",
+        io_time.duration_since(start_time),
+        parse_time.duration_since(io_time),
+    );
+    for part in parts {
+        let part_time = Instant::now();
+        if part == 1 {
+            let result = part1(&parsed);
+            let done_time = Instant::now();
+            println!(
+                "Part 1: {:<30} ({:?})",
+                result,
+                done_time.duration_since(part_time)
+            );
+        } else {
+            let result = part2(&parsed);
+            let done_time = Instant::now();
+            println!(
+                "Part 2: {:<30} ({:?})",
+                result,
+                done_time.duration_since(part_time)
+            );
+        };
+    }
+}
+
+pub fn to_hex(data: &[u8]) -> String {
+    let mut s = String::with_capacity(2 * data.len());
+    for byte in data {
+        write!(s, "{:02x}", byte).unwrap();
+    }
+    s
 }
 
 #[cfg(test)]

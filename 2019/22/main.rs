@@ -1,4 +1,3 @@
-use aoc;
 use std::iter::*;
 
 enum Shuffle {
@@ -26,7 +25,7 @@ fn shuffle_idx(how: &Vec<Shuffle>, len: i128, idx: i128) -> i128 {
                 new_idx = new_idx + len - *x as i128;
             }
             Shuffle::DealWithIncrement(x) => {
-                new_idx = new_idx * *x as i128;
+                new_idx *= *x as i128;
             }
         }
         new_idx = pos_mod(new_idx, len);
@@ -42,12 +41,12 @@ fn reverse_shuffle_idx(how: &[Shuffle], len: i128, idx: i128) -> i128 {
                 new_idx = len - new_idx - 1;
             }
             Shuffle::Cut(x) => {
-                new_idx = new_idx + *x as i128;
+                new_idx += *x as i128;
             }
             Shuffle::DealWithIncrement(x) => {
                 let xx = *x as i128;
                 let f = mod_inverse(xx, len);
-                new_idx = f * new_idx;
+                new_idx *= f;
             }
         }
         new_idx = pos_mod(new_idx, len);
@@ -119,11 +118,8 @@ mod tests {
     use super::{parse, pos_mod, reverse_shuffle_idx, shuffle, Shuffle};
 
     fn validate(how: &[Shuffle], idx: &[i128], len: i128) {
-        for i in 0..idx.len() {
-            assert_eq!(
-                pos_mod(reverse_shuffle_idx(how, len, i as i128), len),
-                idx[i]
-            );
+        for (i, id) in idx.iter().enumerate() {
+            assert_eq!(pos_mod(reverse_shuffle_idx(how, len, i as i128), len), *id);
         }
     }
 
@@ -132,7 +128,7 @@ mod tests {
         let input = vec!["deal into new stack".to_string()];
         let how = parse(&input);
         assert_eq!(shuffle(&how, 10), vec![9, 8, 7, 6, 5, 4, 3, 2, 1, 0]);
-        validate(&how, &vec![9, 8, 7, 6, 5, 4, 3, 2, 1, 0], 10);
+        validate(&how, &[9, 8, 7, 6, 5, 4, 3, 2, 1, 0], 10);
     }
 
     #[test]
@@ -143,7 +139,7 @@ mod tests {
         ];
         let how = parse(&input);
         assert_eq!(shuffle(&how, 10), vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
-        validate(&how, &vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 10);
+        validate(&how, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 10);
     }
 
     #[test]
@@ -151,7 +147,7 @@ mod tests {
         let input = vec!["deal with increment 1".to_string()];
         let how = parse(&input);
         assert_eq!(shuffle(&how, 10), vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
-        validate(&how, &vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 10);
+        validate(&how, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 10);
     }
 
     #[test]
@@ -159,7 +155,7 @@ mod tests {
         let input = vec!["deal with increment 3".to_string()];
         let how = parse(&input);
         assert_eq!(shuffle(&how, 10), vec![0, 7, 4, 1, 8, 5, 2, 9, 6, 3]);
-        validate(&how, &vec![0, 7, 4, 1, 8, 5, 2, 9, 6, 3], 10);
+        validate(&how, &[0, 7, 4, 1, 8, 5, 2, 9, 6, 3], 10);
     }
 
     #[test]
@@ -167,7 +163,7 @@ mod tests {
         let input = vec!["cut 3".to_string()];
         let how = parse(&input);
         assert_eq!(shuffle(&how, 10), vec![3, 4, 5, 6, 7, 8, 9, 0, 1, 2]);
-        validate(&how, &vec![3, 4, 5, 6, 7, 8, 9, 0, 1, 2], 10);
+        validate(&how, &[3, 4, 5, 6, 7, 8, 9, 0, 1, 2], 10);
     }
 
     #[test]
@@ -175,7 +171,7 @@ mod tests {
         let input = vec!["cut -4".to_string()];
         let how = parse(&input);
         assert_eq!(shuffle(&how, 10), vec![6, 7, 8, 9, 0, 1, 2, 3, 4, 5]);
-        validate(&how, &vec![6, 7, 8, 9, 0, 1, 2, 3, 4, 5], 10);
+        validate(&how, &[6, 7, 8, 9, 0, 1, 2, 3, 4, 5], 10);
     }
 
     #[test]
@@ -186,7 +182,7 @@ mod tests {
         ];
         let how = parse(&input);
         assert_eq!(shuffle(&how, 10), vec![3, 6, 9, 2, 5, 8, 1, 4, 7, 0]);
-        validate(&how, &vec![3, 6, 9, 2, 5, 8, 1, 4, 7, 0], 10);
+        validate(&how, &[3, 6, 9, 2, 5, 8, 1, 4, 7, 0], 10);
     }
 
     #[test]
@@ -198,7 +194,7 @@ mod tests {
         ];
         let how = parse(&input);
         assert_eq!(shuffle(&how, 10), vec![0, 3, 6, 9, 2, 5, 8, 1, 4, 7]);
-        validate(&how, &vec![0, 3, 6, 9, 2, 5, 8, 1, 4, 7], 10);
+        validate(&how, &[0, 3, 6, 9, 2, 5, 8, 1, 4, 7], 10);
     }
 
     #[test]
@@ -210,7 +206,7 @@ mod tests {
         ];
         let how = parse(&input);
         assert_eq!(shuffle(&how, 10), vec![3, 0, 7, 4, 1, 8, 5, 2, 9, 6]);
-        validate(&how, &vec![3, 0, 7, 4, 1, 8, 5, 2, 9, 6], 10);
+        validate(&how, &[3, 0, 7, 4, 1, 8, 5, 2, 9, 6], 10);
     }
 
     #[test]
@@ -222,7 +218,7 @@ mod tests {
         ];
         let how = parse(&input);
         assert_eq!(shuffle(&how, 10), vec![6, 3, 0, 7, 4, 1, 8, 5, 2, 9]);
-        validate(&how, &vec![6, 3, 0, 7, 4, 1, 8, 5, 2, 9], 10);
+        validate(&how, &[6, 3, 0, 7, 4, 1, 8, 5, 2, 9], 10);
     }
 
     #[test]
@@ -241,6 +237,6 @@ mod tests {
         ];
         let how = parse(&input);
         assert_eq!(shuffle(&how, 10), vec![9, 2, 5, 8, 1, 4, 7, 0, 3, 6]);
-        validate(&how, &vec![9, 2, 5, 8, 1, 4, 7, 0, 3, 6], 10);
+        validate(&how, &[9, 2, 5, 8, 1, 4, 7, 0, 3, 6], 10);
     }
 }

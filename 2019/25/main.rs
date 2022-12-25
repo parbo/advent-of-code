@@ -1,8 +1,9 @@
-use aoc;
 use intcode::*;
 use rustyline::Editor;
 
-fn part1(program: &Vec<i128>) -> i128 {
+type Parsed = Vec<i128>;
+
+fn part1(program: &Parsed) -> i128 {
     let mut m = Machine::new(program);
     let mut rl = Editor::<()>::new();
     let mut state = m.run_to_next_io();
@@ -38,7 +39,7 @@ fn part1(program: &Vec<i128>) -> i128 {
     0
 }
 
-fn part2(_: &Vec<i128>) -> i128 {
+fn part2(_: &Parsed) -> i128 {
     0
 }
 

@@ -1,8 +1,8 @@
-use aoc;
-use intcode;
 use pancurses::*;
 use std::collections::HashMap;
 use std::iter::*;
+
+type Parsed = Vec<i128>;
 
 #[derive(Clone, Copy)]
 enum Dir {
@@ -32,8 +32,8 @@ fn draw(window: &Window, hull: &HashMap<(i128, i128), i128>, robot: ((i128, i128
     window.refresh();
 }
 
-fn paint(numbers: &Vec<i128>, color: i128, window: Option<&Window>) -> HashMap<(i128, i128), i128> {
-    let mut m = intcode::Machine::new(&numbers);
+fn paint(numbers: &Parsed, color: i128, window: Option<&Window>) -> HashMap<(i128, i128), i128> {
+    let mut m = intcode::Machine::new(numbers);
     let mut current_color;
     let mut current_dir = Dir::Up;
     let mut x = 0;
@@ -94,9 +94,9 @@ fn paint(numbers: &Vec<i128>, color: i128, window: Option<&Window>) -> HashMap<(
     }
 }
 
-fn part1(numbers: &Vec<i128>) -> i128 {
+fn part1(numbers: &Parsed) -> i128 {
     let hull = paint(numbers, 0, None);
-    hull.iter().count() as i128
+    hull.len() as i128
 }
 
 fn print_hull(hull: &HashMap<(i128, i128), i128>) {
@@ -120,7 +120,7 @@ fn print_hull(hull: &HashMap<(i128, i128), i128>) {
     }
 }
 
-fn part2(numbers: &Vec<i128>) -> i128 {
+fn part2(numbers: &Parsed) -> i128 {
     let window = initscr();
     nl();
     noecho();
@@ -249,10 +249,10 @@ impl Disassembled {
     }
 
     fn f490(&mut self, a1: i128) {
-        let _ = self.input(); // input unused
+        self.input(); // input unused
         self.out(a1);
         self.out(self.v486[self.v485]);
-        self.v485 = self.v485 + 1;
+        self.v485 += 1;
         if 4 == self.v485 {
             self.v485 = 0
         }
@@ -267,10 +267,8 @@ impl Disassembled {
     }
 
     fn f564(&mut self, mut a1: i128, mut a2: i128, a3: i128, mut a4: i128) -> i128 {
-        if a3 < 1 {
-            if a4 < a2 {
-                return a4;
-            }
+        if a3 < 1 && a4 < a2 {
+            return a4;
         }
         a4 = self.f564(a1, 2 * a2, a3 - 1, a4);
         a1 = 1;
@@ -281,9 +279,9 @@ impl Disassembled {
         if 0 < a3 {
             self.f490(a1); // v522
         }
-        a2 = a2 * -1;
-        a4 = a4 + a2;
-        return a4;
+        a2 = -a2;
+        a4 += a2;
+        a4
     }
 }
 

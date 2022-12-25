@@ -1,7 +1,8 @@
-use aoc;
 use aoc::GridDrawer;
 use std::collections::HashMap;
 use std::iter::*;
+
+type Parsed = Vec<i128>;
 
 fn to_char(col: i128) -> char {
     match col {
@@ -65,14 +66,14 @@ fn walk(
         }
     }
     // Return shortest path, if any
-    if paths.len() == 0 {
+    if paths.is_empty() {
         None
     } else {
         paths.into_iter().min_by(|a, b| a.len().cmp(&b.len()))
     }
 }
 
-fn part1(program: &Vec<i128>) -> i128 {
+fn part1(program: &Parsed) -> i128 {
     let mut m = intcode::Machine::new(program);
     let mut seen = HashMap::new();
     let p = walk(
@@ -85,7 +86,7 @@ fn part1(program: &Vec<i128>) -> i128 {
     p.unwrap().len() as i128
 }
 
-fn part2(program: &Vec<i128>) -> i128 {
+fn part2(program: &Parsed) -> i128 {
     let mut d = aoc::CursesGridDrawer::new(to_char);
     let mut m = intcode::Machine::new(program);
     let mut seen = HashMap::new();
@@ -106,7 +107,7 @@ fn part2(program: &Vec<i128>) -> i128 {
             }
         }
         expand = new_expand;
-        if expand.len() == 0 {
+        if expand.is_empty() {
             break;
         }
         d.draw(&seen);

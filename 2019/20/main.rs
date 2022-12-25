@@ -1,4 +1,3 @@
-use aoc;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 use std::collections::HashMap;
@@ -37,9 +36,11 @@ impl PartialOrd for State {
     }
 }
 
+type Portals = HashMap<(usize, usize), ((usize, usize), bool)>;
+
 struct Map<'a> {
     map: &'a Vec<Vec<char>>,
-    portals: &'a HashMap<(usize, usize), ((usize, usize), bool)>,
+    portals: &'a Portals,
     recurse: bool,
     dist: HashMap<(usize, usize, usize), usize>,
     heap: BinaryHeap<State>,
@@ -47,11 +48,7 @@ struct Map<'a> {
 }
 
 impl<'a> Map<'a> {
-    fn new(
-        map: &'a Vec<Vec<char>>,
-        portals: &'a HashMap<(usize, usize), ((usize, usize), bool)>,
-        recurse: bool,
-    ) -> Map<'a> {
+    fn new(map: &'a Vec<Vec<char>>, portals: &'a Portals, recurse: bool) -> Map<'a> {
         let mut map = Map {
             map,
             portals,
@@ -256,7 +253,7 @@ fn find_portals(
 }
 
 fn part1(map: &Parsed) -> usize {
-    let (start, end, portals) = find_portals(&map);
+    let (start, end, portals) = find_portals(map);
     let mut m = Map::new(map, &portals, false);
     if let Some(res) = shortest_path(&mut m, (start.0, start.1, 0), (end.0, end.1, 0)) {
         let h = map.len();
@@ -280,7 +277,7 @@ fn part1(map: &Parsed) -> usize {
 }
 
 fn part2(map: &Parsed) -> usize {
-    let (start, end, portals) = find_portals(&map);
+    let (start, end, portals) = find_portals(map);
     let mut m = Map::new(map, &portals, true);
     if let Some(res) = shortest_path(&mut m, (start.0, start.1, 0), (end.0, end.1, 0)) {
         res.0

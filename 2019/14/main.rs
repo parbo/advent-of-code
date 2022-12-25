@@ -1,5 +1,3 @@
-use aoc;
-// use intcode;
 use serde::Deserialize;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
@@ -38,7 +36,7 @@ fn find_amount(
         if rest > 0 {
             *pile.entry(p.material).or_insert(0) += rest;
         }
-        return m;
+        m
     } else {
         panic!("NOT FOUND");
     }
@@ -116,7 +114,7 @@ fn parse(lines: &[String]) -> HashMap<Material, (i64, Vec<Product>)> {
     for line in lines {
         let sides: Vec<&str> = line.split("=>").collect();
         let left: Vec<Product> = sides[0]
-            .split(",")
+            .split(',')
             .map(|x| x.trim())
             .map(parse_thing)
             .map(|x| {

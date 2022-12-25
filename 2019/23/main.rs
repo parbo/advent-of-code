@@ -1,4 +1,3 @@
-use aoc;
 use std::collections::HashSet;
 
 fn init_network(program: &[i128], len: i128) -> Vec<intcode::Machine> {
@@ -50,14 +49,14 @@ fn run_network(
 }
 
 fn part1(program: &Vec<i128>) -> i128 {
-    let mut machines = init_network(&program, 50);
+    let mut machines = init_network(program, 50);
     let mut ans = None;
     loop {
         run_network(&mut machines, &mut |(_x, y)| {
             ans = Some(y);
             false
         });
-        if ans != None {
+        if ans.is_some() {
             break;
         }
     }
@@ -65,7 +64,7 @@ fn part1(program: &Vec<i128>) -> i128 {
 }
 
 fn part2(program: &Vec<i128>) -> i128 {
-    let mut machines = init_network(&program, 50);
+    let mut machines = init_network(program, 50);
     let mut nat = (0, 0);
     let mut seen = HashSet::new();
     loop {

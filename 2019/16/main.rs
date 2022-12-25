@@ -1,13 +1,14 @@
-use aoc;
 use std::iter::*;
 use std::time::Instant;
+
+type Parsed = Vec<i64>;
 
 fn digs_to_num(digs: &[i64], len: usize) -> i64 {
     let mut d = 1;
     let mut num = 0;
     for i in 0..len {
         num += d * digs[len - 1 - i];
-        d = d * 10;
+        d *= 10;
     }
     num
 }
@@ -21,13 +22,13 @@ fn calc_digit(cs: &[i64], x: usize) -> i64 {
         let e = std::cmp::min(i + x + 1, l);
         let a: i64 = aoc::range_sum(cs, i, e);
         s += p * a;
-        p = p * -1;
+        p = -p;
         i += 2 * (x + 1);
     }
     s.abs() % 10
 }
 
-fn calc(input: &Vec<i64>, phases: usize, offset: usize) -> i64 {
+fn calc(input: &Parsed, phases: usize, offset: usize) -> i64 {
     let mut inp = input.clone();
     let len = inp.len();
     for phase in 1..=phases {
@@ -41,11 +42,11 @@ fn calc(input: &Vec<i64>, phases: usize, offset: usize) -> i64 {
     digs_to_num(&inp[offset..], 8)
 }
 
-fn part1(input: &Vec<i64>) -> i64 {
+fn part1(input: &Parsed) -> i64 {
     calc(input, 100, 0)
 }
 
-fn part2(input: &Vec<i64>) -> i64 {
+fn part2(input: &Parsed) -> i64 {
     let mut inp = vec![];
     for _ in 0..10000 {
         inp.extend(input);
@@ -53,7 +54,7 @@ fn part2(input: &Vec<i64>) -> i64 {
     calc(&inp, 100, digs_to_num(input, 7) as usize)
 }
 
-fn parse(lines: &[String]) -> Vec<i64> {
+fn parse(lines: &[String]) -> Parsed {
     lines[0]
         .chars()
         .map(|x| x.to_digit(10).unwrap() as i64)

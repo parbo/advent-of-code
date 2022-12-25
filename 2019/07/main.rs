@@ -2,13 +2,15 @@ use aoc;
 use intcode;
 use std::iter::*;
 
-fn part1(numbers: &Vec<i128>) -> i128 {
+type Parsed = Vec<i128>;
+
+fn part1(numbers: &Parsed) -> i128 {
     let phases = vec![0, 1, 2, 3, 4];
     let mut max_power = 0;
     for permutation in permute::lexicographically(&phases) {
         let mut val = 0;
-        for i in 0..5 {
-            let mut m = intcode::Machine::with_input(&numbers, &[*permutation[i], val]);
+        for perm in permutation {
+            let mut m = intcode::Machine::with_input(numbers, &[*perm, val]);
             val = m.run_to_next_output().unwrap();
         }
         max_power = std::cmp::max(max_power, val);
@@ -16,7 +18,7 @@ fn part1(numbers: &Vec<i128>) -> i128 {
     max_power
 }
 
-fn part2(numbers: &Vec<i128>) -> i128 {
+fn part2(numbers: &Parsed) -> i128 {
     let phases = vec![5, 6, 7, 8, 9];
     let mut max_power = 0;
     for permutation in permute::lexicographically(&phases) {

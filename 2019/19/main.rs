@@ -3,7 +3,9 @@ use aoc::GridDrawer;
 use std::collections::HashMap;
 use std::iter::*;
 
-fn make_grid(program: &Vec<i128>, x: i64, y: i64, w: i64, h: i64) -> HashMap<aoc::Point, i128> {
+type Parsed = Vec<i128>;
+
+fn make_grid(program: &Parsed, x: i64, y: i64, w: i64, h: i64) -> HashMap<aoc::Point, i128> {
     let mut grid = HashMap::new();
     for yy in y..(y + h) {
         for xx in x..(x + w) {
@@ -18,7 +20,7 @@ fn make_grid(program: &Vec<i128>, x: i64, y: i64, w: i64, h: i64) -> HashMap<aoc
     grid
 }
 
-fn draw(program: &Vec<i128>, x: i64, y: i64, sq: i64, pad: i64) {
+fn draw(program: &Parsed, x: i64, y: i64, sq: i64, pad: i64) {
     let mut grid = make_grid(program, x - pad, y - pad, sq + 2 * pad, sq + 2 * pad);
     for yy in y..(y + sq) {
         for xx in x..(x + sq) {
@@ -34,12 +36,12 @@ fn draw(program: &Vec<i128>, x: i64, y: i64, sq: i64, pad: i64) {
     d.draw(&grid);
 }
 
-fn part1(program: &Vec<i128>) -> i64 {
+fn part1(program: &Parsed) -> i64 {
     let grid = make_grid(program, 0, 0, 50, 50);
     grid.iter().filter(|(_, v)| **v == 1).count() as i64
 }
 
-fn get_beam_at(program: &Vec<i128>, start_x: i64, y: i64) -> (i64, i64) {
+fn get_beam_at(program: &Parsed, start_x: i64, y: i64) -> (i64, i64) {
     let mut s = 0;
     let mut x = start_x;
     loop {

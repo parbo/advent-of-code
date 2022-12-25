@@ -2,14 +2,16 @@ use aoc;
 
 extern crate intcode;
 
-fn part1(numbers: &Vec<i128>) -> i128 {
-    let mut m = intcode::Machine::with_input(&numbers, &[1]);
+type Parsed = Vec<i128>;
+
+fn part1(numbers: &Parsed) -> i128 {
+    let mut m = intcode::Machine::with_input(numbers, &[1]);
     m.run();
     *m.outputs().last().unwrap()
 }
 
-fn part2(numbers: &Vec<i128>) -> i128 {
-    let mut m = intcode::Machine::with_input(&numbers, &[5]);
+fn part2(numbers: &Parsed) -> i128 {
+    let mut m = intcode::Machine::with_input(numbers, &[5]);
     m.run();
     *m.outputs().last().unwrap()
 }

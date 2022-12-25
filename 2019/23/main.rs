@@ -87,7 +87,7 @@ fn part2(program: &Vec<i128>) -> i128 {
 
 fn main() {
     let (part, lines) = aoc::read_lines();
-    let parsed = aoc::parse_intcode(&lines);
+    let parsed = intcode::parse_intcode(&lines);
     let result = if part == 1 {
         part1(&parsed)
     } else {

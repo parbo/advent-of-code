@@ -1,10 +1,7 @@
 #![allow(clippy::ptr_arg)]
 
 use aoc::{Grid, GridDrawer};
-use std::{
-    collections::HashSet,
-    iter::*,
-};
+use std::{collections::HashSet, iter::*};
 
 type Parsed = Vec<Vec<i64>>;
 type Answer = i64;
@@ -22,15 +19,15 @@ fn step(g: &mut Parsed) -> usize {
     // Do the flash
     let mut flashed = HashSet::new();
     while !flash.is_empty() {
-	for p in flash.split_off(0) {
-	    flashed.insert(p);
+        for p in flash.split_off(0) {
+            flashed.insert(p);
             for nb in aoc::neighbors_incl_diagonals(p) {
                 if let Some(v) = g.get_value(nb) {
-		    g.set_value(nb, v + 1);
-		    if v + 1 == 10 {
+                    g.set_value(nb, v + 1);
+                    if v + 1 == 10 {
                         flash.push(nb);
-		    }
-		}
+                    }
+                }
             }
         }
     }
@@ -60,15 +57,15 @@ fn part2(grid: &Parsed, draw: bool) -> Answer {
     );
     let mut i = 0;
     loop {
-	let num = step(&mut g);
-	if draw {
-	    gd.draw(&g);
-	    gd.save_image();
-	}
-	i += 1;
-	if num == total {
-	    break;
-	}
+        let num = step(&mut g);
+        if draw {
+            gd.draw(&g);
+            gd.save_image();
+        }
+        i += 1;
+        if num == total {
+            break;
+        }
     }
     i as Answer
 }

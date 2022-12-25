@@ -17,19 +17,19 @@ fn solve(polymer: &Parsed, gen: usize) -> Answer {
         *pairs.entry((w[0], w[1])).or_insert(0) += 1;
     }
     for _ in 0..gen {
-	let mut new_p = pairs.clone();
-	for (p, num) in pairs {
+        let mut new_p = pairs.clone();
+        for (p, num) in pairs {
             if let Some(c) = polymer.rules.get(&p) {
-		*new_p.entry(p).or_insert(0) -= num;
-		*new_p.entry((p.0, *c)).or_insert(0) += num;
-		*new_p.entry((*c, p.1)).or_insert(0) += num;
-	    }
+                *new_p.entry(p).or_insert(0) -= num;
+                *new_p.entry((p.0, *c)).or_insert(0) += num;
+                *new_p.entry((*c, p.1)).or_insert(0) += num;
+            }
         }
-	pairs = new_p;
+        pairs = new_p;
     }
     let mut counts = HashMap::new();
     for (p, num) in pairs {
-	*counts.entry(p.0).or_insert(0) += num;
+        *counts.entry(p.0).or_insert(0) += num;
     }
     // Also count the last letter
     *counts.entry(*polymer.template.last().unwrap()).or_insert(0) += 1;

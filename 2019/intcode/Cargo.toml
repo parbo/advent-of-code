@@ -8,7 +8,7 @@ rustyline = "5.0.4"
 ansi_term = "0.12"
 
 [dev-dependencies]
-aoc = {path = "../aoc"}
+aoc = {path = "../../aoc"}
 
 [[example]]
 name = "debug"

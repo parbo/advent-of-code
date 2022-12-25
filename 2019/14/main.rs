@@ -71,7 +71,7 @@ fn part2(reqs: &HashMap<Material, (i64, Vec<Product>)>) -> i64 {
         } else {
             a = m + 1;
         }
-	m = (a + b) / 2;
+        m = (a + b) / 2;
     }
     m
 }
@@ -136,7 +136,6 @@ fn parse(lines: &Vec<String>) -> HashMap<Material, (i64, Vec<Product>)> {
 
 fn main() {
     let (part, lines) = aoc::read_lines();
-    //let parsed = aoc::parse_intcode(&lines);
     let parsed = parse(&lines);
     let result = if part == 1 {
         part1(&parsed)

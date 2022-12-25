@@ -27,7 +27,7 @@ fn part2(layers: &Vec<Vec<u32>>) -> usize {
                 match v {
                     0 => pixel = 0,
                     1 => pixel = 1,
-                    2 => {},
+                    2 => {}
                     _ => panic!("OH NOES"),
                 }
             }

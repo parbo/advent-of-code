@@ -238,7 +238,6 @@ fn parse(lines: &Vec<String>) -> Vec<Vec<char>> {
 
 fn main() {
     let (part, lines) = aoc::read_lines();
-    //let parsed = aoc::parse_intcode(&lines);
     let parsed = parse(&lines);
     let result = if part == 1 {
         part1(&parsed)

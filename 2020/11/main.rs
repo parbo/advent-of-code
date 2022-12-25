@@ -1,9 +1,9 @@
 use aoc::Grid;
 use aoc::*;
 
-static DG: [u8;3] = [0, 100, 0];
-static LG: [u8;3] = [0, 255, 0];
-static OW: [u8;3] = [200, 200, 200];
+static DG: [u8; 3] = [0, 100, 0];
+static LG: [u8; 3] = [0, 255, 0];
+static OW: [u8; 3] = [200, 200, 200];
 
 fn part1(grid: &[Vec<char>], d: bool) -> usize {
     let mut g = grid.to_owned();
@@ -19,8 +19,8 @@ fn part1(grid: &[Vec<char>], d: bool) -> usize {
     loop {
         let mut newg = g.clone();
         if d {
-	    gd.draw(&g);
-	}
+            gd.draw(&g);
+        }
         for p in g.points() {
             if let Some(c) = g.get_value(p) {
                 let mut empty = 0;
@@ -68,9 +68,9 @@ fn part2(grid: &[Vec<char>], d: bool) -> usize {
     );
     loop {
         let mut newg = g.clone();
-	if d {
+        if d {
             gd.draw(&g);
-	}
+        }
         for p in g.points() {
             if let Some(c) = g.get_value(p) {
                 let mut empty = 0;

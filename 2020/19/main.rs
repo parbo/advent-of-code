@@ -98,8 +98,8 @@ fn part2(input: &Parsed) -> Answer {
     let r31 = Regex::new(&expand_rule(rules, 31).join("")).unwrap();
     let mut n = 0;
     for s in strings {
-	let (num42, ix) = find(&r42, s, 0);
-	let (num31, ix) = find(&r31, s, ix);
+        let (num42, ix) = find(&r42, s, 0);
+        let (num31, ix) = find(&r31, s, ix);
         if num42 > num31 && num31 > 0 && ix == s.len() {
             n += 1;
         }

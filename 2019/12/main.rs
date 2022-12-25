@@ -10,7 +10,7 @@ fn energy(m: &Vec<Vec<i64>>, steps: usize) -> i64 {
     for _s in 0..steps {
         for i in 0..3 {
             for a in 0..moons.len() {
-		for b in (a + 1)..moons.len() {
+                for b in (a + 1)..moons.len() {
                     // Apply gravity
                     if moons[a][i] < moons[b][i] {
                         vel[a][i] += 1;
@@ -20,8 +20,8 @@ fn energy(m: &Vec<Vec<i64>>, steps: usize) -> i64 {
                         vel[b][i] += 1;
                     }
                 }
-		// Apply velocity
-		moons[a][i] += vel[a][i];
+                // Apply velocity
+                moons[a][i] += vel[a][i];
             }
         }
     }
@@ -44,17 +44,17 @@ fn part2(m: &Vec<Vec<i64>>) -> i64 {
     vel.resize(moons.len(), vec![0, 0, 0]);
     let mut cycles = vec![];
     for i in 0..3 {
-	let mut seen = HashSet::new();
-	let mut s = 1;
-	let mut state = vec![];
+        let mut seen = HashSet::new();
+        let mut s = 1;
+        let mut state = vec![];
         for a in 0..moons.len() {
-	    state.push((moons[a][i], vel[a][i]));
-	}
-	seen.insert(state.clone());
-	let c = loop {
-	    state.clear();
+            state.push((moons[a][i], vel[a][i]));
+        }
+        seen.insert(state.clone());
+        let c = loop {
+            state.clear();
             for a in 0..moons.len() {
-		for b in (a + 1)..moons.len() {
+                for b in (a + 1)..moons.len() {
                     // Apply gravity
                     if moons[a][i] < moons[b][i] {
                         vel[a][i] += 1;
@@ -64,16 +64,16 @@ fn part2(m: &Vec<Vec<i64>>) -> i64 {
                         vel[b][i] += 1;
                     }
                 }
-		// Apply velocity
-		moons[a][i] += vel[a][i];
-		state.push((moons[a][i], vel[a][i]));
-	    }
-	    if !seen.insert(state.clone()) {
-		break s;
-	    }
+                // Apply velocity
+                moons[a][i] += vel[a][i];
+                state.push((moons[a][i], vel[a][i]));
+            }
+            if !seen.insert(state.clone()) {
+                break s;
+            }
             s += 1;
-	};
-	cycles.push(c);
+        };
+        cycles.push(c);
     }
     aoc::lcm(cycles[0], aoc::lcm(cycles[1], cycles[2]))
 }
@@ -90,7 +90,6 @@ fn parse(lines: &Vec<String>) -> Vec<Vec<i64>> {
 
 fn main() {
     let (part, lines) = aoc::read_lines();
-    //let parsed = aoc::parse_intcode(&lines);
     let parsed = parse(&lines);
     let result = if part == 1 {
         part1(&parsed)

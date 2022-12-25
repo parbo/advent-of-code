@@ -12,7 +12,7 @@ fn pos_mod(x: i128, y: i128) -> i128 {
 }
 
 fn mod_inverse(a: i128, m: i128) -> i128 {
-    aoc::modinverse(a, m).unwrap()
+    modinverse::modinverse(a, m).unwrap()
 }
 
 fn shuffle_idx(how: &Vec<Shuffle>, len: i128, idx: i128) -> i128 {
@@ -112,7 +112,7 @@ fn parse(lines: &Vec<String>) -> Vec<Shuffle> {
 
 fn main() {
     let (part, lines) = aoc::read_lines();
-    //let parsed = aoc::parse_intcode(&lines);
+    //let parsed = intcode::parse_intcode(&lines);
     let parsed = parse(&lines);
     let result = if part == 1 {
         part1(&parsed)

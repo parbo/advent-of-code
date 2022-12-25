@@ -257,8 +257,8 @@ fn part1(map: &Vec<Vec<char>>) -> usize {
     let (start, end, portals) = find_portals(&map);
     let mut m = Map::new(map, &portals, false);
     if let Some(res) = shortest_path(&mut m, (start.0, start.1, 0), (end.0, end.1, 0)) {
-	let h = map.len();
-	let w = map[0].len();
+        let h = map.len();
+        let w = map[0].len();
         let p: HashSet<_> = res.1.iter().collect();
         for y in 0..h {
             for x in 0..w {
@@ -293,7 +293,7 @@ fn parse(lines: &Vec<String>) -> Vec<Vec<char>> {
 
 fn main() {
     let (part, lines) = aoc::read_lines();
-    //let parsed = aoc::parse_intcode(&lines);
+    //let parsed = intcode::parse_intcode(&lines);
     let parsed = parse(&lines);
     let result = if part == 1 {
         part1(&parsed)

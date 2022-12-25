@@ -165,11 +165,11 @@ fn gen_nums(program: &[ParsedItem], ix: usize, digs: &[i64], max: &mut i64, min:
         assert!(digs.len() == 14, "{:?}", digs);
         for (i, d) in digs.iter().enumerate() {
             m += *d * 10_i64.pow((13 - i) as u32);
-	    alu.add_input(*d);
+            alu.add_input(*d);
         }
-	for p in program {
-	    alu.step(*p);
-	}
+        for p in program {
+            alu.step(*p);
+        }
         if alu.z == 0 {
             *max = (*max).max(m);
             *min = (*min).min(m);

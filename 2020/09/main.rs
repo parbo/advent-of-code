@@ -3,12 +3,12 @@ use std::iter::*;
 fn is_valid(input: &[i64], num: usize, ix: usize) -> bool {
     for j in 0..num {
         for k in 0..num {
-	    if j == k {
+            if j == k {
                 continue;
-	    }
-	    if input[ix + j - num] + input[ix + k - num] == input[ix] {
+            }
+            if input[ix + j - num] + input[ix + k - num] == input[ix] {
                 return true;
-	    }
+            }
         }
     }
     false
@@ -31,14 +31,14 @@ fn find_weakness(input: &[i64], pl: usize) -> i64 {
     let num = get_first_non_valid(input, pl);
     let cs = aoc::cum_sum(&input);
     for i in 0..input.len() {
-	for j in i..input.len() {
-	    let s : i64 = aoc::range_sum(&cs, i, j);
-	    if s == num {
-		let min = input[i..j].iter().min().unwrap();
-		let max = input[i..j].iter().max().unwrap();
-		return min + max;
-	    }
-	}
+        for j in i..input.len() {
+            let s: i64 = aoc::range_sum(&cs, i, j);
+            if s == num {
+                let min = input[i..j].iter().min().unwrap();
+                let max = input[i..j].iter().max().unwrap();
+                return min + max;
+            }
+        }
     }
     0
 }

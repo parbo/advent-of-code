@@ -1,6 +1,6 @@
 use std::fs::File;
-use std::path::Path;
 use std::io::Write;
+use std::path::Path;
 
 pub type Color = [f64; 3];
 pub type Pixel = [f64; 3];

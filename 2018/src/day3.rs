@@ -1,14 +1,14 @@
+use crate::ppm::*;
 use aoc_runner_derive::{aoc, aoc_generator};
 use std::error::Error;
 use std::iter::*;
-use crate::ppm::*;
 
 struct Claim {
     id: i64,
     left: i64,
     top: i64,
     right: i64,
-    bottom: i64
+    bottom: i64,
 }
 
 impl Claim {
@@ -22,7 +22,7 @@ impl Claim {
         let left = s[(at + 2)..comma].parse::<i64>().unwrap();
         let top = s[(comma + 1)..colon].parse::<i64>().unwrap();
         let w = s[(colon + 2)..x].parse::<i64>().unwrap();
-        let h =  s[(x + 1)..].parse::<i64>().unwrap();
+        let h = s[(x + 1)..].parse::<i64>().unwrap();
         let right = left + w;
         let bottom = top + h;
         Claim {
@@ -30,11 +30,14 @@ impl Claim {
             left: left,
             top: top,
             right: right,
-            bottom: bottom
+            bottom: bottom,
         }
     }
     fn overlap(&self, other: &Claim) -> bool {
-        self.left < other.right && self.right > other.left && self.top < other.bottom && self.bottom > other.top
+        self.left < other.right
+            && self.right > other.left
+            && self.top < other.bottom
+            && self.bottom > other.top
     }
     fn draw(&self, pixels: &mut [Pixel], color: &Color, stride: i64) {
         for y in self.top..self.bottom {

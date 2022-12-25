@@ -12,7 +12,7 @@ fn part1(tt: &(usize, Vec<(usize, usize)>)) -> usize {
 fn part2(tt: &(usize, Vec<(usize, usize)>)) -> usize {
     let residues: Vec<i64> = tt.1.iter().map(|x| x.0 as i64).collect();
     let modulii: Vec<i64> = tt.1.iter().map(|x| x.1 as i64).collect();
-    let prod : i64 = modulii.iter().product();
+    let prod: i64 = modulii.iter().product();
     let crt = aoc::chinese_remainder(&residues, &modulii).unwrap();
     (prod - crt) as usize
 }

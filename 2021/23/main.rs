@@ -1,9 +1,9 @@
 #![allow(clippy::ptr_arg)]
 
+use aoc::FxHashMap;
 use aoc::{Grid, Itertools};
 use std::cmp::Reverse;
-use std::collections::{BinaryHeap};
-use aoc::FxHashMap;
+use std::collections::BinaryHeap;
 use std::time::Instant;
 
 type Parsed = Vec<Vec<u8>>;
@@ -91,7 +91,7 @@ fn is_blocking(grid: &[u8], num: i64, p: aoc::Point, a: u8) -> bool {
 fn solve(parsed_grid: &Vec<Vec<u8>>, num: i64) -> Option<i64> {
     // Make a flat grid with only amphipods and empty positions
     let mut start = vec![];
-    start.reserve(parsed_grid.len()*parsed_grid[0].len());
+    start.reserve(parsed_grid.len() * parsed_grid[0].len());
     for p in parsed_grid.points() {
         start.push(parsed_grid.get_value(p).unwrap());
     }
@@ -214,7 +214,7 @@ fn solve(parsed_grid: &Vec<Vec<u8>>, num: i64) -> Option<i64> {
                         }
                     }
                     let new_f = new_g + min_dist;
-		    *fscore.entry(new_pos.clone()).or_insert(i64::MAX) = new_f;
+                    *fscore.entry(new_pos.clone()).or_insert(i64::MAX) = new_f;
                     todo.push(Reverse((new_f, new_pos)));
                 }
             }

@@ -91,38 +91,38 @@ pub enum Arg {
 pub struct Instruction {
     pub address: usize,
     pub op: Op,
-    args: [Arg;4],
+    args: [Arg; 4],
     read: usize,
     write: usize,
 }
 
 impl Instruction {
     pub fn new(address: usize, op: Op) -> Instruction {
-	Instruction {
-	    address,
-	    op,
-	    args: [Arg::Immediate { value: 0 };4],
-	    read: 0,
-	    write: 0,
-	}
+        Instruction {
+            address,
+            op,
+            args: [Arg::Immediate { value: 0 }; 4],
+            read: 0,
+            write: 0,
+        }
     }
 
     pub fn add_read(&mut self, arg: Arg) {
-	self.args[self.read] = arg;
-	self.read += 1;
+        self.args[self.read] = arg;
+        self.read += 1;
     }
 
     pub fn add_write(&mut self, arg: Arg) {
-	self.args[self.read + self.write] = arg;
-	self.write += 1;
+        self.args[self.read + self.write] = arg;
+        self.write += 1;
     }
 
     pub fn read<'a>(&'a self) -> &'a [Arg] {
-	&self.args[0..self.read]
+        &self.args[0..self.read]
     }
 
     pub fn write<'a>(&'a self) -> &'a [Arg] {
-	&self.args[self.read..(self.read+self.write)]
+        &self.args[self.read..(self.read + self.write)]
     }
 
     pub fn name(&self) -> &str {
@@ -209,12 +209,12 @@ impl Machine {
             reads: HashMap::new(),
             writes: HashMap::new(),
             relative_base: 0,
-	    stats: false,
+            stats: false,
         }
     }
 
     pub fn set_stats(&mut self, s: bool) {
-	self.stats = s;
+        self.stats = s;
     }
 
     pub fn new(memory: &[i128]) -> Machine {
@@ -284,7 +284,7 @@ impl Machine {
     }
 
     pub fn input_len(&self) -> usize {
-	self.inputs.len() - self.curr_input
+        self.inputs.len() - self.curr_input
     }
 
     pub fn step(&mut self) -> State {
@@ -321,16 +321,20 @@ impl Machine {
                         }
                         None
                     }
-                    Op::LTN => Some(if self.read_arg(&x.read()[0]) < self.read_arg(&x.read()[1]) {
-                        1
-                    } else {
-                        0
-                    }),
-                    Op::EQL => Some(if self.read_arg(&x.read()[0]) == self.read_arg(&x.read()[1]) {
-                        1
-                    } else {
-                        0
-                    }),
+                    Op::LTN => Some(
+                        if self.read_arg(&x.read()[0]) < self.read_arg(&x.read()[1]) {
+                            1
+                        } else {
+                            0
+                        },
+                    ),
+                    Op::EQL => Some(
+                        if self.read_arg(&x.read()[0]) == self.read_arg(&x.read()[1]) {
+                            1
+                        } else {
+                            0
+                        },
+                    ),
                     Op::SP => {
                         self.relative_base = self.relative_base + self.read_arg(&x.read()[0]);
                         None
@@ -387,13 +391,13 @@ impl Machine {
         let val = *self.memory.get(address).unwrap_or(&0);
         if let Some(op) = Op::from_i128(val) {
             let def = op.definition();
-	    let mut ins = Instruction::new(address, op);
+            let mut ins = Instruction::new(address, op);
             for r in 0..def.1 {
                 let m = mode(val, 1 + r);
                 let v = self.memory.get(address + 1 + r).unwrap_or(&0);
                 match &m {
                     Some(Mode::Immediate) => {
-			ins.add_read(Arg::Immediate { value: *v });
+                        ins.add_read(Arg::Immediate { value: *v });
                     }
                     Some(Mode::Position) => {
                         ins.add_read(Arg::Position {
@@ -406,7 +410,7 @@ impl Machine {
                             offset: *v,
                         });
                     }
-		    _ => ()
+                    _ => (),
                 }
             }
             for w in 0..def.2 {

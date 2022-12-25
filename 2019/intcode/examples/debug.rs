@@ -15,7 +15,7 @@ fn main() {
         let f = File::open(Path::new(filename)).unwrap();
         let buffered = BufReader::new(f);
         (
-            aoc::parse_intcode(
+            intcode::parse_intcode(
                 &buffered
                     .lines()
                     .filter_map(Result::ok)

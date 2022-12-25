@@ -1,7 +1,7 @@
 use std::env;
 use std::fs::File;
-use std::io::BufReader;
 use std::io::prelude::*;
+use std::io::BufReader;
 use std::iter::*;
 use std::path::Path;
 
@@ -12,7 +12,7 @@ fn get_fuel(mass: i64) -> i64 {
 fn get_fuel_recursive(mass: i64) -> i64 {
     let fuel = (mass / 3) - 2;
     if fuel <= 0 {
-        return 0
+        return 0;
     }
     return fuel + get_fuel_recursive(fuel);
 }
@@ -28,7 +28,7 @@ fn part2(masses: &Vec<i64>) -> i64 {
 fn input(path: &Path) -> Vec<i64> {
     let input = File::open(path).unwrap();
     let buffered = BufReader::new(input);
-    let lines : Vec<String> = buffered.lines().filter_map(Result::ok).collect();
+    let lines: Vec<String> = buffered.lines().filter_map(Result::ok).collect();
     lines.iter().map(|v| v.parse::<i64>().unwrap()).collect()
 }
 

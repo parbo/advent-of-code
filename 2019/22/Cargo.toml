@@ -4,8 +4,9 @@ version = '0.0.1'
 edition = '2018'
 
 [dependencies]
-aoc = {path = "../aoc"}
+aoc = {path = "../../aoc"}
 intcode = {path = "../intcode"}
+modinverse = "0.1.1"
 
 [[bin]]
 name = 'day22'

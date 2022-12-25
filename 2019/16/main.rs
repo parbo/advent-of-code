@@ -34,10 +34,7 @@ fn calc(input: &Vec<i64>, phases: usize, offset: usize) -> i64 {
         let now = Instant::now();
         println!("phase: {}", phase);
         let cs = aoc::cum_sum(&inp);
-        let out: Vec<_> = (0..len)
-            .into_iter()
-            .map(|x| calc_digit(&cs, x))
-            .collect();
+        let out: Vec<_> = (0..len).into_iter().map(|x| calc_digit(&cs, x)).collect();
         inp = out;
         println!("done in {} millis", now.elapsed().as_millis());
     }

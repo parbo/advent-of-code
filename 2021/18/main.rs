@@ -96,8 +96,8 @@ fn explode(number: &SnailNumber) -> SnailNumber {
         let r_s = format!("{}", r);
         let parts = aoc::split_str(&r_s, "-1");
         let rev: String = parts[0].chars().rev().collect();
-        let re = aoc::Regex::new(r"(^[^\d]*)(\d+)(.*$)").unwrap();
-        let new_left = re.replace(&rev, |c: &aoc::Captures| {
+        let re = regex::Regex::new(r"(^[^\d]*)(\d+)(.*$)").unwrap();
+        let new_left = re.replace(&rev, |c: &regex::Captures| {
             //	    println!("{} + {}, {}",  c[2].parse::<i64>().unwrap(), a, c[2].parse::<i64>().unwrap() + a);
             format!(
                 "{}{}{}",
@@ -112,7 +112,7 @@ fn explode(number: &SnailNumber) -> SnailNumber {
             )
         });
         // println!("old: {}, new_left: {}", parts[0], new_left);
-        let new_right = re.replace(parts[1], |c: &aoc::Captures| {
+        let new_right = re.replace(parts[1], |c: &regex::Captures| {
             format!("{}{}{}", &c[1], c[2].parse::<i64>().unwrap() + b, &c[3])
         });
         let n_s = format!("{}0{}", new_left, new_right);

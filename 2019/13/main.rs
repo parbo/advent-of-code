@@ -1,7 +1,7 @@
 use aoc;
-use std::iter::*;
-use std::collections::HashMap;
 use pancurses::*;
+use std::collections::HashMap;
+use std::iter::*;
 
 // 0 is an empty tile. No game object appears in this tile.
 // 1 is a wall tile. Walls are indestructible barriers.
@@ -13,14 +13,14 @@ fn part1(program: &Vec<i128>) -> i128 {
     let mut m = intcode::Machine::new(&program);
     let mut blocks = HashMap::new();
     loop {
-	let x = m.run_to_next_output();
-	let y = m.run_to_next_output();
-	let tile = m.run_to_next_output();
-	if x.is_some() && y.is_some() && tile.is_some() {
-	    blocks.insert((x.unwrap(), y.unwrap()), tile.unwrap());
-	} else {
-	    break;
-	}
+        let x = m.run_to_next_output();
+        let y = m.run_to_next_output();
+        let tile = m.run_to_next_output();
+        if x.is_some() && y.is_some() && tile.is_some() {
+            blocks.insert((x.unwrap(), y.unwrap()), tile.unwrap());
+        } else {
+            break;
+        }
     }
     blocks.iter().map(|(_k, v)| *v).filter(|v| *v == 2).count() as i128
 }
@@ -32,15 +32,15 @@ fn draw(window: &Window, x: i128, y: i128, v: i128, score: i128) -> Option<Input
         2 => 'B',
         3 => '-',
         4 => 'o',
-	_ => ' ',
+        _ => ' ',
     };
     window.mvaddch(y as i32, x as i32, ch);
     window.mvprintw(0, 2, score.to_string());
     window.refresh();
     if v == 4 {
-	window.getch()
+        window.getch()
     } else {
-	None
+        None
     }
 }
 
@@ -60,43 +60,43 @@ fn part2(program: &Vec<i128>) -> i128 {
     let mut dir = 0;
     let mut skip = false;
     loop {
-	let state = m.run_to_next_io();
-	match state {
-	    intcode::State::Output => {
-		let outputs = m.drain_output();
-		let x = outputs[0];
-		let y = outputs[1];
-		let t = outputs[2];
-		if x == -1 && y == 0  {
-		    score = t;
-		} else {
-		    if t == 3 {
-			paddle = (x, y);
-		    } else if t == 4 {
-			ball = (x, y);
-		    }
-		    dir = (ball.0 - paddle.0).signum();
-		    if !skip {
-			let x = draw(&window, x, y, t, score);
-			match x {
-			    Some(pancurses::Input::Character(' ')) => skip = true,
-			    None => {},
-			    _ => break,
-			}
-		    }
-		}
-	    },
-	    intcode::State::Input => m.add_input(dir),
-	    intcode::State::Halted => break,
-	    _ => panic!()
-	}
+        let state = m.run_to_next_io();
+        match state {
+            intcode::State::Output => {
+                let outputs = m.drain_output();
+                let x = outputs[0];
+                let y = outputs[1];
+                let t = outputs[2];
+                if x == -1 && y == 0 {
+                    score = t;
+                } else {
+                    if t == 3 {
+                        paddle = (x, y);
+                    } else if t == 4 {
+                        ball = (x, y);
+                    }
+                    dir = (ball.0 - paddle.0).signum();
+                    if !skip {
+                        let x = draw(&window, x, y, t, score);
+                        match x {
+                            Some(pancurses::Input::Character(' ')) => skip = true,
+                            None => {}
+                            _ => break,
+                        }
+                    }
+                }
+            }
+            intcode::State::Input => m.add_input(dir),
+            intcode::State::Halted => break,
+            _ => panic!(),
+        }
     }
     score
 }
 
 fn main() {
     let (part, lines) = aoc::read_lines();
-    let parsed = aoc::parse_intcode(&lines);
+    let parsed = intcode::parse_intcode(&lines);
     let result = if part == 1 {
         part1(&parsed)
     } else {

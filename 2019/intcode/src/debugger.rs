@@ -14,7 +14,7 @@ pub struct Debugger<'a> {
 }
 
 fn config() {
-#[cfg(target_os="windows")]
+    #[cfg(target_os = "windows")]
     let _ = ansi_term::enable_ansi_support();
 }
 

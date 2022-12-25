@@ -11,11 +11,11 @@ fn find(
     all: &mut Vec<HashMap<String, String>>,
 ) {
     if constraints.len() == sofar.len() {
-	for a in all.iter() {
-	    if *a == sofar {
-		return;
-	    }
-	}
+        for a in all.iter() {
+            if *a == sofar {
+                return;
+            }
+        }
         all.push(sofar.clone());
         return;
     }
@@ -74,10 +74,10 @@ fn part1(input: &Parsed) -> usize {
     let mut num = 0;
     for (ingredients, _allergens) in input {
         for i in ingredients {
-	    if na.contains(i) {
-		num += 1;
-	    }
-	}
+            if na.contains(i) {
+                num += 1;
+            }
+        }
     }
     num
 }
@@ -87,15 +87,23 @@ fn part2(input: &Parsed) -> String {
     let mut dangerous = HashSet::new();
     for (ingredients, _) in input {
         for i in ingredients {
-	    if !na.contains(i) {
-		dangerous.insert(i);
-	    }
-	}
+            if !na.contains(i) {
+                dangerous.insert(i);
+            }
+        }
     }
     // Create the reverse mapping
-    let ingredients : HashMap<String, String> = allergens.iter().map(|(k, v)| (v.clone(), k.clone())).collect();
-    let mut canonical : Vec<String> = dangerous.into_iter().map(|x| x.clone()).collect();
-    canonical.sort_by(|a, b| ingredients.get(a).unwrap().cmp(&ingredients.get(b).unwrap()));
+    let ingredients: HashMap<String, String> = allergens
+        .iter()
+        .map(|(k, v)| (v.clone(), k.clone()))
+        .collect();
+    let mut canonical: Vec<String> = dangerous.into_iter().map(|x| x.clone()).collect();
+    canonical.sort_by(|a, b| {
+        ingredients
+            .get(a)
+            .unwrap()
+            .cmp(&ingredients.get(b).unwrap())
+    });
     canonical.iter().join(",")
 }
 
@@ -122,10 +130,10 @@ fn main() {
     let parsed = parse(&lines);
     if part == 1 {
         let res = part1(&parsed);
-	println!("{}", res)
+        println!("{}", res)
     } else {
         let res = part2(&parsed);
-	println!("{}", res)
+        println!("{}", res)
     }
 }
 
@@ -152,6 +160,6 @@ mod tests {
         let na_set: HashSet<String> = na.into_iter().collect();
         let expected_set: HashSet<String> = expected.into_iter().collect();
         assert_eq!(na_set, expected_set);
-	assert_eq!(part2(&parsed), "mxmxvkd,sqjhc,fvjkl");
+        assert_eq!(part2(&parsed), "mxmxvkd,sqjhc,fvjkl");
     }
 }

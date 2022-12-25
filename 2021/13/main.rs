@@ -10,10 +10,7 @@ struct Manual {
 type Parsed = Manual;
 type Answer = i64;
 
-fn fold_grid(
-    grid: &HashMap<Point, char>,
-    fold: (usize, i64),
-) -> HashMap<Point, char> {
+fn fold_grid(grid: &HashMap<Point, char>, fold: (usize, i64)) -> HashMap<Point, char> {
     let mut g = HashMap::new();
     for p in grid.keys() {
         let mut np = *p;

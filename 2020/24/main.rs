@@ -96,7 +96,7 @@ fn part2(paths: &Parsed, draw: bool) -> Answer {
         let mut max_xx = 0;
         let mut max_yy = 0;
         for gg in &all_grid {
-	    // To figure the row/col span, use oddr coords
+            // To figure the row/col span, use oddr coords
             let ([min_x, min_y], [max_x, max_y]) = gg.oddr_extents();
             min_xx = min_xx.min(min_x);
             min_yy = min_yy.min(min_y);

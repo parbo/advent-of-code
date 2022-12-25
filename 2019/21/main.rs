@@ -73,22 +73,22 @@ enum Instruction {
 
 fn poss(curr: &Vec<bool>, res: &mut Vec<Vec<bool>>, len: usize) {
     if curr.len() < len {
-    	for a in &[false, true] {
-	    if *a {
-		let mut c = curr.clone();
-		c.push(true);
-		poss(&c, res, len);
-	    } else if curr.len() + 4 < len {
-		let mut c = curr.clone();
-		for _ in 0..3 {
-		    c.push(false);
-		}
-		c.push(true);
-		poss(&c, res, len);
-	    }
-	}
+        for a in &[false, true] {
+            if *a {
+                let mut c = curr.clone();
+                c.push(true);
+                poss(&c, res, len);
+            } else if curr.len() + 4 < len {
+                let mut c = curr.clone();
+                for _ in 0..3 {
+                    c.push(false);
+                }
+                c.push(true);
+                poss(&c, res, len);
+            }
+        }
     } else if curr.len() == len {
-	res.push(curr.clone());
+        res.push(curr.clone());
     }
 }
 
@@ -102,9 +102,15 @@ fn validate(possible: &Vec<Vec<bool>>, prog: &[(Instruction, char, char)]) -> bo
     for v in possible {
         let mut pos = 0;
         while pos < 10 {
-            let mut s : u32 = 0;
-	    v.iter().skip(pos).enumerate().for_each(|(i, x)| if *x { s = s | (1 << i) } else { s = s & !(1 << i) });
-	    println!("{:b}", s);
+            let mut s: u32 = 0;
+            v.iter().skip(pos).enumerate().for_each(|(i, x)| {
+                if *x {
+                    s = s | (1 << i)
+                } else {
+                    s = s & !(1 << i)
+                }
+            });
+            println!("{:b}", s);
             for (ins, o1, o2) in prog {
                 match ins {
                     Instruction::NOT => {
@@ -117,24 +123,24 @@ fn validate(possible: &Vec<Vec<bool>>, prog: &[(Instruction, char, char)]) -> bo
                         s = write(s, *o2, read(s, *o1) && read(s, *o2));
                     }
                 }
-		println!("{:?}, {:b}", (ins, o1, o2), s);
+                println!("{:?}, {:b}", (ins, o1, o2), s);
             }
             if read(s, 'J') {
-		println!("J");
+                println!("J");
                 pos += 4;
             } else {
-		println!("W");
+                println!("W");
                 pos += 1;
             }
             if pos < 10 {
-		if !v[pos] {
-		    println!("hole {:?}, {}", v, pos);
+                if !v[pos] {
+                    println!("hole {:?}, {}", v, pos);
                     return false;
                 }
             } else {
-		println!("too far {:?}, {}", v, pos);
-		return false;
-	    }
+                println!("too far {:?}, {}", v, pos);
+                return false;
+            }
         }
     }
     true
@@ -278,7 +284,7 @@ fn part2(_: &Vec<i128>) -> i128 {
 
 fn main() {
     let (part, lines) = aoc::read_lines();
-    let parsed = aoc::parse_intcode(&lines);
+    let parsed = intcode::parse_intcode(&lines);
     let result = if part == 1 {
         part1(&parsed)
     } else {
@@ -289,24 +295,27 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::{validate, possible, Instruction};
+    use super::{possible, validate, Instruction};
 
     #[test]
     fn test_valudate() {
-	let p = possible();
+        let p = possible();
         assert_eq!(
-            validate(&p, &vec![
-                (Instruction::NOT, 'A', 'J'),
-                (Instruction::NOT, 'B', 'T'),
-                (Instruction::OR, 'T', 'J'),
-                (Instruction::NOT, 'C', 'T'),
-                (Instruction::OR, 'T', 'J'),
-                (Instruction::AND, 'D', 'J'),
-                (Instruction::NOT, 'E', 'T'),
-                (Instruction::NOT, 'T', 'T'),
-                (Instruction::OR, 'H', 'T'),
-                (Instruction::AND, 'T', 'J'),
-            ]),
+            validate(
+                &p,
+                &vec![
+                    (Instruction::NOT, 'A', 'J'),
+                    (Instruction::NOT, 'B', 'T'),
+                    (Instruction::OR, 'T', 'J'),
+                    (Instruction::NOT, 'C', 'T'),
+                    (Instruction::OR, 'T', 'J'),
+                    (Instruction::AND, 'D', 'J'),
+                    (Instruction::NOT, 'E', 'T'),
+                    (Instruction::NOT, 'T', 'T'),
+                    (Instruction::OR, 'H', 'T'),
+                    (Instruction::AND, 'T', 'J'),
+                ]
+            ),
             true
         );
     }

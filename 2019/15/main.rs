@@ -12,12 +12,12 @@ fn to_char(col: i128) -> char {
     }
 }
 
-fn get_new_pos(pos: (i128, i128), dir: i128) -> (i128, i128) {
+fn get_new_pos(pos: aoc::Point, dir: i128) -> aoc::Point {
     match dir {
-        1 => (pos.0, pos.1 - 1),
-        2 => (pos.0, pos.1 + 1),
-        3 => (pos.0 - 1, pos.1),
-        4 => (pos.0 + 1, pos.1),
+        1 => [pos[0], pos[1] - 1],
+        2 => [pos[0], pos[1] + 1],
+        3 => [pos[0] - 1, pos[1]],
+        4 => [pos[0] + 1, pos[1]],
         _ => panic!(),
     }
 }
@@ -25,9 +25,9 @@ fn get_new_pos(pos: (i128, i128), dir: i128) -> (i128, i128) {
 fn walk(
     m: &mut intcode::Machine,
     path: Vec<i128>,
-    pos: (i128, i128),
-    seen: &mut HashMap<(i128, i128), i128>,
-    drawer: &mut dyn aoc::GridDrawer<HashMap<(i128, i128), i128>>,
+    pos: aoc::Point,
+    seen: &mut HashMap<aoc::Point, i128>,
+    drawer: &mut dyn aoc::GridDrawer<HashMap<aoc::Point, i128>, i128>,
 ) -> Option<Vec<i128>> {
     let mut paths = vec![];
     for d in 1..=4 {
@@ -75,7 +75,13 @@ fn walk(
 fn part1(program: &Vec<i128>) -> i128 {
     let mut m = intcode::Machine::new(program);
     let mut seen = HashMap::new();
-    let p = walk(&mut m, vec![], (0, 0), &mut seen, &mut aoc::NopGridDrawer {});
+    let p = walk(
+        &mut m,
+        vec![],
+        [0, 0],
+        &mut seen,
+        &mut aoc::NopGridDrawer {},
+    );
     p.unwrap().len() as i128
 }
 
@@ -83,7 +89,7 @@ fn part2(program: &Vec<i128>) -> i128 {
     let mut d = aoc::CursesGridDrawer::new(to_char);
     let mut m = intcode::Machine::new(program);
     let mut seen = HashMap::new();
-    let _ = walk(&mut m, vec![], (0, 0), &mut seen, &mut d);
+    let _ = walk(&mut m, vec![], [0, 0], &mut seen, &mut d);
     let mut minutes = 0;
     let mut expand: Vec<_> = seen.iter().filter(|x| *x.1 == 2).map(|x| *x.0).collect();
     loop {
@@ -110,7 +116,7 @@ fn part2(program: &Vec<i128>) -> i128 {
 
 fn main() {
     let (part, lines) = aoc::read_lines();
-    let parsed = aoc::parse_intcode(&lines);
+    let parsed = intcode::parse_intcode(&lines);
     let result = if part == 1 {
         part1(&parsed)
     } else {

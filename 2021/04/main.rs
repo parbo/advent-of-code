@@ -119,9 +119,9 @@ fn part2(bingo: &mut Parsed, draw: bool) -> Answer {
     let mut last = None;
     for num in &bingo.numbers {
         for i in 0..bingo.boards.len() {
-	    if let Some(window) = &window {
-		bingo.boards[i].draw(window, (i as i32 % 10i32, i as i32 / 10i32));
-	    }
+            if let Some(window) = &window {
+                bingo.boards[i].draw(window, (i as i32 % 10i32, i as i32 / 10i32));
+            }
             if won.contains(&i) {
                 continue;
             }
@@ -130,7 +130,7 @@ fn part2(bingo: &mut Parsed, draw: bool) -> Answer {
                 won.insert(i);
             }
         }
-	if let Some(window) = &window {
+        if let Some(window) = &window {
             window.refresh();
             let _ = window.getch();
         }

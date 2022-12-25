@@ -1,16 +1,16 @@
 use std::env;
 use std::fs::File;
-use std::io::BufReader;
 use std::io::prelude::*;
+use std::io::BufReader;
 use std::iter::*;
+use std::num::ParseIntError;
 use std::path::Path;
 use std::str::FromStr;
-use std::num::ParseIntError;
 
 #[derive(Debug)]
 struct Segment {
     dir: char,
-    length: i64
+    length: i64,
 }
 
 impl FromStr for Segment {
@@ -31,13 +31,13 @@ fn extents(segment: &[Segment]) -> ((i64, i64), (i64, i64)) {
     let mut min_x = 0;
     let mut max_y = 0;
     let mut min_y = 0;
-    for Segment{dir, length} in segment {
+    for Segment { dir, length } in segment {
         match dir {
             'U' => y += length,
             'R' => x += length,
             'L' => x -= length,
             'D' => y -= length,
-            _ => panic!("OH NOES")
+            _ => panic!("OH NOES"),
         }
         max_x = std::cmp::max(x, max_x);
         max_y = std::cmp::max(y, max_y);
@@ -69,7 +69,7 @@ fn seg_steps(seg: &Vec<Segment>, pos: (i64, i64)) -> Option<i64> {
     let mut x = 0;
     let mut y = 0;
     let mut step = 0;
-    for Segment{dir, length} in seg {
+    for Segment { dir, length } in seg {
         for _a in 0..*length {
             if (x, y) == pos {
                 return Some(step);
@@ -79,7 +79,7 @@ fn seg_steps(seg: &Vec<Segment>, pos: (i64, i64)) -> Option<i64> {
                 'R' => x += 1,
                 'L' => x -= 1,
                 'D' => y -= 1,
-                _ => panic!("OH NOES")
+                _ => panic!("OH NOES"),
             }
             step += 1;
             if (x, y) == pos {
@@ -100,7 +100,7 @@ fn steps(segments: &Vec<Vec<Segment>>, pos: (i64, i64)) -> Vec<i64> {
 }
 
 fn solve(segments: &Vec<Vec<Segment>>, part: i32) -> i64 {
-    let exts : Vec<((i64, i64), (i64, i64))> = segments.iter().map(|s| extents(s)).collect();
+    let exts: Vec<((i64, i64), (i64, i64))> = segments.iter().map(|s| extents(s)).collect();
     let f = field(&exts);
     let xoffs = (f.0).0;
     let yoffs = (f.1).0;
@@ -109,14 +109,14 @@ fn solve(segments: &Vec<Vec<Segment>>, part: i32) -> i64 {
     println!("{:?}", f);
     println!("{}, {}", xoffs, yoffs);
     println!("{}, {}", xsize, ysize);
-    let mut space : Vec<char> = vec!['.'; (xsize * ysize) as usize];
+    let mut space: Vec<char> = vec!['.'; (xsize * ysize) as usize];
     space[((0 - yoffs) * xsize + 0) as usize] = 'o';
     for seg in segments {
         let orig_space = space.clone();
         let mut x = 0;
         let mut y = 0;
         let mut segno = 0;
-        for Segment{dir, length} in seg {
+        for Segment { dir, length } in seg {
             for a in 0..*length {
                 if segno != 0 && a == 0 {
                     let x0 = x - xoffs;
@@ -130,7 +130,7 @@ fn solve(segments: &Vec<Vec<Segment>>, part: i32) -> i64 {
                     'R' => x += 1,
                     'L' => x -= 1,
                     'D' => y -= 1,
-                    _ => panic!("OH NOES")
+                    _ => panic!("OH NOES"),
                 }
                 let xx = x - xoffs;
                 let yy = y - yoffs;
@@ -143,7 +143,7 @@ fn solve(segments: &Vec<Vec<Segment>>, part: i32) -> i64 {
                         'R' => space[i] = '-',
                         'L' => space[i] = '-',
                         'D' => space[i] = '|',
-                        _ => panic!("OH NOES")
+                        _ => panic!("OH NOES"),
                     }
                 }
             }
@@ -188,13 +188,16 @@ fn part2(segments: &Vec<Vec<Segment>>) -> i64 {
 }
 
 fn segments(line: &str) -> Vec<Segment> {
-    line.split(|c| c == ',').map(|s| s.trim()).map(|v| v.parse::<Segment>().unwrap()).collect()
+    line.split(|c| c == ',')
+        .map(|s| s.trim())
+        .map(|v| v.parse::<Segment>().unwrap())
+        .collect()
 }
 
 fn input(path: &Path) -> Vec<Vec<Segment>> {
     let input = File::open(path).unwrap();
     let buffered = BufReader::new(input);
-    let lines : Vec<String> = buffered.lines().filter_map(Result::ok).collect();
+    let lines: Vec<String> = buffered.lines().filter_map(Result::ok).collect();
     lines.iter().map(|line| segments(&line)).collect()
 }
 
@@ -219,16 +222,45 @@ mod tests {
 
     #[test]
     fn test_part1() {
-        assert_eq!(part1(&vec![segments("R8,U5,L5,D3"), segments("U7,R6,D4,L4")]), 6);
-        assert_eq!(part1(&vec![segments("R75,D30,R83,U83,L12,D49,R71,U7,L72"), segments("U62,R66,U55,R34,D71,R55,D58,R83")]), 159);
-        assert_eq!(part1(&vec![segments("R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51"), segments("U98,R91,D20,R16,D67,R40,U7,R15,U6,R7")]), 135);
+        assert_eq!(
+            part1(&vec![segments("R8,U5,L5,D3"), segments("U7,R6,D4,L4")]),
+            6
+        );
+        assert_eq!(
+            part1(&vec![
+                segments("R75,D30,R83,U83,L12,D49,R71,U7,L72"),
+                segments("U62,R66,U55,R34,D71,R55,D58,R83")
+            ]),
+            159
+        );
+        assert_eq!(
+            part1(&vec![
+                segments("R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51"),
+                segments("U98,R91,D20,R16,D67,R40,U7,R15,U6,R7")
+            ]),
+            135
+        );
     }
 
     #[test]
     fn test_part2() {
-        assert_eq!(part2(&vec![segments("R8,U5,L5,D3"), segments("U7,R6,D4,L4")]), 30);
-        assert_eq!(part2(&vec![segments("R75,D30,R83,U83,L12,D49,R71,U7,L72"), segments("U62,R66,U55,R34,D71,R55,D58,R83")]), 610);
-        assert_eq!(part2(&vec![segments("R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51"), segments("U98,R91,D20,R16,D67,R40,U7,R15,U6,R7")]), 410);
+        assert_eq!(
+            part2(&vec![segments("R8,U5,L5,D3"), segments("U7,R6,D4,L4")]),
+            30
+        );
+        assert_eq!(
+            part2(&vec![
+                segments("R75,D30,R83,U83,L12,D49,R71,U7,L72"),
+                segments("U62,R66,U55,R34,D71,R55,D58,R83")
+            ]),
+            610
+        );
+        assert_eq!(
+            part2(&vec![
+                segments("R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51"),
+                segments("U98,R91,D20,R16,D67,R40,U7,R15,U6,R7")
+            ]),
+            410
+        );
     }
-
 }

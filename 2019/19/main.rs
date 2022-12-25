@@ -3,13 +3,7 @@ use aoc::GridDrawer;
 use std::collections::HashMap;
 use std::iter::*;
 
-fn make_grid(
-    program: &Vec<i128>,
-    x: i128,
-    y: i128,
-    w: i128,
-    h: i128,
-) -> HashMap<(i128, i128), i128> {
+fn make_grid(program: &Vec<i128>, x: i64, y: i64, w: i64, h: i64) -> HashMap<aoc::Point, i128> {
     let mut grid = HashMap::new();
     for yy in y..(y + h) {
         for xx in x..(x + w) {
@@ -17,18 +11,18 @@ fn make_grid(
             m.add_input(xx as i128);
             m.add_input(yy as i128);
             if let Some(v) = m.run_to_next_output() {
-                grid.insert((xx, yy), v);
+                grid.insert([xx, yy], v);
             }
         }
     }
     grid
 }
 
-fn draw(program: &Vec<i128>, x: i128, y: i128, sq: i128, pad: i128) {
+fn draw(program: &Vec<i128>, x: i64, y: i64, sq: i64, pad: i64) {
     let mut grid = make_grid(program, x - pad, y - pad, sq + 2 * pad, sq + 2 * pad);
     for yy in y..(y + sq) {
         for xx in x..(x + sq) {
-            *grid.entry((xx, yy)).or_insert(0) += 10;
+            *grid.entry([xx, yy]).or_insert(0) += 10;
         }
     }
     let mut d = aoc::PrintGridDrawer::new(|ch| match ch {
@@ -40,12 +34,12 @@ fn draw(program: &Vec<i128>, x: i128, y: i128, sq: i128, pad: i128) {
     d.draw(&grid);
 }
 
-fn part1(program: &Vec<i128>) -> i128 {
+fn part1(program: &Vec<i128>) -> i64 {
     let grid = make_grid(program, 0, 0, 50, 50);
-    grid.iter().filter(|(_, v)| **v == 1).count() as i128
+    grid.iter().filter(|(_, v)| **v == 1).count() as i64
 }
 
-fn get_beam_at(program: &Vec<i128>, start_x: i128, y: i128) -> (i128, i128) {
+fn get_beam_at(program: &Vec<i128>, start_x: i64, y: i64) -> (i64, i64) {
     let mut s = 0;
     let mut x = start_x;
     loop {
@@ -64,7 +58,7 @@ fn get_beam_at(program: &Vec<i128>, start_x: i128, y: i128) -> (i128, i128) {
     }
 }
 
-fn part2(program: &Vec<i128>) -> i128 {
+fn part2(program: &Vec<i128>) -> i64 {
     let mut a = 0;
     let mut b = 10000;
     let sq = 100;
@@ -77,7 +71,7 @@ fn part2(program: &Vec<i128>) -> i128 {
         println!("y: {}, s: {}, s2: {}, {}", m, s, s2, e1 - s2);
         if s < s2 {
             a = m + 1;
-	    start_x = s1 - 1;
+            start_x = s1 - 1;
         }
         if s > s2 {
             b = m - 1;
@@ -116,7 +110,7 @@ fn part2(program: &Vec<i128>) -> i128 {
 
 fn main() {
     let (part, lines) = aoc::read_lines();
-    let parsed = aoc::parse_intcode(&lines);
+    let parsed = intcode::parse_intcode(&lines);
     let result = if part == 1 {
         part1(&parsed)
     } else {

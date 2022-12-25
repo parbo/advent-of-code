@@ -91,7 +91,7 @@ fn find_monsters(grid: &HashMap<aoc::Point, char>) -> Vec<aoc::Point> {
     ];
     for g in grid.transpositions() {
         let ([min_x, min_y], [max_x, max_y]) = g.extents();
-	let mut coords = vec![];
+        let mut coords = vec![];
         for y in min_y..=max_y {
             'outer: for x in min_x..=max_x {
                 let mut matches = 0;

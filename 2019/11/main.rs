@@ -1,24 +1,24 @@
 use aoc;
 use intcode;
-use std::iter::*;
-use std::collections::HashMap;
 use pancurses::*;
+use std::collections::HashMap;
+use std::iter::*;
 
 #[derive(Clone, Copy)]
 enum Dir {
     Up,
     Right,
     Down,
-    Left
+    Left,
 }
 
 fn draw(window: &Window, hull: &HashMap<(i128, i128), i128>, robot: ((i128, i128), Dir)) {
     window.clear();
     for ((x, y), col) in hull {
-	let ch = match col {
+        let ch = match col {
             1 => '█',
-	    _ => ' ',
-	};
+            _ => ' ',
+        };
         window.mvaddch(*y as i32, *x as i32, ch);
     }
     let rch = match robot.1 {
@@ -53,10 +53,34 @@ fn paint(numbers: &Vec<i128>, color: i128, window: Option<&Window>) -> HashMap<(
         };
         hull.insert((x, y), color);
         current_dir = match current_dir {
-            Dir::Up => if turn == 0 { Dir::Left } else { Dir::Right },
-            Dir::Right => if turn == 0 { Dir::Up } else { Dir::Down },
-            Dir::Down => if turn == 0 { Dir::Right } else { Dir::Left },
-            Dir::Left => if turn == 0 { Dir::Down } else { Dir::Up },
+            Dir::Up => {
+                if turn == 0 {
+                    Dir::Left
+                } else {
+                    Dir::Right
+                }
+            }
+            Dir::Right => {
+                if turn == 0 {
+                    Dir::Up
+                } else {
+                    Dir::Down
+                }
+            }
+            Dir::Down => {
+                if turn == 0 {
+                    Dir::Right
+                } else {
+                    Dir::Left
+                }
+            }
+            Dir::Left => {
+                if turn == 0 {
+                    Dir::Down
+                } else {
+                    Dir::Up
+                }
+            }
         };
         match current_dir {
             Dir::Up => y -= 1,
@@ -64,9 +88,9 @@ fn paint(numbers: &Vec<i128>, color: i128, window: Option<&Window>) -> HashMap<(
             Dir::Down => y += 1,
             Dir::Left => x -= 1,
         }
-	if let Some(w) = window {
-	    draw(w, &hull, ((x, y), current_dir));
-	}
+        if let Some(w) = window {
+            draw(w, &hull, ((x, y), current_dir));
+        }
     }
 }
 
@@ -114,20 +138,23 @@ fn part2(numbers: &Vec<i128>) -> i128 {
 struct Disassembled {
     outs: Vec<i128>,
     v485: usize,
-    v486: [i128;4],
+    v486: [i128; 4],
 }
 
 impl Disassembled {
     pub fn new() -> Disassembled {
-        Disassembled { outs: Vec::new(), v485: 0, v486: [1, 0, 0, 1] }
+        Disassembled {
+            outs: Vec::new(),
+            v485: 0,
+            v486: [1, 0, 0, 1],
+        }
     }
 
     fn out(&mut self, a: i128) {
         self.outs.push(a);
     }
 
-    fn input(&mut self) {
-    }
+    fn input(&mut self) {}
 
     pub fn run(&mut self) {
         self.out(0);
@@ -178,10 +205,34 @@ impl Disassembled {
             let turn = *maybe_turn.unwrap();
             hull.insert((x, y), color);
             current_dir = match current_dir {
-                Dir::Up => if turn == 0 { Dir::Left } else { Dir::Right },
-                Dir::Right => if turn == 0 { Dir::Up } else { Dir::Down },
-                Dir::Down => if turn == 0 { Dir::Right } else { Dir::Left },
-                Dir::Left => if turn == 0 { Dir::Down } else { Dir::Up },
+                Dir::Up => {
+                    if turn == 0 {
+                        Dir::Left
+                    } else {
+                        Dir::Right
+                    }
+                }
+                Dir::Right => {
+                    if turn == 0 {
+                        Dir::Up
+                    } else {
+                        Dir::Down
+                    }
+                }
+                Dir::Down => {
+                    if turn == 0 {
+                        Dir::Right
+                    } else {
+                        Dir::Left
+                    }
+                }
+                Dir::Left => {
+                    if turn == 0 {
+                        Dir::Down
+                    } else {
+                        Dir::Up
+                    }
+                }
             };
             match current_dir {
                 Dir::Up => y -= 1,
@@ -196,7 +247,6 @@ impl Disassembled {
     fn f459(&mut self, a1: i128) {
         self.f523(490, 40, a1);
     }
-
 
     fn f490(&mut self, a1: i128) {
         let _ = self.input(); // input unused
@@ -229,17 +279,17 @@ impl Disassembled {
             a2 = 0;
         }
         if 0 < a3 {
-            self.f490(a1);  // v522
+            self.f490(a1); // v522
         }
         a2 = a2 * -1;
         a4 = a4 + a2;
-        return a4
+        return a4;
     }
 }
 
 fn main() {
     let (part, lines) = aoc::read_lines();
-    let parsed = aoc::parse_intcode(&lines);
+    let parsed = intcode::parse_intcode(&lines);
     let result = if part == 1 {
         part1(&parsed)
     } else {
@@ -250,4 +300,3 @@ fn main() {
     let mut d = Disassembled::new();
     d.run();
 }
-

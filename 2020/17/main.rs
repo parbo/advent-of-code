@@ -250,7 +250,7 @@ fn main() {
                             p[1] as f32,
                             p[2] as f32,
                         ));
-			let col = p[3] as f32 / (frame / 20 + 1) as f32;
+                        let col = p[3] as f32 / (frame / 20 + 1) as f32;
                         c.set_color(0.0, col, 0.0);
                         new_cubes.push(c);
                     }

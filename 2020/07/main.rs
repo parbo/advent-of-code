@@ -39,19 +39,22 @@ fn part2(rules: &[(String, Vec<(usize, String)>)]) -> i64 {
 }
 
 fn parse(lines: &[String]) -> Vec<(String, Vec<(usize, String)>)> {
-    let rx1 = aoc::Regex::new(r"^(.*) bags contain").unwrap();
-    let rx2 = aoc::Regex::new(r"(\d+) (.+?) bags?").unwrap();
+    let rx1 = regex::Regex::new(r"^(.*) bags contain").unwrap();
+    let rx2 = regex::Regex::new(r"(\d+) (.+?) bags?").unwrap();
     lines
         .iter()
         .map(|x| {
             (
                 rx1.captures(x)
-                    .and_then(|x| x.get(1)).map_or("", |m| m.as_str()).to_string(),
+                    .and_then(|x| x.get(1))
+                    .map_or("", |m| m.as_str())
+                    .to_string(),
                 rx2.captures_iter(x)
                     .map(|caps| {
                         (
-                                caps.get(1).map_or(0, |m| m.as_str().parse::<usize>().unwrap()),
-                                caps.get(2).map_or("", |m| m.as_str()).to_string(),
+                            caps.get(1)
+                                .map_or(0, |m| m.as_str().parse::<usize>().unwrap()),
+                            caps.get(2).map_or("", |m| m.as_str()).to_string(),
                         )
                     })
                     .collect(),

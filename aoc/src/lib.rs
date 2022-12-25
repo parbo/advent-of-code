@@ -32,6 +32,7 @@ pub use petgraph::graphmap::DiGraphMap;
 pub use petgraph::graphmap::GraphMap;
 pub use petgraph::graphmap::UnGraphMap;
 pub use petgraph::visit;
+pub use petgraph::Directed;
 pub use petgraph::Direction::Outgoing;
 pub use rustc_hash::FxHashMap;
 pub use rustc_hash::FxHashSet;
@@ -647,6 +648,13 @@ pub fn range_sum<T: num::Num + Copy>(cum_sum: &[T], a: usize, b: usize) -> T {
     } else {
         T::zero()
     }
+}
+
+pub fn lcm<T>(a: T, b: T) -> T
+where
+    T: std::cmp::PartialEq + num::Signed + Copy,
+{
+    (a * b).abs() / egcd(a, b).0
 }
 
 pub fn egcd<T>(a: T, b: T) -> (T, T, T)

@@ -8,7 +8,7 @@ fn to_char(ch: i128) -> char {
     std::char::from_u32(ch as u32).unwrap()
 }
 
-fn is_scaffold(grid: &HashMap<(i128, i128), i128>, pos: (i128, i128)) -> bool {
+fn is_scaffold(grid: &HashMap<aoc::Point, i128>, pos: aoc::Point) -> bool {
     if let Some(x) = grid.get(&pos) {
         let ch = to_char(*x);
         let c = match ch {
@@ -25,17 +25,17 @@ fn is_scaffold(grid: &HashMap<(i128, i128), i128>, pos: (i128, i128)) -> bool {
     }
 }
 
-fn is_crossing(grid: &HashMap<(i128, i128), i128>, pos: (i128, i128)) -> bool {
-    let (x, y) = pos;
+fn is_crossing(grid: &HashMap<aoc::Point, i128>, pos: aoc::Point) -> bool {
+    let [x, y] = pos;
     // find the +
-    is_scaffold(&grid, (x + 1, y))
-        && is_scaffold(&grid, (x - 1, y))
-        && is_scaffold(&grid, (x, y + 1))
-        && is_scaffold(&grid, (x, y - 1))
+    is_scaffold(&grid, [x + 1, y])
+        && is_scaffold(&grid, [x - 1, y])
+        && is_scaffold(&grid, [x, y + 1])
+        && is_scaffold(&grid, [x, y - 1])
 }
 
-fn find_align(grid: &HashMap<(i128, i128), i128>) -> Vec<(i128, i128)> {
-    let scaffold: Vec<_> = grid.iter().filter(|x| *x.1 == 35).map(|x| *x.0).collect();
+fn find_align(grid: &HashMap<aoc::Point, i128>) -> Vec<aoc::Point> {
+    let scaffold: Vec<aoc::Point> = grid.iter().filter(|x| *x.1 == 35).map(|x| *x.0).collect();
     let mut align = vec![];
     for p in scaffold {
         if is_crossing(&grid, p) {
@@ -63,32 +63,32 @@ fn to_dir(d: char) -> Dir {
     }
 }
 
-fn get_new_pos(pos: (i128, i128), dir: Dir, ch: char) -> ((i128, i128), Dir) {
+fn get_new_pos(pos: aoc::Point, dir: Dir, ch: char) -> (aoc::Point, Dir) {
     match dir {
         Dir::Up => match ch {
-            'R' => ((pos.0 + 1, pos.1), Dir::Right),
-            'L' => ((pos.0 - 1, pos.1), Dir::Left),
-            _ => ((pos.0, pos.1 - 1), Dir::Up),
+            'R' => ([pos[0] + 1, pos[1]], Dir::Right),
+            'L' => ([pos[0] - 1, pos[1]], Dir::Left),
+            _ => ([pos[0], pos[1] - 1], Dir::Up),
         },
         Dir::Left => match ch {
-            'R' => ((pos.0, pos.1 - 1), Dir::Up),
-            'L' => ((pos.0, pos.1 + 1), Dir::Down),
-            _ => ((pos.0 - 1, pos.1), Dir::Left),
+            'R' => ([pos[0], pos[1] - 1], Dir::Up),
+            'L' => ([pos[0], pos[1] + 1], Dir::Down),
+            _ => ([pos[0] - 1, pos[1]], Dir::Left),
         },
         Dir::Right => match ch {
-            'R' => ((pos.0, pos.1 + 1), Dir::Down),
-            'L' => ((pos.0, pos.1 - 1), Dir::Up),
-            _ => ((pos.0 + 1, pos.1), Dir::Right),
+            'R' => ([pos[0], pos[1] + 1], Dir::Down),
+            'L' => ([pos[0], pos[1] - 1], Dir::Up),
+            _ => ([pos[0] + 1, pos[1]], Dir::Right),
         },
         Dir::Down => match ch {
-            'R' => ((pos.0 - 1, pos.1), Dir::Left),
-            'L' => ((pos.0 + 1, pos.1), Dir::Right),
-            _ => ((pos.0, pos.1 + 1), Dir::Down),
+            'R' => ([pos[0] - 1, pos[1]], Dir::Left),
+            'L' => ([pos[0] + 1, pos[1]], Dir::Right),
+            _ => ([pos[0], pos[1] + 1], Dir::Down),
         },
     }
 }
 
-fn visited(start: ((i128, i128), Dir), path: &[i128]) -> HashSet<(i128, i128)> {
+fn visited(start: (aoc::Point, Dir), path: &[i128]) -> HashSet<aoc::Point> {
     let mut vis = HashSet::new();
     let mut pos = start.0;
     let mut dir = start.1;
@@ -101,7 +101,7 @@ fn visited(start: ((i128, i128), Dir), path: &[i128]) -> HashSet<(i128, i128)> {
     vis
 }
 
-fn print_stuff(grid: &HashMap<(i128, i128), i128>, start: ((i128, i128), Dir), p: &[i128]) {
+fn print_stuff(grid: &HashMap<aoc::Point, i128>, start: (aoc::Point, Dir), p: &[i128]) {
     let vis = visited(start, &p);
     let mut g = grid.clone();
     for v in &vis {
@@ -115,12 +115,12 @@ fn print_stuff(grid: &HashMap<(i128, i128), i128>, start: ((i128, i128), Dir), p
 
 fn walk(
     path: Vec<i128>,
-    pos: (i128, i128),
+    pos: aoc::Point,
     direction: Dir,
-    start: ((i128, i128), Dir),
-    grid: &HashMap<(i128, i128), i128>,
-    seen: &mut HashSet<(i128, i128)>,
-    goal: &HashSet<(i128, i128)>,
+    start: (aoc::Point, Dir),
+    grid: &HashMap<aoc::Point, i128>,
+    seen: &mut HashSet<aoc::Point>,
+    goal: &HashSet<aoc::Point>,
 ) -> Vec<Vec<i128>> {
     let mut paths = vec![];
     for d in &[70, 82, 76] {
@@ -135,7 +135,7 @@ fn walk(
             walk(p, new_pos.0, new_pos.1, start, grid, seen, goal)
         } else {
             let vis = visited(start, &path);
-            let diff: HashSet<(i128, i128)> = goal
+            let diff: HashSet<aoc::Point> = goal
                 .symmetric_difference(&vis)
                 .map(|x| x.to_owned())
                 .collect();
@@ -155,7 +155,7 @@ fn walk(
     paths
 }
 
-fn build_grid(program: &Vec<i128>) -> HashMap<(i128, i128), i128> {
+fn build_grid(program: &Vec<i128>) -> HashMap<aoc::Point, i128> {
     let mut m = intcode::Machine::new(program);
     let mut grid = HashMap::new();
     let mut y = 0;
@@ -168,7 +168,7 @@ fn build_grid(program: &Vec<i128>) -> HashMap<(i128, i128), i128> {
                     x = 0;
                 }
                 c => {
-                    grid.insert((x, y), c);
+                    grid.insert([x, y], c);
                     x += 1;
                 }
             }
@@ -189,7 +189,7 @@ fn part1(program: &Vec<i128>) -> i128 {
         g.insert(*p, 'O' as i128);
     }
     d.draw(&g);
-    align.iter().map(|(x, y)| x * y).sum()
+    align.iter().map(|[x, y]| x * y).sum::<i64>() as i128
 }
 
 fn compact(path: &[i128]) -> Vec<i128> {
@@ -314,8 +314,8 @@ fn part2(program: &Vec<i128>) -> i128 {
         })
         .map(|x| (*x.0, to_dir(to_char(*x.1))))
         .collect();
-    let mut seen: HashSet<(i128, i128)> = HashSet::new();
-    let goal: HashSet<(i128, i128)> = grid.iter().filter(|x| *x.1 == 35).map(|x| *x.0).collect();
+    let mut seen: HashSet<aoc::Point> = HashSet::new();
+    let goal: HashSet<aoc::Point> = grid.iter().filter(|x| *x.1 == 35).map(|x| *x.0).collect();
     let paths = walk(
         vec![],
         robot[0].0,
@@ -392,7 +392,7 @@ fn part2(program: &Vec<i128>) -> i128 {
 
 fn main() {
     let (part, lines) = aoc::read_lines();
-    let parsed = aoc::parse_intcode(&lines);
+    let parsed = intcode::parse_intcode(&lines);
     let result = if part == 1 {
         part1(&parsed)
     } else {

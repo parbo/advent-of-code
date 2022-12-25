@@ -1,6 +1,6 @@
-use std::iter::*;
-use std::collections::VecDeque;
 use aoc::ParseError;
+use std::collections::VecDeque;
+use std::iter::*;
 use std::str::FromStr;
 
 type Parsed = Vec<Vec<Ops>>;
@@ -12,20 +12,20 @@ enum Ops {
     Mul,
     Num(i64),
     LParen,
-    RParen
+    RParen,
 }
 
 impl FromStr for Ops {
     type Err = ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-	match s {
-	    "(" => Ok(Ops::LParen),
-	    ")" => Ok(Ops::RParen),
-	    "*" => Ok(Ops::Mul),
-	    "+" => Ok(Ops::Add),
-	    x => Ok(Ops::Num(x.parse()?)),
-	}
+        match s {
+            "(" => Ok(Ops::LParen),
+            ")" => Ok(Ops::RParen),
+            "*" => Ok(Ops::Mul),
+            "+" => Ok(Ops::Add),
+            x => Ok(Ops::Num(x.parse()?)),
+        }
     }
 }
 
@@ -61,21 +61,24 @@ fn tokenize(line: &str) -> Vec<Ops> {
 
 fn prec1(s: Ops) -> i64 {
     match s {
-	Ops::Add => 1,
-	Ops::Mul => 1,
-	_ => -1,
+        Ops::Add => 1,
+        Ops::Mul => 1,
+        _ => -1,
     }
 }
 
 fn prec2(s: Ops) -> i64 {
     match s {
-	Ops::Add => 2,
-	Ops::Mul => 1,
-	_ => -1,
+        Ops::Add => 2,
+        Ops::Mul => 1,
+        _ => -1,
     }
 }
 
-fn calc<F>(s: &[Ops], prec: F) -> Option<i64> where F: Fn(Ops) -> i64 {
+fn calc<F>(s: &[Ops], prec: F) -> Option<i64>
+where
+    F: Fn(Ops) -> i64,
+{
     // Convert to postfix
     let mut stack = VecDeque::new();
     let mut postfix = vec![];
@@ -83,50 +86,50 @@ fn calc<F>(s: &[Ops], prec: F) -> Option<i64> where F: Fn(Ops) -> i64 {
         match op {
             Ops::LParen => stack.push_back(*op),
             Ops::RParen => {
-		while let Some(x) = stack.back() {
-		    if *x == Ops::LParen {
-			stack.pop_back();
-			break;
-		    }
-		    postfix.push(*x);
-		    stack.pop_back();
-		}
-	    },
+                while let Some(x) = stack.back() {
+                    if *x == Ops::LParen {
+                        stack.pop_back();
+                        break;
+                    }
+                    postfix.push(*x);
+                    stack.pop_back();
+                }
+            }
             Ops::Add | Ops::Mul => {
-		while let Some(x) = stack.back() {
-		    if prec(*op) <= prec(*x) {
-			postfix.push(*x);
-			stack.pop_back();
-		    } else {
-			break;
-		    }
-		}
-		stack.push_back(*op);
-	    }
+                while let Some(x) = stack.back() {
+                    if prec(*op) <= prec(*x) {
+                        postfix.push(*x);
+                        stack.pop_back();
+                    } else {
+                        break;
+                    }
+                }
+                stack.push_back(*op);
+            }
             x => postfix.push(*x),
         }
     }
     while let Some(x) = stack.pop_back() {
-	postfix.push(x);
+        postfix.push(x);
     }
     // Evaluate postfix
     for op in postfix {
-	if let Ops::Num(_) = op {
-	    stack.push_back(op);
-	} else {
-	    if let Some((Ops::Num(a), Ops::Num(b))) = stack.pop_back().zip(stack.pop_back()) {
-		if op == Ops::Mul {
-		    stack.push_back(Ops::Num(a * b));
-		} else {
-		    stack.push_back(Ops::Num(a + b));
-		}
-	    }
-	}
+        if let Ops::Num(_) = op {
+            stack.push_back(op);
+        } else {
+            if let Some((Ops::Num(a), Ops::Num(b))) = stack.pop_back().zip(stack.pop_back()) {
+                if op == Ops::Mul {
+                    stack.push_back(Ops::Num(a * b));
+                } else {
+                    stack.push_back(Ops::Num(a + b));
+                }
+            }
+        }
     }
     if let Some(Ops::Num(a)) = stack.back() {
-	Some(*a)
+        Some(*a)
     } else {
-	None
+        None
     }
 }
 

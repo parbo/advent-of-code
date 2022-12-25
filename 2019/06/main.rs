@@ -1,6 +1,53 @@
 use aoc;
-use aoc::Tree;
+use std::collections::HashMap;
+use std::collections::HashSet;
 use std::iter::*;
+
+// TODO: improve and generalize
+pub struct Tree {
+    things: HashSet<String>,
+    children: HashMap<String, Vec<String>>,
+}
+
+impl Tree {
+    pub fn new() -> Tree {
+        Tree {
+            things: HashSet::new(),
+            children: HashMap::new(),
+        }
+    }
+
+    pub fn things(&self) -> impl Iterator<Item = &String> {
+        self.things.iter()
+    }
+
+    pub fn insert(&mut self, parent: &str, child: &str) {
+        self.things.insert(parent.to_string());
+        self.things.insert(child.to_string());
+        self.children
+            .entry(parent.to_string())
+            .or_insert(Vec::new())
+            .push(child.to_string());
+    }
+
+    pub fn depth_from_to(&self, from: &str, to: &str) -> Option<i64> {
+        self.depth_from_to_recursive(from, to, 0)
+    }
+
+    fn depth_from_to_recursive(&self, from: &str, to: &str, depth: i64) -> Option<i64> {
+        if from == to {
+            return Some(depth);
+        }
+        if let Some(v) = self.children.get(from) {
+            for t in v {
+                if let Some(x) = self.depth_from_to_recursive(t, to, depth + 1) {
+                    return Some(x);
+                }
+            }
+        }
+        return None;
+    }
+}
 
 fn part1(tree: &Tree) -> i64 {
     tree.things()
@@ -12,7 +59,10 @@ fn part1(tree: &Tree) -> i64 {
 fn part2(tree: &Tree) -> i64 {
     tree.things()
         .filter_map(|t| {
-            [tree.depth_from_to(t, "YOU"), tree.depth_from_to(t, "SAN")].iter().map(|&x| x).sum::<Option<i64>>()
+            [tree.depth_from_to(t, "YOU"), tree.depth_from_to(t, "SAN")]
+                .iter()
+                .map(|&x| x)
+                .sum::<Option<i64>>()
         })
         .min()
         .unwrap()

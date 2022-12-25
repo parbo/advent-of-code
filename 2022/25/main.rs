@@ -6,14 +6,9 @@ const SNAFU: [char; 5] = ['=', '-', '0', '1', '2'];
 
 fn from_snafu(s: &str) -> i64 {
     s.chars()
-        .rev()
-        .fold((0, 1), |acc, c| {
-            (
-                acc.0 + acc.1 * (SNAFU.iter().position(|x| c == *x).unwrap() as i64 - 2),
-                acc.1 * 5,
-            )
-        })
-        .0
+        .fold(0, |acc, c| 
+                acc * 5 + (SNAFU.iter().position(|x| c == *x).unwrap() as i64 - 2)
+       )
 }
 
 fn to_snafu(mut d: i64) -> String {

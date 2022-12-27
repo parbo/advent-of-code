@@ -1,4 +1,3 @@
-
 use intcode;
 use std::env;
 use std::fs::File;
@@ -20,7 +19,7 @@ fn main() {
                     .lines()
                     .filter_map(Result::ok)
                     .map(|x| x.trim().to_string())
-                    .collect(),
+                    .collect::<Vec<_>>(),
             ),
             if args.len() > 2 {
                 args[2]

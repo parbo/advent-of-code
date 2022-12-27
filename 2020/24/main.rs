@@ -225,6 +225,6 @@ mod tests {
             "wseweeenwnesenwwwswnew".to_string(),
         ];
         let parsed = parse(&input);
-        assert_eq!(part2(&parsed, false), 2208);
+        assert_eq!(part2(&parsed), 2208);
     }
 }

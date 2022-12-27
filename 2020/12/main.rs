@@ -173,10 +173,7 @@ mod tests {
     #[test]
     fn test_part2() {
         assert_eq!(
-            part2(
-                &vec![('F', 10), ('N', 3), ('F', 7), ('R', 90), ('F', 11)],
-                false
-            ),
+            part2(&vec![('F', 10), ('N', 3), ('F', 7), ('R', 90), ('F', 11)]),
             286
         );
     }

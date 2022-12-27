@@ -147,6 +147,6 @@ mod tests {
             "mem[26] = 1".to_string(),
         ];
         let parsed = parse(&input);
-        assert_eq!(part2(&parsed, false), 208);
+        assert_eq!(part2(&parsed), 208);
     }
 }

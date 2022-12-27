@@ -142,6 +142,6 @@ mod tests {
         g.push("L.LLLLLL.L".into());
         g.push("L.LLLLL.LL".into());
         let grid = parse_grid(&g);
-        assert_eq!(part1(&grid, false), 37);
+        assert_eq!(part1(&grid), 37);
     }
 }

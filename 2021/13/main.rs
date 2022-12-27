@@ -49,7 +49,7 @@ fn parse(lines: &[String]) -> Parsed {
         .map(|x| {
             let c = x[0].chars().next().unwrap();
             let d = x[1].parse().unwrap();
-            (if c == 'x' { 0 } else { 1 }, d)
+            (usize::from(c != 'x'), d)
         })
         .collect();
     Manual { grid, folds }

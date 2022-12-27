@@ -27,10 +27,7 @@ fn find(nums: &[ParsedItem], most: bool) -> Answer {
         let count_1 = numbers.iter().filter(|x| x[bit] == '1').count();
         let count_0 = numbers.iter().filter(|x| x[bit] == '0').count();
         let cond = if count_0 > count_1 { most } else { !most };
-        numbers = numbers
-            .into_iter()
-            .filter(|x| if cond { x[bit] == '0' } else { x[bit] == '1' })
-            .collect();
+        numbers.retain(|x| if cond { x[bit] == '0' } else { x[bit] == '1' });
         if numbers.len() == 1 {
             break;
         }

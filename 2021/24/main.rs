@@ -1,7 +1,6 @@
 use std::fmt;
 use std::iter::*;
 
-
 #[derive(
     parse_display::Display, parse_display::FromStr, Debug, Copy, Clone, PartialEq, Eq, Hash,
 )]
@@ -118,7 +117,7 @@ impl Alu {
             Ops::Eql(a, b) => {
                 let av = self.read(a);
                 let bv = self.read(b);
-                self.store(a, if av == bv { 1 } else { 0 });
+                self.store(a, i64::from(av == bv));
             }
         }
     }

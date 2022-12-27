@@ -1,5 +1,4 @@
 use std::iter::*;
-use std::time::Instant;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum SnailNumber {
@@ -20,7 +19,6 @@ impl std::fmt::Display for SnailNumber {
     }
 }
 
-type ParsedItem = SnailNumber;
 type Parsed = Vec<SnailNumber>;
 type Answer = i64;
 
@@ -160,13 +158,13 @@ fn sum(numbers: &[SnailNumber]) -> SnailNumber {
     n
 }
 
-fn part1(numbers: &[ParsedItem]) -> Answer {
+fn part1(numbers: &Parsed) -> Answer {
     let mut n = sum(numbers);
     n = reduce(&n);
     magnitude(&n)
 }
 
-fn part2(numbers: &[ParsedItem]) -> Answer {
+fn part2(numbers: &Parsed) -> Answer {
     let mut mx = 0;
     for i in 0..numbers.len() {
         for j in 1..numbers.len() {

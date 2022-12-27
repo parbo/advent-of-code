@@ -230,6 +230,6 @@ mod tests {
             "22 11 13  6  5".into(),
             " 2  0 12  3  7".into(),
         ]);
-        assert_eq!(part2(&mut bingo, false), 1924);
+        assert_eq!(part2(&mut bingo), 1924);
     }
 }

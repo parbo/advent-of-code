@@ -12,7 +12,7 @@ struct Packet {
     packets: Vec<Packet>,
 }
 
-fn parse_packet(bytes: &Vec<u8>, bp: u32, c: usize) -> (Packet, u32) {
+fn parse_packet(bytes: &Vec<u8>, bp: u32, _c: usize) -> (Packet, u32) {
     let version = bytes.get_u8(0, bp, 3).unwrap();
     let id = bytes.get_u8(0, bp + 3, 3).unwrap();
     if let 4u8 = id {
@@ -44,7 +44,7 @@ fn parse_packet(bytes: &Vec<u8>, bp: u32, c: usize) -> (Packet, u32) {
             let mut pos = bp + 22;
             let mut packets = vec![];
             while bits > 0 {
-                let (p, len) = parse_packet(bytes, pos, c + 1);
+                let (p, len) = parse_packet(bytes, pos, _c + 1);
                 pos += 6 + len;
                 bits -= 6 + len;
                 packets.push(p);
@@ -66,7 +66,7 @@ fn parse_packet(bytes: &Vec<u8>, bp: u32, c: usize) -> (Packet, u32) {
             let mut packets = vec![];
             let mut pos = bp + 18;
             for _i in 0..num {
-                let (p, len) = parse_packet(bytes, pos, c + 1);
+                let (p, len) = parse_packet(bytes, pos, _c + 1);
                 pos += 6 + len;
                 packets.push(p);
             }

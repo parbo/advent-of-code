@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::iter::*;
 
-
 #[derive(Debug)]
 struct Polymer {
     template: Vec<char>,
@@ -33,8 +32,8 @@ fn solve(polymer: &Parsed, gen: usize) -> Answer {
     }
     // Also count the last letter
     *counts.entry(*polymer.template.last().unwrap()).or_insert(0) += 1;
-    let max = counts.iter().map(|(_, num)| num).max().unwrap();
-    let min = counts.iter().map(|(_, num)| num).min().unwrap();
+    let max = counts.values().max().unwrap();
+    let min = counts.values().min().unwrap();
     max - min
 }
 

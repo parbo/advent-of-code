@@ -133,12 +133,12 @@ fn solve(sensors: &[ParsedItem]) -> (FxHashSet<Vec4>, Vec<Vec4>) {
     (translated, dists)
 }
 
-fn part1(sensors: &[ParsedItem]) -> Answer {
+fn part1(sensors: &Parsed) -> Answer {
     let (combined, _) = solve(sensors);
     combined.len() as Answer
 }
 
-fn part2(sensors: &[ParsedItem]) -> Answer {
+fn part2(sensors: &Parsed) -> Answer {
     let (_combined, dists) = solve(sensors);
     dists
         .iter()
@@ -156,7 +156,7 @@ fn parse(lines: &[String]) -> Parsed {
             x[1..]
                 .iter()
                 .map(|x| {
-                    let p = aoc::split_ch(*x, ',');
+                    let p = aoc::split_ch(x, ',');
                     [
                         p[0].parse::<i64>().unwrap(),
                         p[1].parse::<i64>().unwrap(),

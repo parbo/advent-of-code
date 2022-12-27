@@ -52,7 +52,7 @@ fn is_valid(ticket: &[i64], rules: &[Rule]) -> bool {
             return false;
         }
     }
-    return true;
+    true
 }
 
 fn dfs(
@@ -99,7 +99,7 @@ fn find_rules(input: &Parsed) -> Vec<Rule> {
     }
     // Sort by most constrained
     valid_rules.sort_by(|a, b| a.1.len().cmp(&b.1.len()));
-    let mut r = dfs(&valid_rules, 0, ticket.len(), &vec![]);
+    let mut r = dfs(&valid_rules, 0, ticket.len(), &[]);
     // Then sort it back to ordered again and remove the indices
     r.sort_by(|a, b| a.0.cmp(&b.0));
     r.into_iter().map(|(_, x)| x).collect()
@@ -127,7 +127,7 @@ fn parse(lines: &[String]) -> Parsed {
             0 => {
                 if line == "your ticket:" {
                     state = 1
-                } else if line != "" {
+                } else if !line.is_empty() {
                     let rule: Rule = line.parse().unwrap();
                     rules.push(rule);
                 }
@@ -135,7 +135,7 @@ fn parse(lines: &[String]) -> Parsed {
             1 => {
                 if line == "nearby tickets:" {
                     state = 2
-                } else if line != "" {
+                } else if !line.is_empty() {
                     ticket = aoc::split_ch(line, ',')
                         .iter()
                         .map(|x| x.parse().unwrap())

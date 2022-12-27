@@ -61,7 +61,7 @@ fn parse(lines: &[String]) -> Parsed {
             aoc::split(&passport, |c| c == ' ')
                 .iter()
                 .map(|part| {
-                    let x = aoc::split(&part, |c| c == ':');
+                    let x = aoc::split(part, |c| c == ':');
                     (x[0].to_string(), x[1].to_string())
                 })
                 .collect()

@@ -61,7 +61,7 @@ fn rounds(cups: &Parsed, num: usize, total: usize) -> Vec<i32> {
 }
 
 fn part1(cups: &Parsed) -> Answer {
-    let c = rounds(&cups, 100, cups.len());
+    let c = rounds(cups, 100, cups.len());
     get_values(&c)
         .iter()
         .skip(1)
@@ -71,7 +71,7 @@ fn part1(cups: &Parsed) -> Answer {
 }
 
 fn part2(cups: &Parsed) -> i64 {
-    let c = rounds(&cups, 10000000, 1000000);
+    let c = rounds(cups, 10000000, 1000000);
     let a = c[0];
     let b = c[a as usize];
     (a as i64 + 1) * (b as i64 + 1)

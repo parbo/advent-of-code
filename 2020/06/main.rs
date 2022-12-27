@@ -21,7 +21,7 @@ fn parse(lines: &[String]) -> Parsed {
             group.iter().fold((0, HashMap::new()), |mut acc, person| {
                 acc.0 += 1;
                 person.chars().for_each(|answer| {
-                    *acc.1.entry(answer).or_insert(0 as usize) += 1;
+                    *acc.1.entry(answer).or_default() += 1;
                 });
                 acc
             })

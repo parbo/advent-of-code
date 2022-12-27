@@ -31,7 +31,7 @@ fn part1(input: &Parsed) -> i64 {
 
 fn find_weakness(input: &[i64], pl: usize) -> i64 {
     let num = get_first_non_valid(input, pl);
-    let cs = aoc::cum_sum(&input);
+    let cs = aoc::cum_sum(input);
     for i in 0..input.len() {
         for j in i..input.len() {
             let s: i64 = aoc::range_sum(&cs, i, j);

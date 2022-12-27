@@ -84,11 +84,8 @@ fn step(g: &Parsed, d: &[Vec3]) -> Parsed {
                 let c = g.get(&p).unwrap_or(&'.');
                 for dir in d {
                     let np = vec_add(p, *dir);
-                    match g.get(&np) {
-                        Some('#') => {
-                            active += 1;
-                        }
-                        _ => {}
+                    if let Some('#') = g.get(&np) {
+                        active += 1;
                     }
                 }
                 if *c == '#' && !(active == 2 || active == 3) {
@@ -132,11 +129,8 @@ fn step4(g: &HashMap<Vec4, char>, d: &[Vec4]) -> HashMap<Vec4, char> {
                     let c = g.get(&p).unwrap_or(&'.');
                     for dir in d {
                         let np = vec4_add(p, *dir);
-                        match g.get(&np) {
-                            Some('#') => {
-                                active += 1;
-                            }
-                            _ => {}
+                        if let Some('#') = g.get(&np) {
+                            active += 1;
                         }
                     }
                     if *c == '#' && !(active == 2 || active == 3) {
@@ -179,97 +173,98 @@ fn parse(lines: &[String]) -> Parsed {
     g
 }
 
+fn draw1(parsed: &Parsed) -> Answer {
+    let mut window = kiss3d::window::Window::new_with_size("Day 17", 1280, 720);
+
+    window.set_light(kiss3d::light::Light::StickToCamera);
+
+    let d = dirs();
+    let mut g = parsed.clone();
+    let mut cubes = vec![];
+    let eye = kiss3d::nalgebra::Point3::new(40.0f32, 15.0, 20.0);
+    let at = kiss3d::nalgebra::Point3::origin();
+    let mut camera = kiss3d::camera::ArcBall::new(eye, at);
+    let mut frame = 0;
+    while window.render_with_camera(&mut camera) {
+        if frame % 20 == 0 {
+            for mut c in cubes {
+                window.remove_node(&mut c);
+            }
+            let mut new_cubes = vec![];
+            for (p, v) in &g {
+                if *v == '#' {
+                    let mut c = window.add_cube(1.0, 1.0, 1.0);
+                    c.append_translation(&kiss3d::nalgebra::Translation3::new(
+                        p[0] as f32,
+                        p[1] as f32,
+                        p[2] as f32,
+                    ));
+                    c.set_color(0.0, 1.0, 0.0);
+                    new_cubes.push(c);
+                }
+            }
+            g = step(&g, &d);
+            cubes = new_cubes;
+        }
+        // rotate the arc-ball camera.
+        let curr_yaw = camera.yaw();
+        camera.set_yaw(curr_yaw + 0.05);
+        frame += 1;
+    }
+    0
+}
+
+fn draw2(parsed: &Parsed) -> Answer {
+    let mut window = kiss3d::window::Window::new_with_size("Day 17", 1280, 720);
+
+    window.set_light(kiss3d::light::Light::StickToCamera);
+
+    let d = dirs4();
+    let mut g = HashMap::new();
+    for ([x, y, z], v) in parsed {
+        g.insert([*x, *y, *z, 0], *v);
+    }
+    let mut cubes = vec![];
+    let eye = kiss3d::nalgebra::Point3::new(40.0f32, 15.0, 20.0);
+    let at = kiss3d::nalgebra::Point3::origin();
+    let mut camera = kiss3d::camera::ArcBall::new(eye, at);
+    let mut frame = 0;
+    while window.render_with_camera(&mut camera) {
+        if frame % 20 == 0 {
+            for mut c in cubes {
+                window.remove_node(&mut c);
+            }
+            let mut new_cubes = vec![];
+            for (p, v) in &g {
+                if *v == '#' {
+                    let mut c = window.add_cube(1.0, 1.0, 1.0);
+                    c.append_translation(&kiss3d::nalgebra::Translation3::new(
+                        p[0] as f32,
+                        p[1] as f32,
+                        p[2] as f32,
+                    ));
+                    let col = p[3] as f32 / (frame / 20 + 1) as f32;
+                    c.set_color(0.0, col, 0.0);
+                    new_cubes.push(c);
+                }
+            }
+            g = step4(&g, &d);
+            cubes = new_cubes;
+        }
+        // rotate the arc-ball camera.
+        let curr_yaw = camera.yaw();
+        camera.set_yaw(curr_yaw + 0.05);
+        frame += 1;
+    }
+    0
+}
+
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    let result = if part == 3 {
-        let mut window = kiss3d::window::Window::new_with_size("Day 17", 1280, 720);
-
-        window.set_light(kiss3d::light::Light::StickToCamera);
-
-        let d = dirs();
-        let mut g = parsed.clone();
-        let mut cubes = vec![];
-        let eye = kiss3d::nalgebra::Point3::new(40.0f32, 15.0, 20.0);
-        let at = kiss3d::nalgebra::Point3::origin();
-        let mut camera = kiss3d::camera::ArcBall::new(eye, at);
-        let mut frame = 0;
-        while window.render_with_camera(&mut camera) {
-            if frame % 20 == 0 {
-                for mut c in cubes {
-                    window.remove_node(&mut c);
-                }
-                let mut new_cubes = vec![];
-                for (p, v) in &g {
-                    if *v == '#' {
-                        let mut c = window.add_cube(1.0, 1.0, 1.0);
-                        c.append_translation(&kiss3d::nalgebra::Translation3::new(
-                            p[0] as f32,
-                            p[1] as f32,
-                            p[2] as f32,
-                        ));
-                        c.set_color(0.0, 1.0, 0.0);
-                        new_cubes.push(c);
-                    }
-                }
-                g = step(&g, &d);
-                cubes = new_cubes;
-            }
-            // rotate the arc-ball camera.
-            let curr_yaw = camera.yaw();
-            camera.set_yaw(curr_yaw + 0.05);
-            frame += 1;
-        }
-        0
-    } else if part == 4 {
-        let mut window = kiss3d::window::Window::new_with_size("Day 17", 1280, 720);
-
-        window.set_light(kiss3d::light::Light::StickToCamera);
-
-        let d = dirs4();
-        let mut g = HashMap::new();
-        for ([x, y, z], v) in &parsed {
-            g.insert([*x, *y, *z, 0], *v);
-        }
-        let mut cubes = vec![];
-        let eye = kiss3d::nalgebra::Point3::new(40.0f32, 15.0, 20.0);
-        let at = kiss3d::nalgebra::Point3::origin();
-        let mut camera = kiss3d::camera::ArcBall::new(eye, at);
-        let mut frame = 0;
-        while window.render_with_camera(&mut camera) {
-            if frame % 20 == 0 {
-                for mut c in cubes {
-                    window.remove_node(&mut c);
-                }
-                let mut new_cubes = vec![];
-                for (p, v) in &g {
-                    if *v == '#' {
-                        let mut c = window.add_cube(1.0, 1.0, 1.0);
-                        c.append_translation(&kiss3d::nalgebra::Translation3::new(
-                            p[0] as f32,
-                            p[1] as f32,
-                            p[2] as f32,
-                        ));
-                        let col = p[3] as f32 / (frame / 20 + 1) as f32;
-                        c.set_color(0.0, col, 0.0);
-                        new_cubes.push(c);
-                    }
-                }
-                g = step4(&g, &d);
-                cubes = new_cubes;
-            }
-            // rotate the arc-ball camera.
-            let curr_yaw = camera.yaw();
-            camera.set_yaw(curr_yaw + 0.05);
-            frame += 1;
-        }
-        0
-    } else if part == 1 {
-        part1(&parsed)
+    if cfg!(feature = "vis") {
+        aoc::run_main(parse, draw1, draw2);
     } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+        aoc::run_main(parse, part1, part2);
+    }
 }
 
 #[cfg(test)]

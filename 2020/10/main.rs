@@ -17,7 +17,7 @@ fn make_graph(adapters: &[i64]) -> (i64, i64, aoc::GraphMap<i64, i32, aoc::Direc
                 continue;
             }
             let diff = a[j] - a[i];
-            if diff >= 1 && diff <= 3 {
+            if (1..=3).contains(&diff) {
                 let gnp = graph.add_node(a[j]);
                 graph.add_edge(gp, gnp, 1);
             }

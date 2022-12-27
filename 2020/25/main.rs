@@ -36,8 +36,7 @@ fn transform(a: u64, ls: u64) -> u64 {
 
 fn part1(input: &Parsed) -> Answer {
     let ls0 = loopsize(input[0]).unwrap();
-    let k = transform(input[1], ls0);
-    k
+    transform(input[1], ls0)
 }
 
 fn part2(_: &Parsed) -> Answer {

@@ -55,8 +55,8 @@ fn recursive_combat(
             // println!("Player 2's plays: {}", top_b);
             let mut a_wins = top_a > top_b;
             if a.len() >= top_a && b.len() >= top_b {
-                let mut aa = a.iter().take(top_a).map(|x| *x).collect();
-                let mut bb = b.iter().take(top_b).map(|x| *x).collect();
+                let mut aa = a.iter().take(top_a).copied().collect();
+                let mut bb = b.iter().take(top_b).copied().collect();
                 // println!("Playing a sub-game to determine the winner...");
                 let mut ss = HashSet::new();
                 recursive_combat(&mut aa, &mut bb, &mut ss);

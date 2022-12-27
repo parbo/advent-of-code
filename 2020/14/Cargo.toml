@@ -9,3 +9,6 @@ aoc = {path = "../../aoc"}
 [[bin]]
 name = 'day14'
 path = 'main.rs'
+
+[features]
+vis = []

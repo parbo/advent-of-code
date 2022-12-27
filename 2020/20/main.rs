@@ -56,12 +56,12 @@ fn get_matches(input: &Parsed) -> HashMap<i64, Vec<(i64, i64, i64, bool)>> {
                     if *edge == *other_edge {
                         matches
                             .entry(input[i].0)
-                            .or_insert(vec![])
+                            .or_default()
                             .push((di as i64, input[j].0, dj as i64, false));
                     } else if *edge == other_edge_reversed {
                         matches
                             .entry(input[i].0)
-                            .or_insert(vec![])
+                            .or_default()
                             .push((di as i64, input[j].0, dj as i64, true));
                     }
                 }
@@ -96,8 +96,8 @@ fn find_monsters(grid: &HashMap<aoc::Point, char>) -> Vec<aoc::Point> {
             'outer: for x in min_x..=max_x {
                 let mut matches = 0;
                 let mut monster_coords = vec![];
-                for yy in 0..monster.len() {
-                    for (xx, mc) in monster[yy].chars().enumerate() {
+                for (yy, myy) in monster.iter().enumerate() {
+                    for (xx, mc) in myy.chars().enumerate() {
                         if mc == '#' {
                             let xxx = x + xx as i64;
                             let yyy = y + yy as i64;
@@ -120,7 +120,7 @@ fn find_monsters(grid: &HashMap<aoc::Point, char>) -> Vec<aoc::Point> {
                 }
             }
         }
-        if coords.len() > 0 {
+        if !coords.is_empty() {
             return coords;
         }
     }
@@ -140,7 +140,7 @@ fn place(
     }
     let mut candidates = vec![];
     for (id, g) in grids {
-        if placed.contains(&id) {
+        if placed.contains(id) {
             continue;
         }
         if coord == [0, 0]
@@ -182,7 +182,7 @@ fn place(
             candidates.push((id, ggg.clone()));
         }
     }
-    if candidates.len() > 0 {
+    if !candidates.is_empty() {
         for (id, g) in candidates {
             let mut gog = grid_of_grids.clone();
             gog.insert(coord, (*id, g.clone()));

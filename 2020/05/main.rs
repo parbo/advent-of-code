@@ -27,7 +27,7 @@ fn find_seat(bp: &[char]) -> (i64, i64) {
 fn part1(bps: &Parsed) -> i64 {
     bps.iter()
         .map(|bp| {
-            let seat = find_seat(&bp);
+            let seat = find_seat(bp);
             seat.0 * 8 + seat.1
         })
         .max()
@@ -38,7 +38,7 @@ fn part2(bps: &Parsed) -> i64 {
     let mut ids: Vec<_> = bps
         .iter()
         .map(|bp| {
-            let seat = find_seat(&bp);
+            let seat = find_seat(bp);
             seat.0 * 8 + seat.1
         })
         .collect();

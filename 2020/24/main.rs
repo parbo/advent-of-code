@@ -71,11 +71,8 @@ fn part2(paths: &Parsed) -> Answer {
                 let c = g.get(&p).unwrap_or(&'.');
                 for dir in &d {
                     let np = aoc::vec_add(p, *dir);
-                    match g.get(&np) {
-                        Some('B') => {
-                            black += 1;
-                        }
-                        _ => {}
+                    if let Some('B') = g.get(&np) {
+                        black += 1;
                     }
                 }
                 if *c == 'B' && (black == 0 || black > 2) {

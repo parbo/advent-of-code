@@ -16,7 +16,7 @@ fn find(
                 return;
             }
         }
-        all.push(sofar.clone());
+        all.push(sofar);
         return;
     }
     for (allergen, ingredients) in constraints
@@ -44,9 +44,9 @@ fn allergenic(input: &Parsed) -> (HashSet<String>, HashMap<String, String>) {
     let mut possible = HashMap::new();
     for (ingredients, allergens) in input {
         for a in allergens {
-            let ing: HashSet<String> = ingredients.iter().map(|x| x.clone()).collect();
-            let curr = possible.entry(a.clone()).or_insert(ing.clone());
-            let updated: HashSet<String> = curr.intersection(&ing).map(|x| x.clone()).collect();
+            let ing: HashSet<String> = ingredients.iter().cloned().collect();
+            let curr = possible.entry(a.clone()).or_insert_with(|| ing.clone());
+            let updated: HashSet<String> = curr.intersection(&ing).cloned().collect();
             *curr = updated;
         }
     }
@@ -54,7 +54,7 @@ fn allergenic(input: &Parsed) -> (HashSet<String>, HashMap<String, String>) {
     find(&possible, HashMap::new(), HashSet::new(), &mut all);
     let mut allergenic = HashSet::new();
     for res in &all {
-        for (_, v) in res {
+        for v in res.values() {
             allergenic.insert(v);
         }
     }
@@ -97,13 +97,8 @@ fn part2(input: &Parsed) -> String {
         .iter()
         .map(|(k, v)| (v.clone(), k.clone()))
         .collect();
-    let mut canonical: Vec<String> = dangerous.into_iter().map(|x| x.clone()).collect();
-    canonical.sort_by(|a, b| {
-        ingredients
-            .get(a)
-            .unwrap()
-            .cmp(&ingredients.get(b).unwrap())
-    });
+    let mut canonical: Vec<String> = dangerous.into_iter().cloned().collect();
+    canonical.sort_by(|a, b| ingredients.get(a).unwrap().cmp(ingredients.get(b).unwrap()));
     canonical.iter().join(",")
 }
 

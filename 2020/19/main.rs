@@ -19,7 +19,7 @@ impl FromStr for Rule {
         } else if s.len() == 3 {
             s.chars()
                 .nth(1)
-                .map(|c| Rule::Char(c))
+                .map(Rule::Char)
                 .ok_or(aoc::ParseError::Generic)
         } else {
             let parts = aoc::split_ch(s, '|');

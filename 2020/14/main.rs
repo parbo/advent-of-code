@@ -4,6 +4,8 @@ use std::collections::{BTreeMap, HashMap};
 use std::iter::*;
 use std::str::FromStr;
 
+type Parsed = Vec<Op>;
+
 #[derive(Debug)]
 enum Op {
     Mask(String),
@@ -23,7 +25,7 @@ impl FromStr for Op {
     }
 }
 
-fn part1(ops: &[Op]) -> i64 {
+fn part1(ops: &Parsed) -> i64 {
     let mut mem = HashMap::new();
     let mut mask = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX".to_string();
     for op in ops {
@@ -50,10 +52,11 @@ fn part1(ops: &[Op]) -> i64 {
     mem.values().sum()
 }
 
-fn part2(ops: &[Op], draw: bool) -> i64 {
+fn part2(ops: &Parsed) -> i64 {
     let mut all_mem = vec![];
     let mut mem = BTreeMap::new();
     let mut mask = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX".to_string();
+    let draw = cfg!(feature = "vis");
     for op in ops {
         match op {
             Op::Mask(m) => {
@@ -66,7 +69,7 @@ fn part2(ops: &[Op], draw: bool) -> i64 {
                     let bit = 1 << (35 - i);
                     match x {
                         'X' => {
-                            base_addr = base_addr & !bit;
+                            base_addr &= !bit;
                             floating.push(bit);
                         }
                         '0' => {}
@@ -123,7 +126,7 @@ fn part2(ops: &[Op], draw: bool) -> i64 {
     mem.values().sum()
 }
 
-fn parse(lines: &[String]) -> Vec<Op> {
+fn parse(lines: &[String]) -> Parsed {
     lines.iter().map(|x| x.parse().unwrap()).collect()
 }
 

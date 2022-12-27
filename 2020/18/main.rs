@@ -116,13 +116,11 @@ where
     for op in postfix {
         if let Ops::Num(_) = op {
             stack.push_back(op);
-        } else {
-            if let Some((Ops::Num(a), Ops::Num(b))) = stack.pop_back().zip(stack.pop_back()) {
-                if op == Ops::Mul {
-                    stack.push_back(Ops::Num(a * b));
-                } else {
-                    stack.push_back(Ops::Num(a + b));
-                }
+        } else if let Some((Ops::Num(a), Ops::Num(b))) = stack.pop_back().zip(stack.pop_back()) {
+            if op == Ops::Mul {
+                stack.push_back(Ops::Num(a * b));
+            } else {
+                stack.push_back(Ops::Num(a + b));
             }
         }
     }

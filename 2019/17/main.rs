@@ -1,8 +1,9 @@
-use aoc;
 use aoc::GridDrawer;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::iter::*;
+
+type Parsed = Vec<i128>;
 
 fn to_char(ch: i128) -> char {
     std::char::from_u32(ch as u32).unwrap()
@@ -10,16 +11,7 @@ fn to_char(ch: i128) -> char {
 
 fn is_scaffold(grid: &HashMap<aoc::Point, i128>, pos: aoc::Point) -> bool {
     if let Some(x) = grid.get(&pos) {
-        let ch = to_char(*x);
-        let c = match ch {
-            '#' => true,
-            '<' => true,
-            '>' => true,
-            '^' => true,
-            'v' => true,
-            _ => false,
-        };
-        c
+        matches!(to_char(*x), '#' | '<' | '>' | '^' | 'v')
     } else {
         false
     }
@@ -28,17 +20,17 @@ fn is_scaffold(grid: &HashMap<aoc::Point, i128>, pos: aoc::Point) -> bool {
 fn is_crossing(grid: &HashMap<aoc::Point, i128>, pos: aoc::Point) -> bool {
     let [x, y] = pos;
     // find the +
-    is_scaffold(&grid, [x + 1, y])
-        && is_scaffold(&grid, [x - 1, y])
-        && is_scaffold(&grid, [x, y + 1])
-        && is_scaffold(&grid, [x, y - 1])
+    is_scaffold(grid, [x + 1, y])
+        && is_scaffold(grid, [x - 1, y])
+        && is_scaffold(grid, [x, y + 1])
+        && is_scaffold(grid, [x, y - 1])
 }
 
 fn find_align(grid: &HashMap<aoc::Point, i128>) -> Vec<aoc::Point> {
     let scaffold: Vec<aoc::Point> = grid.iter().filter(|x| *x.1 == 35).map(|x| *x.0).collect();
     let mut align = vec![];
     for p in scaffold {
-        if is_crossing(&grid, p) {
+        if is_crossing(grid, p) {
             align.push(p);
         }
     }
@@ -102,7 +94,7 @@ fn visited(start: (aoc::Point, Dir), path: &[i128]) -> HashSet<aoc::Point> {
 }
 
 fn print_stuff(grid: &HashMap<aoc::Point, i128>, start: (aoc::Point, Dir), p: &[i128]) {
-    let vis = visited(start, &p);
+    let vis = visited(start, p);
     let mut g = grid.clone();
     for v in &vis {
         g.insert(*v, 42);
@@ -139,7 +131,7 @@ fn walk(
                 .symmetric_difference(&vis)
                 .map(|x| x.to_owned())
                 .collect();
-            if diff.len() == 0 {
+            if diff.is_empty() {
                 print_stuff(grid, start, &path);
                 vec![path.clone()]
             } else {
@@ -147,7 +139,7 @@ fn walk(
             }
         };
         for p in pp {
-            if p.len() > 0 {
+            if !p.is_empty() {
                 paths.push(p);
             }
         }
@@ -155,31 +147,27 @@ fn walk(
     paths
 }
 
-fn build_grid(program: &Vec<i128>) -> HashMap<aoc::Point, i128> {
+fn build_grid(program: &Parsed) -> HashMap<aoc::Point, i128> {
     let mut m = intcode::Machine::new(program);
     let mut grid = HashMap::new();
     let mut y = 0;
     let mut x = 0;
-    loop {
-        if let Some(ch) = m.run_to_next_output() {
-            match ch {
-                10 => {
-                    y += 1;
-                    x = 0;
-                }
-                c => {
-                    grid.insert([x, y], c);
-                    x += 1;
-                }
+    while let Some(ch) = m.run_to_next_output() {
+        match ch {
+            10 => {
+                y += 1;
+                x = 0;
             }
-        } else {
-            break;
+            c => {
+                grid.insert([x, y], c);
+                x += 1;
+            }
         }
     }
     grid
 }
 
-fn part1(program: &Vec<i128>) -> i128 {
+fn part1(program: &Parsed) -> i128 {
     let mut d = aoc::PrintGridDrawer::new(to_char);
     let grid = build_grid(program);
     d.draw(&grid);
@@ -192,7 +180,7 @@ fn part1(program: &Vec<i128>) -> i128 {
     align.iter().map(|[x, y]| x * y).sum::<i64>() as i128
 }
 
-fn compact(path: &[i128]) -> Vec<i128> {
+fn compact(path: &[i128]) -> Parsed {
     let mut v = vec![];
     let mut last = None;
     let mut count = 0;
@@ -249,7 +237,7 @@ fn segments_at_offset(c: &[i128], start: usize) -> Vec<&[i128]> {
             continue;
         }
         let sg = &c[start..e];
-        if sg.len() == 0 {
+        if sg.is_empty() {
             continue;
         }
         let s = prog_to_str(sg);
@@ -261,17 +249,18 @@ fn segments_at_offset(c: &[i128], start: usize) -> Vec<&[i128]> {
     segments
 }
 
-fn assemble_seq(c: &[i128], start: usize, sofar: &Vec<Vec<i128>>) -> Vec<Vec<Vec<i128>>> {
+#[allow(clippy::comparison_chain)]
+fn assemble_seq(c: &[i128], start: usize, sofar: &[Vec<i128>]) -> Vec<Vec<Vec<i128>>> {
     let mut results = vec![];
     for s in segments_at_offset(c, start) {
         if start + s.len() == c.len() {
-            let mut sf = sofar.clone();
+            let mut sf = sofar.to_vec();
             sf.push(s.to_vec());
             results.push(sf);
         } else if start + s.len() < c.len() {
             // Look up the rest
             let sv = s.to_vec();
-            let mut sf = sofar.clone();
+            let mut sf = sofar.to_vec();
             sf.push(sv.clone());
             let set: HashSet<_> = sf.iter().collect();
             if set.len() <= 3 {
@@ -284,7 +273,7 @@ fn assemble_seq(c: &[i128], start: usize, sofar: &Vec<Vec<i128>>) -> Vec<Vec<Vec
 }
 
 fn sub_seq(c: &[i128]) -> Vec<Vec<(Vec<i128>, char)>> {
-    let results = assemble_seq(c, 0, &vec![]);
+    let results = assemble_seq(c, 0, &[]);
     let ids = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
     let mut res = vec![];
     for r in &results {
@@ -304,7 +293,7 @@ fn sub_seq(c: &[i128]) -> Vec<Vec<(Vec<i128>, char)>> {
     res
 }
 
-fn part2(program: &Vec<i128>) -> i128 {
+fn part2(program: &Parsed) -> i128 {
     let grid = build_grid(program);
     let robot: Vec<_> = grid
         .iter()
@@ -336,7 +325,7 @@ fn part2(program: &Vec<i128>) -> i128 {
             results.push(r.clone());
         }
     }
-    results.sort_by(|a, b| a.len().cmp(&b.len()));
+    results.sort_by_key(|a| a.len());
 
     let res = &results[0];
 
@@ -344,9 +333,9 @@ fn part2(program: &Vec<i128>) -> i128 {
     *m.memory_mut().get_mut(0).unwrap() = 2;
     let mut inp: Vec<char> = vec![];
     let mut progs: HashMap<char, Vec<i128>> = HashMap::new();
-    for i in 0..res.len() {
-        progs.insert(res[i].1, res[i].0.clone());
-        inp.push(res[i].1);
+    for r in res {
+        progs.insert(r.1, r.0.clone());
+        inp.push(r.1);
         inp.push(',');
     }
     *inp.last_mut().unwrap() = '\n';

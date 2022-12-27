@@ -1,4 +1,3 @@
-use aoc;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 use std::collections::HashMap;
@@ -203,6 +202,7 @@ fn shortest_path(
     None
 }
 
+#[allow(clippy::needless_range_loop)]
 fn find_keys(map: &Vec<Vec<char>>) -> HashMap<(usize, usize), char> {
     let mut things = HashMap::new();
     let h = map.len();
@@ -218,6 +218,7 @@ fn find_keys(map: &Vec<Vec<char>>) -> HashMap<(usize, usize), char> {
     things
 }
 
+#[allow(clippy::needless_range_loop)]
 fn find_self(map: &Vec<Vec<char>>) -> Option<(usize, usize)> {
     let h = map.len();
     let w = map[0].len();
@@ -265,10 +266,12 @@ impl PartialOrd for PathState {
     }
 }
 
-fn solve<'a>(map: &'a Vec<Vec<char>>, curr: &Vec<(usize, usize)>) -> usize {
+type PathCache = HashMap<((usize, usize), (usize, usize)), (usize, KeyState, KeyState)>;
+
+fn solve(map: &Vec<Vec<char>>, curr: &Vec<(usize, usize)>) -> usize {
     let mut dist = HashMap::new();
     let mut frontier: BinaryHeap<PathState> = BinaryHeap::new();
-    let all_keys = find_keys(&map);
+    let all_keys = find_keys(map);
     frontier.push(PathState {
         cost: 0,
         map_state: MapState {
@@ -276,8 +279,7 @@ fn solve<'a>(map: &'a Vec<Vec<char>>, curr: &Vec<(usize, usize)>) -> usize {
             keys: KeyState { state: 0 },
         },
     });
-    let mut cached_paths: HashMap<((usize, usize), (usize, usize)), (usize, KeyState, KeyState)> =
-        HashMap::new();
+    let mut cached_paths: PathCache = HashMap::new();
 
     let unlocked = KeyState { state: 0xffffffff };
     let mut pairs = vec![];
@@ -293,7 +295,7 @@ fn solve<'a>(map: &'a Vec<Vec<char>>, curr: &Vec<(usize, usize)>) -> usize {
         }
     }
     for (k1, k2) in pairs {
-        let mut m = Map::new(&map, unlocked);
+        let mut m = Map::new(map, unlocked);
         let mut needed = KeyState { state: 0 };
         let mut provided = KeyState { state: 0 };
         if let Some(p) = shortest_path(&mut m, *k1, *k2) {
@@ -324,7 +326,7 @@ fn solve<'a>(map: &'a Vec<Vec<char>>, curr: &Vec<(usize, usize)>) -> usize {
             println!("keys: {:?}, cost: {}, total: {}", keys.len(), cost, total);
             last_cost = cost / 100;
         }
-        if keys.len() == 0 {
+        if keys.is_empty() {
             if let Some(gc) = goal_cost {
                 if cost == gc {
                     res.push(map_state.clone());
@@ -393,13 +395,13 @@ fn solve<'a>(map: &'a Vec<Vec<char>>, curr: &Vec<(usize, usize)>) -> usize {
 }
 
 fn part1(map: &Vec<Vec<char>>) -> usize {
-    let curr = find_self(&map).unwrap();
+    let curr = find_self(map).unwrap();
     let cv = vec![curr];
-    solve(&map, &cv)
+    solve(map, &cv)
 }
 
 fn part2(map: &Vec<Vec<char>>) -> usize {
-    let curr = find_self(&map).unwrap();
+    let curr = find_self(map).unwrap();
     let mut m = map.clone();
     m[curr.0][curr.1] = '#';
     m[curr.0][curr.1 + 1] = '#';

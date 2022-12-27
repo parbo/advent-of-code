@@ -9,7 +9,7 @@ fn find_amount(
     p: &Product,
     reqs: &HashMap<Material, (i64, Vec<Product>)>,
     pile: &mut HashMap<Material, i64>,
-    depth: usize,
+    _depth: usize,
 ) -> i64 {
     if let Some((amount, materials)) = reqs.get(&p.material) {
         let mut m = 0;
@@ -28,7 +28,7 @@ fn find_amount(
                 if pr.material == Material::Ore {
                     m += pr_left.amount;
                 } else {
-                    m += find_amount(&pr_left, reqs, pile, depth + 1);
+                    m += find_amount(&pr_left, reqs, pile, _depth + 1);
                 }
             }
         }

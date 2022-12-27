@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+type Parsed = Vec<i128>;
+
 fn init_network(program: &[i128], len: i128) -> Vec<intcode::Machine> {
     let mut machines = Vec::new();
     for i in 0..len {
@@ -48,7 +50,7 @@ fn run_network(
     !any_sent && input_count == 50
 }
 
-fn part1(program: &Vec<i128>) -> i128 {
+fn part1(program: &Parsed) -> i128 {
     let mut machines = init_network(program, 50);
     let mut ans = None;
     loop {
@@ -63,7 +65,7 @@ fn part1(program: &Vec<i128>) -> i128 {
     ans.unwrap()
 }
 
-fn part2(program: &Vec<i128>) -> i128 {
+fn part2(program: &Parsed) -> i128 {
     let mut machines = init_network(program, 50);
     let mut nat = (0, 0);
     let mut seen = HashSet::new();

@@ -11,7 +11,7 @@ fn part1(program: &Parsed) -> i128 {
         match state {
             State::Output => {
                 for o in m.outputs() {
-                    if o >= 0 && o < 256 {
+                    if (0..256).contains(&o) {
                         print!("{}", std::char::from_u32(o as u32).unwrap());
                     } else {
                         println!("value: {}", o);

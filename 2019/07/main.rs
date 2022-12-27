@@ -1,5 +1,3 @@
-use aoc;
-use intcode;
 use std::iter::*;
 
 type Parsed = Vec<i128>;
@@ -23,7 +21,7 @@ fn part2(numbers: &Parsed) -> i128 {
     let mut max_power = 0;
     for permutation in permute::lexicographically(&phases) {
         let mut machines: Vec<intcode::Machine> = (0..5)
-            .map(|x| intcode::Machine::with_input(&numbers, &[*permutation[x]]))
+            .map(|x| intcode::Machine::with_input(numbers, &[*permutation[x]]))
             .collect();
         machines[0].add_input(0);
         let mut last_output = None;

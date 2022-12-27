@@ -47,6 +47,7 @@ fn extents(segment: &[Segment]) -> ((i64, i64), (i64, i64)) {
     ((min_x, max_x), (min_y, max_y))
 }
 
+#[allow(clippy::type_complexity)]
 fn field(exts: &[((i64, i64), (i64, i64))]) -> ((i64, i64), (i64, i64)) {
     let mut max_x = 0;
     let mut min_x = 0;
@@ -94,7 +95,7 @@ fn seg_steps(seg: &Vec<Segment>, pos: (i64, i64)) -> Option<i64> {
 fn steps(segments: &Vec<Vec<Segment>>, pos: (i64, i64)) -> Vec<i64> {
     let mut s = vec![];
     for seg in segments {
-        s.push(seg_steps(&seg, pos).unwrap());
+        s.push(seg_steps(seg, pos).unwrap());
     }
     s
 }
@@ -110,7 +111,7 @@ fn solve(segments: &Vec<Vec<Segment>>, part: i32) -> i64 {
     println!("{}, {}", xoffs, yoffs);
     println!("{}, {}", xsize, ysize);
     let mut space: Vec<char> = vec!['.'; (xsize * ysize) as usize];
-    space[((0 - yoffs) * xsize + 0) as usize] = 'o';
+    space[((0 - yoffs) * xsize) as usize] = 'o';
     for seg in segments {
         let orig_space = space.clone();
         let mut x = 0;
@@ -169,7 +170,7 @@ fn solve(segments: &Vec<Vec<Segment>>, part: i32) -> i64 {
                     let mh = x.abs() + y.abs();
                     result = std::cmp::min(result, mh);
                 } else {
-                    let step = steps(&segments, (x, y));
+                    let step = steps(segments, (x, y));
                     let sum = step.iter().sum();
                     result = std::cmp::min(result, sum);
                 }
@@ -198,7 +199,7 @@ fn input(path: &Path) -> Vec<Vec<Segment>> {
     let input = File::open(path).unwrap();
     let buffered = BufReader::new(input);
     let lines: Vec<String> = buffered.lines().filter_map(Result::ok).collect();
-    lines.iter().map(|line| segments(&line)).collect()
+    lines.iter().map(|line| segments(line)).collect()
 }
 
 fn main() {

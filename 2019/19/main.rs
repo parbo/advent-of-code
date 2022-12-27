@@ -1,4 +1,3 @@
-use aoc;
 use aoc::GridDrawer;
 use std::collections::HashMap;
 use std::iter::*;

@@ -95,6 +95,7 @@ fn dijkstra_neighbours(state: &Map, pos: (usize, usize, usize)) -> Vec<(usize, u
 }
 
 // Dijkstra's shortest path algorithm.
+#[allow(clippy::type_complexity)]
 fn shortest_path(
     state: &mut Map,
     start: (usize, usize, usize),
@@ -194,6 +195,7 @@ fn to_label(ch_a: char, ch_b: char, a: (usize, usize), b: (usize, usize)) -> (ch
     (v[0].1, v[1].1)
 }
 
+#[allow(clippy::type_complexity)]
 fn find_portals(
     map: &Vec<Vec<char>>,
 ) -> (
@@ -229,7 +231,7 @@ fn find_portals(
                         let inner = x > 3 && x + 3 < w && y > 3 && y + 3 < h;
                         labels
                             .entry(to_label(ch_b, ch_c, (xx, yy), (xxx, yyy)))
-                            .or_insert(HashSet::new())
+                            .or_default()
                             .insert(((x, y), inner));
                     }
                 }
@@ -252,6 +254,7 @@ fn find_portals(
     (start, end, portals)
 }
 
+#[allow(clippy::needless_range_loop)]
 fn part1(map: &Parsed) -> usize {
     let (start, end, portals) = find_portals(map);
     let mut m = Map::new(map, &portals, false);

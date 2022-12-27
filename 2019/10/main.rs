@@ -1,9 +1,10 @@
-use aoc;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::iter::*;
 
-fn seen(things: &Vec<Vec<char>>, x: i64, y: i64) -> HashSet<(i64, i64)> {
+type Parsed = Vec<Vec<char>>;
+
+fn seen(things: &Parsed, x: i64, y: i64) -> HashSet<(i64, i64)> {
     let h = things.len() as i64;
     let w = things[0].len() as i64;
     let mut seen = HashSet::new();
@@ -41,7 +42,7 @@ fn seen(things: &Vec<Vec<char>>, x: i64, y: i64) -> HashSet<(i64, i64)> {
     seen
 }
 
-fn solve_part1(things: &Vec<Vec<char>>) -> ((i64, i64), i64) {
+fn solve_part1(things: &Parsed) -> ((i64, i64), i64) {
     let mut seen_count = HashMap::new();
     let h = things.len() as i64;
     let w = things[0].len() as i64;
@@ -50,15 +51,15 @@ fn solve_part1(things: &Vec<Vec<char>>) -> ((i64, i64), i64) {
             if things[y as usize][x as usize] != '#' {
                 continue;
             }
-            let s = seen(&things, x, y);
-            let c = s.iter().count() as i64;
+            let s = seen(things, x, y);
+            let c = s.len() as i64;
             seen_count.insert((x, y), c);
         }
     }
     seen_count.into_iter().max_by(|a, b| a.1.cmp(&b.1)).unwrap()
 }
 
-fn part1(things: &Vec<Vec<char>>) -> i64 {
+fn part1(things: &Parsed) -> i64 {
     solve_part1(things).1
 }
 
@@ -88,9 +89,9 @@ fn pseudo_angle(dx: i64, dy: i64) -> f64 {
     }
 }
 
-fn zappable(t: &Vec<Vec<char>>, x: i64, y: i64) -> Vec<(i64, i64)> {
+fn zappable(t: &Parsed, x: i64, y: i64) -> Vec<(i64, i64)> {
     // Deltas to seen asteroids
-    let mut deltas: Vec<_> = seen(&t, x, y)
+    let mut deltas: Vec<_> = seen(t, x, y)
         .into_iter()
         .map(|(xx, yy)| (xx - x, yy - y))
         .collect();
@@ -105,7 +106,7 @@ fn zappable(t: &Vec<Vec<char>>, x: i64, y: i64) -> Vec<(i64, i64)> {
     deltas
 }
 
-fn solve_part2(things: &Vec<Vec<char>>, x: i64, y: i64) -> i64 {
+fn solve_part2(things: &Parsed, x: i64, y: i64) -> i64 {
     let mut t = things.clone();
     let mut zap = zappable(&t, x, y);
     let mut c = 1;
@@ -117,19 +118,19 @@ fn solve_part2(things: &Vec<Vec<char>>, x: i64, y: i64) -> i64 {
             if c == 200 {
                 return 100 * xx + yy;
             }
-            c = c + 1;
+            c += 1;
         }
         zap = zappable(&t, x, y);
     }
 }
 
-fn part2(things: &Vec<Vec<char>>) -> i64 {
+fn part2(things: &Parsed) -> i64 {
     let ((x, y), _) = solve_part1(things);
     solve_part2(things, x, y)
 }
 
-fn parse(lines: &[String]) -> Vec<Vec<char>> {
-    lines.into_iter().map(|x| x.chars().collect()).collect()
+fn parse(lines: &[String]) -> Parsed {
+    lines.iter().map(|x| x.chars().collect()).collect()
 }
 
 fn main() {
@@ -142,7 +143,7 @@ mod tests {
 
     #[test]
     fn test_part1_1() {
-        let m = parse(&vec![
+        let m = parse(&[
             ".#..#".to_string(),
             ".....".to_string(),
             "#####".to_string(),

@@ -1,7 +1,8 @@
-use aoc;
 use std::iter::*;
 
-fn part1(layers: &Vec<Vec<u32>>) -> usize {
+type Parsed = Vec<Vec<u32>>;
+
+fn part1(layers: &Parsed) -> usize {
     let min_zeroes = layers
         .iter()
         .enumerate()
@@ -18,7 +19,7 @@ fn part1(layers: &Vec<Vec<u32>>) -> usize {
     ans
 }
 
-fn part2(layers: &Vec<Vec<u32>>) -> usize {
+fn part2(layers: &Parsed) -> usize {
     for y in 0..6 {
         for x in 0..25 {
             let mut pixel = 2u32;
@@ -42,10 +43,9 @@ fn part2(layers: &Vec<Vec<u32>>) -> usize {
     0
 }
 
-fn parse(lines: &[String]) -> Vec<Vec<u32>> {
-    let image: Vec<_> = lines[0].chars().map(|x| x.to_digit(10).unwrap()).collect();
+fn parse(lines: &[String]) -> Parsed {
     let mut layers = vec![];
-    let mut iter = image.into_iter();
+    let mut iter = lines[0].chars().map(|x| x.to_digit(10).unwrap());
     loop {
         let mut layer = vec![];
         for _ in 0..25 {

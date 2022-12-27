@@ -19,7 +19,7 @@ fn config() {
 }
 
 impl Debugger<'_> {
-    pub fn new<'a>(machine: &'a mut Machine) -> Debugger<'a> {
+    pub fn new(machine: &mut Machine) -> Debugger {
         config();
         Debugger {
             machine,
@@ -37,28 +37,24 @@ impl Debugger<'_> {
                 Disassembly::Instruction(x) => {
                     match x.op {
                         // Find function
-                        Op::SP => match &x.read().get(0) {
-                            Some(Arg::Immediate { value }) => {
+                        Op::SP => {
+                            if let Some(Arg::Immediate { value }) = &x.read().get(0) {
                                 if value.is_positive() {
                                     sp = *value;
                                     sp_addr = a;
-                                } else {
-                                    if *value == -1 * sp {
-                                        sp = 0;
-                                    }
+                                } else if *value == -sp {
+                                    sp = 0;
                                 }
                             }
-                            _ => {}
-                        },
-                        Op::JIT => match &x.read().get(0) {
-                            Some(Arg::Immediate { value: 1 }) => match &x.read().get(1) {
-                                Some(Arg::Relative { base: _, offset: 0 }) => {
+                        }
+                        Op::JIT => {
+                            if let Some(Arg::Immediate { value: 1 }) = &x.read().get(0) {
+                                if let Some(Arg::Relative { base: _, offset: 0 }) = &x.read().get(1)
+                                {
                                     println!("found function {} -> {}", sp_addr, a);
                                 }
-                                _ => {}
-                            },
-                            _ => {}
-                        },
+                            }
+                        }
                         _ => {}
                     }
                     a + x.increment()
@@ -91,7 +87,7 @@ impl Debugger<'_> {
                 for r in x.read() {
                     print!("{}, ", self.machine.read_arg(r));
                 }
-                if x.write().len() > 0 {
+                if !x.write().is_empty() {
                     print!("-> ");
                 }
                 for w in x.write() {
@@ -189,7 +185,7 @@ impl Debugger<'_> {
 
     fn print_output(&mut self) {
         for o in self.machine.outputs() {
-            if o >= 0 && o < 256 {
+            if (0..256).contains(&o) {
                 print!("{}", std::char::from_u32(o as u32).unwrap());
             } else {
                 println!("value: {}", o);
@@ -226,7 +222,8 @@ impl Debugger<'_> {
                 Ok(l) => {
                     rl.add_history_entry(l.as_str());
                     let mut line = l;
-                    if line == "" && last.is_some() {
+                    #[allow(clippy::unnecessary_unwrap)]
+                    if line.is_empty() && last.is_some() {
                         line = last.unwrap();
                     }
                     if line == "s" {
@@ -237,23 +234,23 @@ impl Debugger<'_> {
                         } else {
                             let _ = self.print_instruction(self.machine.ip(), true);
                         }
-                    } else if line.starts_with("b") {
+                    } else if line.starts_with('b') {
                         if line == "bl" {
                             self.list_breakpoints();
-                        } else if line.starts_with("bc") {
-                            if let Ok(addr) = line[2..].trim().parse::<usize>() {
+                        } else if let Some(stripped) = line.strip_prefix("bc") {
+                            if let Ok(addr) = stripped.trim().parse::<usize>() {
                                 self.clear_breakpoint(addr);
                             } else {
                                 self.clear_breakpoint(self.machine.ip());
                             }
-                        } else {
-                            if let Ok(addr) = line[1..].trim().parse::<usize>() {
+                        } else if let Some(stripped) = line.strip_prefix('b') {
+                            if let Ok(addr) = stripped.trim().parse::<usize>() {
                                 self.set_breakpoint(addr);
                             } else {
                                 self.set_breakpoint(self.machine.ip());
                             }
                         }
-                    } else if line.starts_with("w") {
+                    } else if line.starts_with('w') {
                         if line.starts_with("wr ") {
                             let parts: Vec<_> = line.split(' ').map(|x| x.trim()).collect();
                             let addr = parts[1].parse::<usize>().unwrap();
@@ -265,8 +262,8 @@ impl Debugger<'_> {
                             }
                         } else if line == "wl" {
                             self.list_watches();
-                        } else if line.starts_with("wc") {
-                            self.clear_watch(&line[2..]);
+                        } else if let Some(stripped) = line.strip_prefix("wc") {
+                            self.clear_watch(stripped);
                         } else {
                             let parts: Vec<_> = line.split(' ').map(|x| x.trim()).collect();
                             let name = parts[1];
@@ -287,8 +284,8 @@ impl Debugger<'_> {
                             }
                         }
                         let _ = self.print_instruction(self.machine.ip(), true);
-                    } else if line.starts_with("p") {
-                        if let Ok(addr) = line[1..].trim().parse::<usize>() {
+                    } else if let Some(stripped) = line.strip_prefix('p') {
+                        if let Ok(addr) = stripped.trim().parse::<usize>() {
                             self.print_memory(addr, 8);
                         } else {
                             self.print_memory(self.machine.ip(), 8);
@@ -297,8 +294,8 @@ impl Debugger<'_> {
                         self.print_memory(self.machine.ip(), 8);
                     } else if line == "ds" {
                         self.machine.dump(5);
-                    } else if line.starts_with("l") {
-                        if let Ok(lines) = line[1..].trim().parse::<usize>() {
+                    } else if let Some(stripped) = line.strip_prefix('l') {
+                        if let Ok(lines) = stripped.trim().parse::<usize>() {
                             self.print_instructions(self.machine.ip(), lines);
                         } else {
                             self.print_instructions(self.machine.ip(), 8);

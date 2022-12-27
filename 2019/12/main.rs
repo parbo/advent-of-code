@@ -1,9 +1,10 @@
-use aoc;
-// use intcode;
+use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::iter::*;
 
-fn energy(m: &Vec<Vec<i64>>, steps: usize) -> i64 {
+type Parsed = Vec<Vec<i64>>;
+
+fn energy(m: &Parsed, steps: usize) -> i64 {
     let mut moons = m.clone();
     let mut vel = vec![];
     vel.resize(moons.len(), vec![0, 0, 0]);
@@ -12,12 +13,16 @@ fn energy(m: &Vec<Vec<i64>>, steps: usize) -> i64 {
             for a in 0..moons.len() {
                 for b in (a + 1)..moons.len() {
                     // Apply gravity
-                    if moons[a][i] < moons[b][i] {
-                        vel[a][i] += 1;
-                        vel[b][i] -= 1;
-                    } else if moons[a][i] > moons[b][i] {
-                        vel[a][i] -= 1;
-                        vel[b][i] += 1;
+                    match moons[a][i].cmp(&moons[b][i]) {
+                        Ordering::Less => {
+                            vel[a][i] += 1;
+                            vel[b][i] -= 1;
+                        }
+                        Ordering::Greater => {
+                            vel[a][i] -= 1;
+                            vel[b][i] += 1;
+                        }
+                        _ => (),
                     }
                 }
                 // Apply velocity
@@ -34,11 +39,11 @@ fn energy(m: &Vec<Vec<i64>>, steps: usize) -> i64 {
     e
 }
 
-fn part1(m: &Vec<Vec<i64>>) -> i64 {
+fn part1(m: &Parsed) -> i64 {
     energy(m, 1000)
 }
 
-fn part2(m: &Vec<Vec<i64>>) -> i64 {
+fn part2(m: &Parsed) -> i64 {
     let mut moons = m.clone();
     let mut vel = vec![];
     vel.resize(moons.len(), vec![0, 0, 0]);
@@ -56,12 +61,16 @@ fn part2(m: &Vec<Vec<i64>>) -> i64 {
             for a in 0..moons.len() {
                 for b in (a + 1)..moons.len() {
                     // Apply gravity
-                    if moons[a][i] < moons[b][i] {
-                        vel[a][i] += 1;
-                        vel[b][i] -= 1;
-                    } else if moons[a][i] > moons[b][i] {
-                        vel[a][i] -= 1;
-                        vel[b][i] += 1;
+                    match moons[a][i].cmp(&moons[b][i]) {
+                        Ordering::Less => {
+                            vel[a][i] += 1;
+                            vel[b][i] -= 1;
+                        }
+                        Ordering::Greater => {
+                            vel[a][i] -= 1;
+                            vel[b][i] += 1;
+                        }
+                        _ => (),
                     }
                 }
                 // Apply velocity
@@ -78,7 +87,7 @@ fn part2(m: &Vec<Vec<i64>>) -> i64 {
     aoc::lcm(cycles[0], aoc::lcm(cycles[1], cycles[2]))
 }
 
-fn parse(lines: &[String]) -> Vec<Vec<i64>> {
+fn parse(lines: &[String]) -> Parsed {
     lines
         .iter()
         .map(|line| {

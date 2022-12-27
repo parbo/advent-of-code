@@ -1,4 +1,3 @@
-use aoc;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::iter::*;
@@ -26,7 +25,7 @@ impl Tree {
         self.things.insert(child.to_string());
         self.children
             .entry(parent.to_string())
-            .or_insert(Vec::new())
+            .or_default()
             .push(child.to_string());
     }
 
@@ -45,13 +44,19 @@ impl Tree {
                 }
             }
         }
-        return None;
+        None
+    }
+}
+
+impl Default for Tree {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
 fn part1(tree: &Tree) -> i64 {
     tree.things()
-        .map(|t| tree.depth_from_to("COM", &t))
+        .map(|t| tree.depth_from_to("COM", t))
         .sum::<Option<i64>>()
         .unwrap()
 }
@@ -61,7 +66,7 @@ fn part2(tree: &Tree) -> i64 {
         .filter_map(|t| {
             [tree.depth_from_to(t, "YOU"), tree.depth_from_to(t, "SAN")]
                 .iter()
-                .map(|&x| x)
+                .copied()
                 .sum::<Option<i64>>()
         })
         .min()

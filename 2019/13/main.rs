@@ -1,7 +1,8 @@
-use aoc;
 use pancurses::*;
 use std::collections::HashMap;
 use std::iter::*;
+
+type Parsed = Vec<i128>;
 
 // 0 is an empty tile. No game object appears in this tile.
 // 1 is a wall tile. Walls are indestructible barriers.
@@ -9,20 +10,20 @@ use std::iter::*;
 // 3 is a horizontal paddle tile. The paddle is indestructible.
 // 4 is a ball tile. The ball moves diagonally and bounces off objects.
 
-fn part1(program: &Vec<i128>) -> i128 {
-    let mut m = intcode::Machine::new(&program);
+fn part1(program: &Parsed) -> i128 {
+    let mut m = intcode::Machine::new(program);
     let mut blocks = HashMap::new();
     loop {
         let x = m.run_to_next_output();
         let y = m.run_to_next_output();
         let tile = m.run_to_next_output();
-        if x.is_some() && y.is_some() && tile.is_some() {
-            blocks.insert((x.unwrap(), y.unwrap()), tile.unwrap());
+        if let (Some(x), Some(y), Some(tile)) = (x, y, tile) {
+            blocks.insert((x, y), tile);
         } else {
             break;
         }
     }
-    blocks.iter().map(|(_k, v)| *v).filter(|v| *v == 2).count() as i128
+    blocks.values().filter(|v| **v == 2).count() as i128
 }
 
 fn draw(window: &Window, x: i128, y: i128, v: i128, score: i128) -> Option<Input> {
@@ -44,7 +45,7 @@ fn draw(window: &Window, x: i128, y: i128, v: i128, score: i128) -> Option<Input
     }
 }
 
-fn part2(program: &Vec<i128>) -> i128 {
+fn part2(program: &Parsed) -> i128 {
     let window = initscr();
     nl();
     noecho();
@@ -52,7 +53,7 @@ fn part2(program: &Vec<i128>) -> i128 {
     window.keypad(true);
     window.scrollok(true);
     window.timeout(5);
-    let mut m = intcode::Machine::new(&program);
+    let mut m = intcode::Machine::new(program);
     *m.memory_mut().get_mut(0).unwrap() = 2;
     let mut score = -1;
     let mut paddle = (0, 0);

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fmt;
 
+#[allow(clippy::upper_case_acronyms)]
 pub enum Op {
     ADD,
     MUL,
@@ -58,7 +59,7 @@ enum Mode {
 fn mode(value: i128, pos: usize) -> Option<Mode> {
     let mut div = 100;
     for _ in 1..pos {
-        div = div * 10;
+        div *= 10;
     }
     let m = (value / div) % 10;
     match m {
@@ -117,11 +118,11 @@ impl Instruction {
         self.write += 1;
     }
 
-    pub fn read<'a>(&'a self) -> &'a [Arg] {
+    pub fn read(&self) -> &[Arg] {
         &self.args[0..self.read]
     }
 
-    pub fn write<'a>(&'a self) -> &'a [Arg] {
+    pub fn write(&self) -> &[Arg] {
         &self.args[self.read..(self.read + self.write)]
     }
 
@@ -150,7 +151,7 @@ impl fmt::Display for Instruction {
                 )?,
             }
         }
-        if self.write().len() > 0 {
+        if !self.write().is_empty() {
             write!(f, "-> ")?;
         }
         for w in self.write() {
@@ -321,22 +322,14 @@ impl Machine {
                         }
                         None
                     }
-                    Op::LTN => Some(
-                        if self.read_arg(&x.read()[0]) < self.read_arg(&x.read()[1]) {
-                            1
-                        } else {
-                            0
-                        },
-                    ),
-                    Op::EQL => Some(
-                        if self.read_arg(&x.read()[0]) == self.read_arg(&x.read()[1]) {
-                            1
-                        } else {
-                            0
-                        },
-                    ),
+                    Op::LTN => Some(i128::from(
+                        self.read_arg(&x.read()[0]) < self.read_arg(&x.read()[1]),
+                    )),
+                    Op::EQL => Some(i128::from(
+                        self.read_arg(&x.read()[0]) == self.read_arg(&x.read()[1]),
+                    )),
                     Op::SP => {
-                        self.relative_base = self.relative_base + self.read_arg(&x.read()[0]);
+                        self.relative_base += self.read_arg(&x.read()[0]);
                         None
                     }
                     Op::HLT => {
@@ -347,11 +340,9 @@ impl Machine {
                 if let Some(out) = v {
                     assert!(x.op.definition().2 == 1);
                     self.write_arg(&x.write()[0], out);
-                } else {
-                    if x.op.definition().2 != 0 {
-                        println!("{:?}", x.op.definition());
-                        assert!(x.op.definition().2 == 0);
-                    }
+                } else if x.op.definition().2 != 0 {
+                    println!("{:?}", x.op.definition());
+                    assert!(x.op.definition().2 == 0);
                 }
                 // Update stats
                 for r in x.read() {
@@ -381,9 +372,7 @@ impl Machine {
                 self.ip = next_pos;
                 state
             }
-            Disassembly::MemoryValue(_) => {
-                return State::Invalid;
-            }
+            Disassembly::MemoryValue(_) => State::Invalid,
         }
     }
 
@@ -434,7 +423,7 @@ impl Machine {
             Disassembly::Instruction(ins)
         } else {
             Disassembly::MemoryValue(MemoryValue {
-                address: address,
+                address,
                 value: val,
             })
         }
@@ -526,7 +515,7 @@ mod tests {
         let program = vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50];
         let mut m = Machine::with_input(&program, &[0]);
         m.run();
-        assert_eq!(m.memory.get(0), Some(&3500));
+        assert_eq!(m.memory.first(), Some(&3500));
         m.dump(10);
     }
 
@@ -537,7 +526,7 @@ mod tests {
         m.run();
         assert_eq!(m.outputs[0], 0);
         let mut m2 = Machine::with_input(&program, &[8]);
-        let _2 = m2.run();
+        m2.run();
         assert_eq!(m2.outputs[0], 1);
     }
 
@@ -548,7 +537,7 @@ mod tests {
         m.run();
         assert_eq!(m.outputs[0], 1);
         let mut m2 = Machine::with_input(&program, &[8]);
-        let _2 = m2.run();
+        m2.run();
         assert_eq!(m2.outputs[0], 0);
     }
 
@@ -559,7 +548,7 @@ mod tests {
         m.run();
         assert_eq!(m.outputs[0], 0);
         let mut m2 = Machine::with_input(&program, &[8]);
-        let _2 = m2.run();
+        m2.run();
         assert_eq!(m2.outputs[0], 1);
     }
 
@@ -570,7 +559,7 @@ mod tests {
         m.run();
         assert_eq!(m.outputs[0], 1);
         let mut m2 = Machine::with_input(&program, &[8]);
-        let _2 = m2.run();
+        m2.run();
         assert_eq!(m2.outputs[0], 0);
     }
 
@@ -581,7 +570,7 @@ mod tests {
         m.run();
         assert_eq!(m.outputs[0], 0);
         let mut m2 = Machine::with_input(&program, &[42]);
-        let _2 = m2.run();
+        m2.run();
         assert_eq!(m2.outputs[0], 1);
     }
 
@@ -592,7 +581,7 @@ mod tests {
         m.run();
         assert_eq!(m.outputs[0], 0);
         let mut m2 = Machine::with_input(&program, &[42]);
-        let _2 = m2.run();
+        m2.run();
         assert_eq!(m2.outputs[0], 1);
     }
 
@@ -607,10 +596,10 @@ mod tests {
         m.run();
         assert_eq!(m.outputs[0], 999);
         let mut m2 = Machine::with_input(&program, &[8]);
-        let _2 = m2.run();
+        m2.run();
         assert_eq!(m2.outputs[0], 1000);
         let mut m3 = Machine::with_input(&program, &[14]);
-        let _3 = m3.run();
+        m3.run();
         assert_eq!(m3.outputs[0], 1001);
     }
 

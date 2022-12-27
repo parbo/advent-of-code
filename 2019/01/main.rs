@@ -1,9 +1,6 @@
-use std::env;
-use std::fs::File;
-use std::io::prelude::*;
-use std::io::BufReader;
 use std::iter::*;
-use std::path::Path;
+
+type Parsed = Vec<i64>;
 
 fn get_fuel(mass: i64) -> i64 {
     std::cmp::max((mass / 3) - 2, 0)
@@ -14,37 +11,23 @@ fn get_fuel_recursive(mass: i64) -> i64 {
     if fuel <= 0 {
         return 0;
     }
-    return fuel + get_fuel_recursive(fuel);
+    fuel + get_fuel_recursive(fuel)
 }
 
-fn part1(masses: &Vec<i64>) -> i64 {
+fn part1(masses: &Parsed) -> i64 {
     masses.iter().map(|&m| get_fuel(m)).sum()
 }
 
-fn part2(masses: &Vec<i64>) -> i64 {
+fn part2(masses: &Parsed) -> i64 {
     masses.iter().map(|&m| get_fuel_recursive(m)).sum()
 }
 
-fn input(path: &Path) -> Vec<i64> {
-    let input = File::open(path).unwrap();
-    let buffered = BufReader::new(input);
-    let lines: Vec<String> = buffered.lines().filter_map(Result::ok).collect();
+fn parse(lines: &[String]) -> Parsed {
     lines.iter().map(|v| v.parse::<i64>().unwrap()).collect()
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    let part = args[1].parse::<i32>().unwrap();
-    let filename = &args[2];
-
-    let parsed = input(Path::new(&filename));
-
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

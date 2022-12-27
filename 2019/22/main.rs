@@ -1,5 +1,7 @@
 use std::iter::*;
 
+type Parsed = Vec<Shuffle>;
+
 enum Shuffle {
     DealIntoNewStack,
     Cut(i64),
@@ -64,7 +66,7 @@ fn shuffle(how: &Vec<Shuffle>, len: i128) -> Vec<i128> {
     new_deck
 }
 
-fn part1(input: &Vec<Shuffle>) -> i128 {
+fn part1(input: &Parsed) -> i128 {
     let len = 10007i128;
     let shuffled = shuffle(input, len);
     shuffled
@@ -75,7 +77,7 @@ fn part1(input: &Vec<Shuffle>) -> i128 {
         .0 as i128
 }
 
-fn part2(input: &Vec<Shuffle>) -> i128 {
+fn part2(input: &Parsed) -> i128 {
     let len = 119315717514047i128;
     let times = 101741582076661i128;
     // a*(a*(a*x + b) + b) + b = z
@@ -93,7 +95,7 @@ fn part2(input: &Vec<Shuffle>) -> i128 {
     pos_mod(ans, len)
 }
 
-fn parse(lines: &[String]) -> Vec<Shuffle> {
+fn parse(lines: &[String]) -> Parsed {
     let mut res = vec![];
     for line in lines {
         if line == "deal into new stack" {

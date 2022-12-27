@@ -81,9 +81,9 @@ fn whitespace_tokenizer(a: &str) -> Option<TokenizeResult> {
 
 fn comment_tokenizer(a: &str) -> Option<TokenizeResult> {
     let mut consumed = 0;
-    if a.starts_with("//") {
+    if let Some(stripped) = a.strip_prefix("//") {
         consumed += 2;
-        for (offset, char) in a[2..].char_indices() {
+        for (offset, char) in stripped.char_indices() {
             if char == '\n' {
                 break;
             } else {
@@ -249,7 +249,7 @@ fn not_equal_tokenizer(a: &str) -> Option<TokenizeResult> {
 }
 
 fn less_than_tokenizer(a: &str) -> Option<TokenizeResult> {
-    if a.starts_with("<") {
+    if a.starts_with('<') {
         Some(TokenizeResult(Token::LessThan, 1, true))
     } else {
         None
@@ -265,7 +265,7 @@ fn less_than_or_equal_tokenizer(a: &str) -> Option<TokenizeResult> {
 }
 
 fn greater_than_tokenizer(a: &str) -> Option<TokenizeResult> {
-    if a.starts_with(">") {
+    if a.starts_with('>') {
         Some(TokenizeResult(Token::GreaterThan, 1, true))
     } else {
         None
@@ -281,7 +281,7 @@ fn greater_than_or_equal_tokenizer(a: &str) -> Option<TokenizeResult> {
 }
 
 fn assign_tokenizer(a: &str) -> Option<TokenizeResult> {
-    if a.starts_with("=") {
+    if a.starts_with('=') {
         Some(TokenizeResult(Token::Assign, 1, true))
     } else {
         None
@@ -289,29 +289,15 @@ fn assign_tokenizer(a: &str) -> Option<TokenizeResult> {
 }
 
 fn is_identifier_start(c: char) -> bool {
-    match c {
-        'a'..='z' => true,
-        'A'..='Z' => true,
-        '_' => true,
-        _ => false,
-    }
+    matches!(c, 'a'..='z' | 'A'..='Z' | '_')
 }
 
 fn is_identifier_rest(c: char) -> bool {
-    match c {
-        '0'..='9' => true,
-        'a'..='z' => true,
-        'A'..='Z' => true,
-        '_' => true,
-        _ => false,
-    }
+    matches!(c, '0'..='9' | 'a'..='z' | 'A'..='Z' | '_')
 }
 
 fn is_decimal_number(c: char) -> bool {
-    match c {
-        '0'..='9' => true,
-        _ => false,
-    }
+    matches!(c, '0'..='9')
 }
 
 fn match_keyword(a: &str) -> Option<Keyword> {
@@ -330,10 +316,7 @@ fn match_keyword(a: &str) -> Option<Keyword> {
 }
 
 fn is_keyword(a: &str) -> bool {
-    match match_keyword(a) {
-        Some(_) => true,
-        _ => false,
-    }
+    matches!(match_keyword(a), Some(_))
 }
 
 fn match_identifier(a: &str) -> Option<&str> {
@@ -369,10 +352,7 @@ fn identifier_tokenizer(a: &str) -> Option<TokenizeResult> {
 fn keyword_tokenizer(a: &str) -> Option<TokenizeResult> {
     // Same as identifier, but with a reversed check for keyword-ness
     match match_identifier(a) {
-        Some(id) => match match_keyword(id) {
-            Some(op) => Some(TokenizeResult(Token::Keyword(op), id.len(), true)),
-            _ => None,
-        },
+        Some(id) => match_keyword(id).map(|op| TokenizeResult(Token::Keyword(op), id.len(), true)),
         _ => None,
     }
 }
@@ -652,7 +632,7 @@ fn parse_factor(tokens: &[TokenWithLocation]) -> Result<(Expression, usize), Par
             Ok((Expression::VariableReference(name.clone()), 1))
         }
         _ => {
-            if tokens.len() > 0 {
+            if !tokens.is_empty() {
                 Err(ParseError::SyntaxError(
                     "Expected factor".into(),
                     tokens[0].1.clone(),
@@ -1006,39 +986,39 @@ fn parse_conditional_expression(
                 offset += 1;
                 if let Ok((exp_b, new_offset)) = parse_conditional_expression(&tokens[offset..]) {
                     offset += new_offset;
-                    return Ok((
+                    Ok((
                         Expression::Conditional(Box::new(loe), Box::new(exp_a), Box::new(exp_b)),
                         offset,
-                    ));
+                    ))
                 } else {
-                    return Err(ParseError::SyntaxError(
+                    Err(ParseError::SyntaxError(
                         "Expected expression after 'exp ? exp :'".into(),
                         tokens[offset].1.clone(),
-                    ));
+                    ))
                 }
             } else {
-                return Err(ParseError::SyntaxError(
+                Err(ParseError::SyntaxError(
                     "Expected ':' after 'exp ? exp'".into(),
                     tokens[offset].1.clone(),
-                ));
+                ))
             }
         } else {
-            return Err(ParseError::SyntaxError(
+            Err(ParseError::SyntaxError(
                 "Expected expression after '?'".into(),
                 tokens[offset].1.clone(),
-            ));
+            ))
         }
     } else {
-        return Ok((loe, o));
+        Ok((loe, o))
     }
 }
 
 fn parse_expression(tokens: &[TokenWithLocation]) -> Result<(Expression, usize), ParseError> {
     let mut offset = 0;
     if let Some(TokenWithLocation(Token::Identifier(name), _)) = tokens[offset..].iter().next() {
-        offset = offset + 1;
+        offset += 1;
         if let Some(TokenWithLocation(Token::Assign, loc)) = tokens[offset..].iter().next() {
-            offset = offset + 1;
+            offset += 1;
             if let Ok((exp, new_offset)) = parse_expression(&tokens[offset..]) {
                 return Ok((
                     Expression::Assignment(name.clone(), Box::new(exp)),
@@ -1081,7 +1061,7 @@ fn parse_for_common(
         if let TokenWithLocation(Token::SemiColon, _) = tokens[offset..]
             .iter()
             .next()
-            .ok_or_else(|| ParseError::UnexpectedEOF)?
+            .ok_or(ParseError::UnexpectedEOF)?
         {
             offset += 1;
             if let Ok((opt_exp_post, new_offset)) = parse_optional_expression(&tokens[offset..]) {
@@ -1089,7 +1069,7 @@ fn parse_for_common(
                 if let TokenWithLocation(Token::CloseParen, _) = tokens[offset..]
                     .iter()
                     .next()
-                    .ok_or_else(|| ParseError::UnexpectedEOF)?
+                    .ok_or(ParseError::UnexpectedEOF)?
                 {
                     offset += 1;
                     let cond = if let Some(exp) = opt_exp_cond {
@@ -1106,10 +1086,10 @@ fn parse_for_common(
             }
         }
     }
-    return Err(ParseError::SyntaxError(
+    Err(ParseError::SyntaxError(
         "Could not parse 'for' statement 1".into(),
         tokens[offset].1.clone(),
-    ));
+    ))
 }
 
 fn parse_statement(tokens: &[TokenWithLocation]) -> Result<(Statement, usize), ParseError> {
@@ -1120,20 +1100,20 @@ fn parse_statement(tokens: &[TokenWithLocation]) -> Result<(Statement, usize), P
                 if let TokenWithLocation(Token::SemiColon, _) = tokens[(1 + offset)..]
                     .iter()
                     .next()
-                    .ok_or_else(|| ParseError::UnexpectedEOF)?
+                    .ok_or(ParseError::UnexpectedEOF)?
                 {
-                    return Ok((Statement::Return(exp), 1 + offset + 1));
+                    Ok((Statement::Return(exp), 1 + offset + 1))
                 } else {
-                    return Err(ParseError::SyntaxError(
+                    Err(ParseError::SyntaxError(
                         "Expected ; at end of return statement".into(),
                         tokens[offset].1.clone(),
-                    ));
+                    ))
                 }
             } else {
-                return Err(ParseError::SyntaxError(
+                Err(ParseError::SyntaxError(
                     "Expected expression after return".into(),
                     loc.clone(),
-                ));
+                ))
             }
         }
         Some(TokenWithLocation(Token::Keyword(Keyword::If), loc)) => {
@@ -1141,7 +1121,7 @@ fn parse_statement(tokens: &[TokenWithLocation]) -> Result<(Statement, usize), P
             if let TokenWithLocation(Token::OpenParen, _) = tokens[offset..]
                 .iter()
                 .next()
-                .ok_or_else(|| ParseError::UnexpectedEOF)?
+                .ok_or(ParseError::UnexpectedEOF)?
             {
                 offset += 1;
                 if let Ok((exp, new_offset)) = parse_expression(&tokens[offset..]) {
@@ -1149,7 +1129,7 @@ fn parse_statement(tokens: &[TokenWithLocation]) -> Result<(Statement, usize), P
                     if let TokenWithLocation(Token::CloseParen, _) = tokens[offset..]
                         .iter()
                         .next()
-                        .ok_or_else(|| ParseError::UnexpectedEOF)?
+                        .ok_or(ParseError::UnexpectedEOF)?
                     {
                         offset += 1;
                         if let Ok((statement, new_offset)) = parse_statement(&tokens[offset..]) {
@@ -1171,37 +1151,37 @@ fn parse_statement(tokens: &[TokenWithLocation]) -> Result<(Statement, usize), P
                                     ));
                                 }
                             }
-                            return Ok((
+                            Ok((
                                 Statement::Conditional(
                                     exp,
                                     Box::new(statement),
                                     opt_else_statement,
                                 ),
                                 offset,
-                            ));
+                            ))
                         } else {
-                            return Err(ParseError::SyntaxError(
+                            Err(ParseError::SyntaxError(
                                 "Expected statement after 'if (expression)'".into(),
                                 tokens[offset].1.clone(),
-                            ));
+                            ))
                         }
                     } else {
-                        return Err(ParseError::SyntaxError(
+                        Err(ParseError::SyntaxError(
                             "Expected ) after 'if (expression'".into(),
                             tokens[offset].1.clone(),
-                        ));
+                        ))
                     }
                 } else {
-                    return Err(ParseError::SyntaxError(
+                    Err(ParseError::SyntaxError(
                         "Expected expression after 'if ('".into(),
                         tokens[offset].1.clone(),
-                    ));
+                    ))
                 }
             } else {
-                return Err(ParseError::SyntaxError(
+                Err(ParseError::SyntaxError(
                     "Expected ( after if".into(),
                     loc.clone(),
-                ));
+                ))
             }
         }
         Some(TokenWithLocation(Token::OpenBrace, _)) => {
@@ -1212,7 +1192,7 @@ fn parse_statement(tokens: &[TokenWithLocation]) -> Result<(Statement, usize), P
                 match res {
                     Ok((blockitem, new_offset)) => {
                         blockitems.push(blockitem);
-                        offset = offset + new_offset;
+                        offset += new_offset;
                     }
                     Err(e) => {
                         break e;
@@ -1222,11 +1202,11 @@ fn parse_statement(tokens: &[TokenWithLocation]) -> Result<(Statement, usize), P
             if let TokenWithLocation(Token::CloseBrace, _) = tokens[offset..]
                 .iter()
                 .next()
-                .ok_or_else(|| ParseError::UnexpectedEOF)?
+                .ok_or(ParseError::UnexpectedEOF)?
             {
-                return Ok((Statement::Compound(blockitems), offset + 1));
+                Ok((Statement::Compound(blockitems), offset + 1))
             } else {
-                return Err(err);
+                Err(err)
             }
         }
         Some(TokenWithLocation(Token::Keyword(Keyword::For), _)) => {
@@ -1234,7 +1214,7 @@ fn parse_statement(tokens: &[TokenWithLocation]) -> Result<(Statement, usize), P
             if let TokenWithLocation(Token::OpenParen, _) = tokens[offset..]
                 .iter()
                 .next()
-                .ok_or_else(|| ParseError::UnexpectedEOF)?
+                .ok_or(ParseError::UnexpectedEOF)?
             {
                 offset += 1;
                 if let Ok((decl, decl_offset)) = parse_declaration(&tokens[offset..]) {
@@ -1254,7 +1234,7 @@ fn parse_statement(tokens: &[TokenWithLocation]) -> Result<(Statement, usize), P
                         tokens[offset..]
                             .iter()
                             .next()
-                            .ok_or_else(|| ParseError::UnexpectedEOF)?
+                            .ok_or(ParseError::UnexpectedEOF)?
                     {
                         offset += 1;
                         let (cond, opt_exp_post, statement, new_offset) =
@@ -1267,17 +1247,17 @@ fn parse_statement(tokens: &[TokenWithLocation]) -> Result<(Statement, usize), P
                     }
                 }
             }
-            return Err(ParseError::SyntaxError(
+            Err(ParseError::SyntaxError(
                 "Could not parse 'for' statement".into(),
                 tokens[offset].1.clone(),
-            ));
+            ))
         }
         Some(TokenWithLocation(Token::Keyword(Keyword::While), _)) => {
             let mut offset = 1;
             if let TokenWithLocation(Token::OpenParen, _) = tokens[offset..]
                 .iter()
                 .next()
-                .ok_or_else(|| ParseError::UnexpectedEOF)?
+                .ok_or(ParseError::UnexpectedEOF)?
             {
                 offset += 1;
                 if let Ok((exp, new_offset)) = parse_expression(&tokens[offset..]) {
@@ -1285,7 +1265,7 @@ fn parse_statement(tokens: &[TokenWithLocation]) -> Result<(Statement, usize), P
                     if let TokenWithLocation(Token::CloseParen, _) = tokens[offset..]
                         .iter()
                         .next()
-                        .ok_or_else(|| ParseError::UnexpectedEOF)?
+                        .ok_or(ParseError::UnexpectedEOF)?
                     {
                         offset += 1;
                         if let Ok((statement, new_offset)) = parse_statement(&tokens[offset..]) {
@@ -1295,10 +1275,10 @@ fn parse_statement(tokens: &[TokenWithLocation]) -> Result<(Statement, usize), P
                     }
                 }
             }
-            return Err(ParseError::SyntaxError(
+            Err(ParseError::SyntaxError(
                 "Could not parse 'while' statement".into(),
                 tokens[offset].1.clone(),
-            ));
+            ))
         }
         Some(TokenWithLocation(Token::Keyword(Keyword::Do), _)) => {
             let mut offset = 1;
@@ -1307,7 +1287,7 @@ fn parse_statement(tokens: &[TokenWithLocation]) -> Result<(Statement, usize), P
                 if let TokenWithLocation(Token::Keyword(Keyword::While), _) = tokens[offset..]
                     .iter()
                     .next()
-                    .ok_or_else(|| ParseError::UnexpectedEOF)?
+                    .ok_or(ParseError::UnexpectedEOF)?
                 {
                     offset += 1;
                     if let Ok((exp, new_offset)) = parse_expression(&tokens[offset..]) {
@@ -1315,70 +1295,63 @@ fn parse_statement(tokens: &[TokenWithLocation]) -> Result<(Statement, usize), P
                         if let TokenWithLocation(Token::SemiColon, _) = tokens[offset..]
                             .iter()
                             .next()
-                            .ok_or_else(|| ParseError::UnexpectedEOF)?
+                            .ok_or(ParseError::UnexpectedEOF)?
                         {
                             return Ok((Statement::While(exp, Box::new(statement)), offset));
                         }
                     }
                 }
             }
-            return Err(ParseError::SyntaxError(
+            Err(ParseError::SyntaxError(
                 "Could not parse 'do' statement".into(),
                 tokens[offset].1.clone(),
-            ));
+            ))
         }
         Some(TokenWithLocation(Token::Keyword(Keyword::Break), _)) => {
-            if let TokenWithLocation(Token::SemiColon, _) = tokens[1..]
-                .iter()
-                .next()
-                .ok_or_else(|| ParseError::UnexpectedEOF)?
+            if let TokenWithLocation(Token::SemiColon, _) =
+                tokens.get(1).ok_or(ParseError::UnexpectedEOF)?
             {
-                return Ok((Statement::Break, 2));
+                Ok((Statement::Break, 2))
             } else {
-                return Err(ParseError::SyntaxError(
+                Err(ParseError::SyntaxError(
                     "Expected ; after 'break'".into(),
                     tokens[1].1.clone(),
-                ));
+                ))
             }
         }
         Some(TokenWithLocation(Token::Keyword(Keyword::Continue), _)) => {
-            if let TokenWithLocation(Token::SemiColon, _) = tokens[1..]
-                .iter()
-                .next()
-                .ok_or_else(|| ParseError::UnexpectedEOF)?
+            if let TokenWithLocation(Token::SemiColon, _) =
+                tokens.get(1).ok_or(ParseError::UnexpectedEOF)?
             {
-                return Ok((Statement::Continue, 2));
+                Ok((Statement::Continue, 2))
             } else {
-                return Err(ParseError::SyntaxError(
+                Err(ParseError::SyntaxError(
                     "Expected ; after 'continue'".into(),
                     tokens[1].1.clone(),
-                ));
+                ))
             }
         }
         _ => {
-            if let Ok((optional_expression, new_offset)) = parse_optional_expression(&tokens) {
-                if let TokenWithLocation(Token::SemiColon, _) =
-                    tokens[new_offset..]
-                        .iter()
-                        .next()
-                        .ok_or_else(|| ParseError::UnexpectedEOF)?
+            if let Ok((optional_expression, new_offset)) = parse_optional_expression(tokens) {
+                if let TokenWithLocation(Token::SemiColon, _) = tokens[new_offset..]
+                    .iter()
+                    .next()
+                    .ok_or(ParseError::UnexpectedEOF)?
                 {
-                    return Ok((Statement::Expression(optional_expression), new_offset + 1));
+                    Ok((Statement::Expression(optional_expression), new_offset + 1))
                 } else {
-                    return Err(ParseError::SyntaxError(
+                    Err(ParseError::SyntaxError(
                         "Expected ; at end of expression statement".into(),
                         tokens[new_offset].1.clone(),
-                    ));
+                    ))
                 }
+            } else if !tokens.is_empty() {
+                Err(ParseError::SyntaxError(
+                    "Expected expression".into(),
+                    tokens[0].1.clone(),
+                ))
             } else {
-                if tokens.len() > 0 {
-                    return Err(ParseError::SyntaxError(
-                        "Expected expression".into(),
-                        tokens[0].1.clone(),
-                    ));
-                } else {
-                    return Err(ParseError::UnexpectedEOF);
-                }
+                Err(ParseError::UnexpectedEOF)
             }
         }
     }
@@ -1386,54 +1359,50 @@ fn parse_statement(tokens: &[TokenWithLocation]) -> Result<(Statement, usize), P
 
 fn parse_declaration(tokens: &[TokenWithLocation]) -> Result<(Declaration, usize), ParseError> {
     let mut it = tokens.iter();
-    match it.next() {
-        Some(TokenWithLocation(Token::Keyword(Keyword::Int), _)) => {
-            let mut offset = 1;
-            let mut opt_assign = None;
-            if let TokenWithLocation(Token::Identifier(name), _) = tokens[offset..]
-                .iter()
-                .next()
-                .ok_or_else(|| ParseError::UnexpectedEOF)?
-            {
-                offset = offset + 1;
-                if let Some(TokenWithLocation(Token::Assign, loc)) = tokens[offset..].iter().next()
-                {
-                    offset = offset + 1;
-                    if let Ok((exp, new_offset)) = parse_expression(&tokens[offset..]) {
-                        offset = offset + new_offset;
-                        opt_assign = Some(exp);
-                    } else {
-                        return Err(ParseError::SyntaxError(
-                            "Expected expression after =".into(),
-                            loc.clone(),
-                        ));
-                    }
-                } else {
-                    // assignment is optional.
-                }
-                if let TokenWithLocation(Token::SemiColon, _) = tokens[offset..]
-                    .iter()
-                    .next()
-                    .ok_or_else(|| ParseError::UnexpectedEOF)?
-                {
-                    return Ok((Declaration::Variable(name.clone(), opt_assign), offset + 1));
+    if let Some(TokenWithLocation(Token::Keyword(Keyword::Int), _)) = it.next() {
+        let mut offset = 1;
+        let mut opt_assign = None;
+        if let TokenWithLocation(Token::Identifier(name), _) = tokens[offset..]
+            .iter()
+            .next()
+            .ok_or(ParseError::UnexpectedEOF)?
+        {
+            offset += 1;
+            if let Some(TokenWithLocation(Token::Assign, loc)) = tokens[offset..].iter().next() {
+                offset += 1;
+                if let Ok((exp, new_offset)) = parse_expression(&tokens[offset..]) {
+                    offset += new_offset;
+                    opt_assign = Some(exp);
                 } else {
                     return Err(ParseError::SyntaxError(
-                        "Expected ; after declaration".into(),
-                        tokens[offset - 1].1.clone(),
+                        "Expected expression after =".into(),
+                        loc.clone(),
                     ));
                 }
+            } else {
+                // assignment is optional.
+            }
+            if let TokenWithLocation(Token::SemiColon, _) = tokens[offset..]
+                .iter()
+                .next()
+                .ok_or(ParseError::UnexpectedEOF)?
+            {
+                return Ok((Declaration::Variable(name.clone(), opt_assign), offset + 1));
+            } else {
+                return Err(ParseError::SyntaxError(
+                    "Expected ; after declaration".into(),
+                    tokens[offset - 1].1.clone(),
+                ));
             }
         }
-        _ => {}
     }
-    if tokens.len() > 0 {
-        return Err(ParseError::SyntaxError(
+    if !tokens.is_empty() {
+        Err(ParseError::SyntaxError(
             "Expected declaration".into(),
             tokens[0].1.clone(),
-        ));
+        ))
     } else {
-        return Err(ParseError::UnexpectedEOF);
+        Err(ParseError::UnexpectedEOF)
     }
 }
 
@@ -1454,19 +1423,19 @@ fn parse_blockitem(tokens: &[TokenWithLocation]) -> Result<(BlockItem, usize), P
 fn parse_function(tokens: &[TokenWithLocation]) -> Result<(Function, usize), ParseError> {
     let mut it = tokens.iter();
     if let TokenWithLocation(Token::Keyword(Keyword::Int), _) =
-        it.next().ok_or_else(|| ParseError::UnexpectedEOF)?
+        it.next().ok_or(ParseError::UnexpectedEOF)?
     {
         if let TokenWithLocation(Token::Identifier(name), _) =
-            it.next().ok_or_else(|| ParseError::UnexpectedEOF)?
+            it.next().ok_or(ParseError::UnexpectedEOF)?
         {
             if let TokenWithLocation(Token::OpenParen, loc) =
-                it.next().ok_or_else(|| ParseError::UnexpectedEOF)?
+                it.next().ok_or(ParseError::UnexpectedEOF)?
             {
                 if let TokenWithLocation(Token::CloseParen, loc) =
-                    it.next().ok_or_else(|| ParseError::UnexpectedEOF)?
+                    it.next().ok_or(ParseError::UnexpectedEOF)?
                 {
                     if let TokenWithLocation(Token::OpenBrace, _) =
-                        it.next().ok_or_else(|| ParseError::UnexpectedEOF)?
+                        it.next().ok_or(ParseError::UnexpectedEOF)?
                     {
                         let mut blockitems = vec![];
                         let mut offset = 5;
@@ -1475,7 +1444,7 @@ fn parse_function(tokens: &[TokenWithLocation]) -> Result<(Function, usize), Par
                             match res {
                                 Ok((blockitem, new_offset)) => {
                                     blockitems.push(blockitem);
-                                    offset = offset + new_offset;
+                                    offset += new_offset;
                                 }
                                 Err(e) => {
                                     break e;
@@ -1485,7 +1454,7 @@ fn parse_function(tokens: &[TokenWithLocation]) -> Result<(Function, usize), Par
                         if let TokenWithLocation(Token::CloseBrace, _) = tokens[offset..]
                             .iter()
                             .next()
-                            .ok_or_else(|| ParseError::UnexpectedEOF)?
+                            .ok_or(ParseError::UnexpectedEOF)?
                         {
                             return Ok((Function::Function(name.clone(), blockitems), offset + 1));
                         } else {
@@ -1529,11 +1498,11 @@ pub fn parse(a: &[TokenWithLocation]) -> Result<Program, ParseError> {
 fn test_comment_tokenizer_comment() {
     let result = comment_tokenizer("// blah");
     match result {
-        None => assert!(false),
+        None => unreachable!(),
         Some(TokenizeResult(token, consumed, emit)) => {
             assert_eq!(token, Token::Comment);
             assert_eq!(consumed, 7);
-            assert_eq!(emit, false);
+            assert!(!emit);
         }
     }
 }
@@ -1543,7 +1512,7 @@ fn test_comment_tokenizer_non_comment() {
     let result = comment_tokenizer("blah");
     match result {
         None => {}
-        Some(_) => assert!(false),
+        Some(_) => unreachable!(),
     }
 }
 

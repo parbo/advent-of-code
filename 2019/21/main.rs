@@ -1,7 +1,8 @@
-use aoc;
 use intcode::*;
 use rustyline::Editor;
-use std::collections::VecDeque;
+use std::{cmp::Ordering, collections::VecDeque};
+
+type Parsed = Vec<i128>;
 
 // >> NOT A J
 // >> NOT B T
@@ -10,7 +11,7 @@ use std::collections::VecDeque;
 // >> OR T J
 // >> AND D J
 // >> WALK
-fn part1(program: &Vec<i128>) -> i128 {
+fn part1(program: &Parsed) -> i128 {
     let mut m = Machine::new(program);
     let mut rl = Editor::<()>::new();
     let mut state = m.run_to_next_io();
@@ -18,7 +19,7 @@ fn part1(program: &Vec<i128>) -> i128 {
         match state {
             State::Output => {
                 for o in m.outputs() {
-                    if o >= 0 && o < 256 {
+                    if (0..256).contains(&o) {
                         print!("{}", std::char::from_u32(o as u32).unwrap());
                     } else {
                         println!("value: {}", o);
@@ -65,30 +66,36 @@ fn write(v: u32, ch: char, b: bool) -> u32 {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[allow(clippy::upper_case_acronyms)]
 enum Instruction {
     NOT,
     AND,
     OR,
 }
 
+#[allow(clippy::same_item_push)]
 fn poss(curr: &Vec<bool>, res: &mut Vec<Vec<bool>>, len: usize) {
-    if curr.len() < len {
-        for a in &[false, true] {
-            if *a {
-                let mut c = curr.clone();
-                c.push(true);
-                poss(&c, res, len);
-            } else if curr.len() + 4 < len {
-                let mut c = curr.clone();
-                for _ in 0..3 {
-                    c.push(false);
+    match curr.len().cmp(&len) {
+        Ordering::Less => {
+            for a in &[false, true] {
+                if *a {
+                    let mut c = curr.clone();
+                    c.push(true);
+                    poss(&c, res, len);
+                } else if curr.len() + 4 < len {
+                    let mut c = curr.clone();
+                    for _ in 0..3 {
+                        c.push(false);
+                    }
+                    c.push(true);
+                    poss(&c, res, len);
                 }
-                c.push(true);
-                poss(&c, res, len);
             }
         }
-    } else if curr.len() == len {
-        res.push(curr.clone());
+        Ordering::Equal => {
+            res.push(curr.clone());
+        }
+        _ => (),
     }
 }
 
@@ -103,13 +110,15 @@ fn validate(possible: &Vec<Vec<bool>>, prog: &[(Instruction, char, char)]) -> bo
         let mut pos = 0;
         while pos < 10 {
             let mut s: u32 = 0;
-            v.iter().skip(pos).enumerate().for_each(|(i, x)| {
-                if *x {
-                    s = s | (1 << i)
-                } else {
-                    s = s & !(1 << i)
-                }
-            });
+            v.iter().skip(pos).enumerate().for_each(
+                |(i, x)| {
+                    if *x {
+                        s |= 1 << i
+                    } else {
+                        s &= !(1 << i)
+                    }
+                },
+            );
             println!("{:b}", s);
             for (ins, o1, o2) in prog {
                 match ins {
@@ -198,13 +207,13 @@ fn from_ins(ins: &(Instruction, char, char)) -> u8 {
         'J' => 10,
         _ => panic!(),
     };
-    r = r | (ch_a << 2);
+    r |= ch_a << 2;
     let ch_b = match ins.2 {
         'T' => 0,
         'J' => 1,
         _ => panic!(),
     };
-    r = r | (ch_b << 6);
+    r |= ch_b << 6;
     r
 }
 
@@ -220,18 +229,16 @@ fn search() {
             last_len = s.len();
         }
         for instruction in &[Instruction::NOT, Instruction::AND, Instruction::OR] {
-            if *instruction == Instruction::NOT {
-                if s.iter().map(|(c, _, _)| c).any(|x| *x == Instruction::NOT) {
-                    // Only one NOT allowed
-                    continue;
-                }
+            if *instruction == Instruction::NOT
+                && s.iter().map(|(c, _, _)| c).any(|x| *x == Instruction::NOT)
+            {
+                // Only one NOT allowed
+                continue;
             }
             for a in &['A', 'B', 'C', 'D', 'E', 'H', 'T', 'J'] {
-                if *a != 'T' && *a != 'J' {
-                    if s.iter().map(|(_, i, _)| i).any(|x| x == a) {
-                        // println!("already read {}", a);
-                        continue;
-                    }
+                if *a != 'T' && *a != 'J' && s.iter().map(|(_, i, _)| i).any(|x| x == a) {
+                    // println!("already read {}", a);
+                    continue;
                 }
                 for b in &['T', 'J'] {
                     if *instruction != Instruction::NOT && a == b {
@@ -246,7 +253,7 @@ fn search() {
                         solutions.push(new_s);
                         break;
                     } else {
-                        q.push_back(new_s.iter().map(|x| from_ins(x)).collect());
+                        q.push_back(new_s.iter().map(from_ins).collect());
                     }
                 }
             }
@@ -254,7 +261,7 @@ fn search() {
         if s.len() > 15 {
             break;
         }
-        if solutions.len() > 0 {
+        if !solutions.is_empty() {
             break;
         }
         s = if let Some(x) = q.pop_front() {

@@ -1,10 +1,11 @@
-use aoc;
-// use intcode;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::iter::*;
 
-fn bd(grid: &Vec<Vec<char>>) -> i64 {
+type Parsed = Vec<Vec<char>>;
+
+#[allow(clippy::needless_range_loop)]
+fn bd(grid: &Parsed) -> i64 {
     let h = grid.len();
     let w = grid[0].len();
     let mut bd = 1;
@@ -16,7 +17,7 @@ fn bd(grid: &Vec<Vec<char>>) -> i64 {
             if grid[y][x] == '#' {
                 res += bd;
             }
-            bd = bd * 2;
+            bd *= 2;
         }
         println!();
     }
@@ -52,7 +53,7 @@ fn draw(g: &HashMap<(i64, i64, i64), char>) {
     println!("total bugs: {}", tot);
 }
 
-fn part2(grid: &Vec<Vec<char>>) -> i64 {
+fn part2(grid: &Parsed) -> i64 {
     solve(grid, 200)
 }
 
@@ -68,7 +69,8 @@ fn add_level(g: &mut HashMap<(i64, i64, i64), char>, level: i64) {
     }
 }
 
-fn solve(grid: &Vec<Vec<char>>, it: i64) -> i64 {
+#[allow(clippy::needless_range_loop)]
+fn solve(grid: &Parsed, it: i64) -> i64 {
     let mut g = HashMap::new();
     let mut yy = -2;
     for y in 0..5 {
@@ -89,8 +91,8 @@ fn solve(grid: &Vec<Vec<char>>, it: i64) -> i64 {
     draw(&g);
     loop {
         let mut new_g = g.clone();
-        let lev_min = g.iter().map(|(k, _)| k.0).min().unwrap();
-        let lev_max = g.iter().map(|(k, _)| k.0).max().unwrap();
+        let lev_min = g.keys().map(|k| k.0).min().unwrap();
+        let lev_max = g.keys().map(|k| k.0).max().unwrap();
         add_level(&mut new_g, lev_max + 1);
         add_level(&mut new_g, lev_min - 1);
         let mut changes = vec![];
@@ -132,32 +134,30 @@ fn solve(grid: &Vec<Vec<char>>, it: i64) -> i64 {
                     } else {
                         panic!();
                     }
+                } else if *ny > 2 {
+                    let v = new_g.entry((*level - 1, 0, 1)).or_insert('.');
+                    if *v == '#' {
+                        c += 1;
+                    }
+                } else if *ny < -2 {
+                    let v = new_g.entry((*level - 1, 0, -1)).or_insert('.');
+                    if *v == '#' {
+                        c += 1;
+                    }
+                } else if *nx > 2 {
+                    let v = new_g.entry((*level - 1, 1, 0)).or_insert('.');
+                    if *v == '#' {
+                        c += 1;
+                    }
+                } else if *nx < -2 {
+                    let v = new_g.entry((*level - 1, -1, 0)).or_insert('.');
+                    if *v == '#' {
+                        c += 1;
+                    }
                 } else {
-                    if *ny > 2 {
-                        let v = new_g.entry((*level - 1, 0, 1)).or_insert('.');
-                        if *v == '#' {
-                            c += 1;
-                        }
-                    } else if *ny < -2 {
-                        let v = new_g.entry((*level - 1, 0, -1)).or_insert('.');
-                        if *v == '#' {
-                            c += 1;
-                        }
-                    } else if *nx > 2 {
-                        let v = new_g.entry((*level - 1, 1, 0)).or_insert('.');
-                        if *v == '#' {
-                            c += 1;
-                        }
-                    } else if *nx < -2 {
-                        let v = new_g.entry((*level - 1, -1, 0)).or_insert('.');
-                        if *v == '#' {
-                            c += 1;
-                        }
-                    } else {
-                        let v = new_g.entry((*level, *nx, *ny)).or_insert('.');
-                        if *v == '#' {
-                            c += 1;
-                        }
+                    let v = new_g.entry((*level, *nx, *ny)).or_insert('.');
+                    if *v == '#' {
+                        c += 1;
                     }
                 }
             }
@@ -165,10 +165,8 @@ fn solve(grid: &Vec<Vec<char>>, it: i64) -> i64 {
                 if c == 1 || c == 2 {
                     changes.push(((*level, *x, *y), '#'));
                 }
-            } else {
-                if c != 1 {
-                    changes.push(((*level, *x, *y), '.'));
-                }
+            } else if c != 1 {
+                changes.push(((*level, *x, *y), '.'));
             }
         }
         for (k, v) in changes {
@@ -184,7 +182,7 @@ fn solve(grid: &Vec<Vec<char>>, it: i64) -> i64 {
     }
 }
 
-fn part1(grid: &Vec<Vec<char>>) -> i64 {
+fn part1(grid: &Parsed) -> i64 {
     let h = grid.len() as i64;
     let w = grid[0].len() as i64;
     let mut g = grid.clone();
@@ -232,7 +230,7 @@ fn part1(grid: &Vec<Vec<char>>) -> i64 {
     0
 }
 
-fn parse(lines: &[String]) -> Vec<Vec<char>> {
+fn parse(lines: &[String]) -> Parsed {
     lines.iter().map(|x| x.chars().collect()).collect()
 }
 

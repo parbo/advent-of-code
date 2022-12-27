@@ -1,5 +1,3 @@
-use aoc;
-
 extern crate intcode;
 
 type Parsed = Vec<i128>;

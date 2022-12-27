@@ -145,7 +145,7 @@ jobs:
     - name: Run clippy
       run: cargo clippy --manifest-path=2019/Cargo.toml
 
-  formatYear2017:
+  formatYear2019:
 
     runs-on: ubuntu-latest
     steps:

@@ -1,7 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::iter::*;
 
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Program {
     name: String,

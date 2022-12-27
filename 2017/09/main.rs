@@ -1,7 +1,6 @@
 use std::iter::*;
 use std::ops::Range;
 
-
 type Parsed = Vec<char>;
 type Answer = i64;
 

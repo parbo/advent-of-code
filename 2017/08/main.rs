@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::iter::*;
 
-
 #[derive(parse_display::Display, parse_display::FromStr, Debug, Clone, Copy, PartialEq, Eq)]
 #[display(style = "snake_case")]
 enum Op {

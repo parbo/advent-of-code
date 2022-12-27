@@ -2,7 +2,6 @@ use aoc::*;
 use std::collections::HashSet;
 use std::iter::*;
 
-
 type ParsedItem = Vec<String>;
 type Parsed = Vec<ParsedItem>;
 type Answer = i64;

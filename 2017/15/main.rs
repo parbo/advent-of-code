@@ -1,6 +1,5 @@
 use std::iter::*;
 
-
 type Parsed = (i64, i64);
 type Answer = i64;
 

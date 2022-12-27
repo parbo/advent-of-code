@@ -1,6 +1,5 @@
 use std::iter::*;
 
-
 #[derive(Debug, Clone)]
 struct Connection {
     from: String,

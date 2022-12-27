@@ -1,7 +1,6 @@
 use std::collections::HashSet;
 use std::iter::*;
 
-
 // #[derive(parse_display::Display, parse_display::FromStr, Debug, Clone, PartialEq, Eq, Hash)]
 // #[display("{thing}: {al}-{ah} or {bl}-{bh}")]
 // struct Rule {

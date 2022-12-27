@@ -1,7 +1,6 @@
 use std::iter::*;
 use std::str::FromStr;
 
-
 #[derive(Debug, PartialEq, Eq, Hash, Clone, PartialOrd, Ord)]
 enum Node {
     Start,

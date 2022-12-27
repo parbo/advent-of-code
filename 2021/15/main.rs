@@ -2,7 +2,6 @@
 
 use aoc::Grid;
 
-
 type ParsedItem = Vec<i64>;
 type Parsed = Vec<ParsedItem>;
 type Answer = i64;

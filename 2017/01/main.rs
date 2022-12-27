@@ -1,6 +1,5 @@
 use std::iter::*;
 
-
 type ParsedItem = u32;
 type Parsed = Vec<ParsedItem>;
 type Answer = u32;

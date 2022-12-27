@@ -14,3 +14,6 @@ features = ["win32"]
 [[bin]]
 name = 'day11'
 path = 'main.rs'
+
+[features]
+vis = []

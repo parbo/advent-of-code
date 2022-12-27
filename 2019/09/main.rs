@@ -13,14 +13,7 @@ fn part2(numbers: &Parsed) -> i128 {
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = intcode::parse_intcode(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(intcode::parse_intcode, part1, part2);
 }
 
 #[cfg(test)]

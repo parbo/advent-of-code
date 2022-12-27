@@ -121,14 +121,18 @@ fn print_hull(hull: &HashMap<(i128, i128), i128>) {
 }
 
 fn part2(numbers: &Parsed) -> i128 {
-    let window = initscr();
-    nl();
-    noecho();
-    curs_set(0);
-    window.keypad(true);
-    window.scrollok(true);
-    window.timeout(20);
-    let hull = paint(numbers, 1, Some(&window));
+    let hull = if cfg!(feature = "vis") {
+        let window = initscr();
+        nl();
+        noecho();
+        curs_set(0);
+        window.keypad(true);
+        window.scrollok(true);
+        window.timeout(20);
+        paint(numbers, 1, Some(&window))
+    } else {
+        paint(numbers, 1, None)
+    };
     print_hull(&hull);
     0
 }
@@ -286,14 +290,7 @@ impl Disassembled {
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = intcode::parse_intcode(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(intcode::parse_intcode, part1, part2);
 
     let mut d = Disassembled::new();
     d.run();

@@ -10,3 +10,6 @@ parse-display = "0.4.0"
 [[bin]]
 name = 'day17'
 path = 'main.rs'
+
+[features]
+vis = []

@@ -1,12 +1,12 @@
 use pancurses::*;
 use std::{collections::HashSet, iter::*};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Board {
     board: Vec<Vec<(i64, bool)>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Bingo {
     numbers: Vec<i64>,
     boards: Vec<Board>,
@@ -82,7 +82,8 @@ impl Board {
     }
 }
 
-fn part1(bingo: &mut Parsed) -> Answer {
+fn part1(data: &Parsed) -> Answer {
+    let mut bingo = data.clone();
     for num in &bingo.numbers {
         for board in &mut bingo.boards {
             if board.mark(*num) && board.has_bingo() != 0 {
@@ -93,8 +94,9 @@ fn part1(bingo: &mut Parsed) -> Answer {
     -1
 }
 
-fn part2(bingo: &mut Parsed, draw: bool) -> Answer {
-    let window = if draw {
+fn part2(data: &Parsed) -> Answer {
+    let mut bingo = data.clone();
+    let window = if cfg!(feature = "vis") {
         let window = initscr();
         nl();
         noecho();
@@ -172,16 +174,7 @@ fn parse(lines: &[String]) -> Parsed {
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let mut parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&mut parsed)
-    } else if part == 2 {
-        part2(&mut parsed, false)
-    } else {
-        part2(&mut parsed, true)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

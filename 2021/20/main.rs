@@ -1,7 +1,6 @@
 use aoc::{BitmapSpriteGridDrawer, Grid, GridDrawer, Point};
 use std::collections::HashMap;
 use std::iter::*;
-use std::time::Instant;
 
 type Parsed = (Vec<char>, HashMap<Point, char>);
 type Answer = i64;
@@ -107,11 +106,13 @@ fn solve(map: &Parsed, iterations: usize, draw: bool) -> Answer {
 }
 
 fn part1(map: &Parsed) -> Answer {
-    solve(map, 2, false)
+    let draw = cfg!(feature = "vis");
+    solve(map, 2, draw)
 }
 
 fn part2(map: &Parsed) -> Answer {
-    solve(map, 50, false)
+    let draw = cfg!(feature = "vis");
+    solve(map, 50, draw)
 }
 
 fn parse(lines: &[String]) -> Parsed {
@@ -122,28 +123,7 @@ fn parse(lines: &[String]) -> Parsed {
 }
 
 fn main() {
-    let start_time = Instant::now();
-    let (part, lines) = aoc::read_lines();
-    let io_time = Instant::now();
-    let parsed = parse(&lines);
-    let parse_time = Instant::now();
-    let result = if part == 1 {
-        part1(&parsed)
-    } else if part == 2 {
-        part2(&parsed)
-    } else if part == 3 {
-        solve(&parsed, 50, true)
-    } else {
-        solve(&parsed, part as usize, true)
-    };
-    let done_time = Instant::now();
-    println!(
-        "read: {:?}, parse: {:?}, solve: {:?}\n",
-        io_time.duration_since(start_time),
-        parse_time.duration_since(io_time),
-        done_time.duration_since(parse_time)
-    );
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

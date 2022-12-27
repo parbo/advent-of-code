@@ -36,9 +36,10 @@ fn part1(paths: &Parsed) -> Answer {
     tiles.iter().filter(|(_coord, col)| **col == 'B').count()
 }
 
-fn part2(paths: &Parsed, draw: bool) -> Answer {
+fn part2(paths: &Parsed) -> Answer {
     let mut g = HashMap::new();
     let mut all_grid = vec![g.clone()];
+    let draw = cfg!(feature = "vis");
     // init tiles to white
     for path in paths {
         let mut coord = [0, 0, 0];
@@ -167,16 +168,7 @@ fn parse(lines: &[String]) -> Parsed {
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else if part == 3 {
-        part2(&parsed, true)
-    } else {
-        part2(&parsed, false)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

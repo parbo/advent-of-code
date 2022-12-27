@@ -1562,13 +1562,15 @@ where
         let height = max_y - min_y + 1;
         // Default bg is white
         let mut image = RgbImage::from_pixel(width as u32, height as u32, image::Rgb(self.bg));
-        for [x, y] in area.points() {
-            if let Some(value) = area.get_value([x, y]) {
-                let color = self.to_color(value);
-                let yy = y - min_y;
-                let xx = x - min_x;
-                let rgb = Rgb(color);
-                image.put_pixel(xx as u32, yy as u32, rgb);
+        for y in min_y..=max_y {
+            for x in min_x..=max_x {
+                if let Some(value) = area.get_value([x, y]) {
+                    let color = self.to_color(value);
+                    let yy = y - min_y;
+                    let xx = x - min_x;
+                    let rgb = Rgb(color);
+                    image.put_pixel(xx as u32, yy as u32, rgb);
+                }
             }
         }
         self.image = Some(image);

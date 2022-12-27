@@ -29,13 +29,16 @@ where
     counts.iter().filter(|(_, c)| **c >= 2).count() as Answer
 }
 
-fn part1(lines: &[ParsedItem]) -> Answer {
+fn part1(lines: &Parsed) -> Answer {
     solve(lines, |line| {
         line.a[0] == line.b[0] || line.a[1] == line.b[1]
     })
 }
 
-fn part2(lines: &[ParsedItem]) -> Answer {
+fn part2(lines: &Parsed) -> Answer {
+    #[cfg(feature = "vis")]
+    draw(&lines);
+
     solve(lines, |_| true)
 }
 
@@ -50,7 +53,8 @@ fn parse(lines: &[String]) -> Parsed {
         .collect()
 }
 
-fn draw(lines: &[Line]) -> Answer {
+#[cfg(feature = "vis")]
+fn draw(lines: &Parsed) {
     let mut counts = HashMap::new();
     lines
         .iter()
@@ -84,18 +88,8 @@ fn draw(lines: &[Line]) -> Answer {
             gd.draw_grid(&counts);
             gd.save_image();
         });
-    0
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else if part == 2 {
-        part2(&parsed)
-    } else {
-        draw(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }

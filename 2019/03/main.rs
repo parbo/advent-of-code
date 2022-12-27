@@ -1,10 +1,5 @@
-use std::env;
-use std::fs::File;
-use std::io::prelude::*;
-use std::io::BufReader;
 use std::iter::*;
 use std::num::ParseIntError;
-use std::path::Path;
 use std::str::FromStr;
 
 #[derive(Debug)]
@@ -195,26 +190,12 @@ fn segments(line: &str) -> Vec<Segment> {
         .collect()
 }
 
-fn input(path: &Path) -> Vec<Vec<Segment>> {
-    let input = File::open(path).unwrap();
-    let buffered = BufReader::new(input);
-    let lines: Vec<String> = buffered.lines().filter_map(Result::ok).collect();
+fn parse(lines: &[String]) -> Vec<Vec<Segment>> {
     lines.iter().map(|line| segments(line)).collect()
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    let part = args[1].parse::<i32>().unwrap();
-    let filename = &args[2];
-
-    let parsed = input(Path::new(&filename));
-
-    let result = if part == 1 {
-        part1(&parsed)
-    } else {
-        part2(&parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

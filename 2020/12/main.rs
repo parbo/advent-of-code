@@ -93,7 +93,7 @@ fn draw(orig_path: &[(Point, Point)], s: &str, scale: i64) {
     }
 }
 
-fn part1(moves: &Parsed, d: bool) -> i64 {
+fn part1(moves: &Parsed) -> i64 {
     let mut curr = [0, 0];
     let mut facing = EAST;
     let mut path = vec![(curr, facing)];
@@ -118,13 +118,13 @@ fn part1(moves: &Parsed, d: bool) -> i64 {
         }
         path.push((curr, facing));
     }
-    if d {
+    if cfg!(feature = "vis") {
         draw(&path, "ppm/day12/part1", 1);
     }
     curr[0].abs() + curr[1].abs()
 }
 
-fn part2(moves: &Parsed, d: bool) -> i64 {
+fn part2(moves: &Parsed) -> i64 {
     let mut waypoint = [10, -1];
     let mut ship = [0, 0];
     let mut path = vec![(ship, waypoint)];
@@ -149,7 +149,7 @@ fn part2(moves: &Parsed, d: bool) -> i64 {
         }
         path.push((ship, waypoint));
     }
-    if d {
+    if cfg!(feature = "vis") {
         draw(&path, "ppm/day12/part2", 16);
     }
     ship[0].abs() + ship[1].abs()
@@ -163,14 +163,7 @@ fn parse(lines: &[String]) -> Parsed {
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed, true)
-    } else {
-        part2(&parsed, true)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

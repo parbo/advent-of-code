@@ -1,9 +1,12 @@
 #![allow(clippy::ptr_arg)]
 
-use aoc::{Grid, GridDrawer};
+use aoc::Grid;
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 use std::iter::*;
+
+#[cfg(feature = "vis")]
+use aoc::GridDrawer;
 
 type Parsed = Vec<Vec<i64>>;
 type Answer = i64;
@@ -33,10 +36,11 @@ fn part1(map: &Parsed) -> Answer {
         .sum::<i64>()
 }
 
-fn part2(m: &Parsed, draw: bool) -> Answer {
+fn part2(m: &Parsed) -> Answer {
     let mut map = m.clone();
     let mut basins = vec![];
     let ([min_x, min_y], [max_x, max_y]) = map.extents();
+    #[cfg(feature = "vis")]
     let mut gd = aoc::BitmapSpriteGridDrawer::new(
         (3, 3),
         |x| match x {
@@ -54,6 +58,7 @@ fn part2(m: &Parsed, draw: bool) -> Answer {
         }
         let mut num = 0;
         let mut todo = BinaryHeap::new();
+        #[cfg(feature = "vis")]
         let mut last_gen = -1;
         todo.push(Reverse((0, pos)));
         while let Some(Reverse((gen, p))) = todo.pop() {
@@ -73,24 +78,30 @@ fn part2(m: &Parsed, draw: bool) -> Answer {
                     if p[1] < max_y {
                         todo.push(Reverse((gen + 1, [p[0], p[1] + 1])));
                     }
-                    if draw && last_gen != gen {
-                        gd.draw(&map);
-                        gd.save_image();
+                    #[cfg(feature = "vis")]
+                    {
+                        if last_gen != gen {
+                            gd.draw(&map);
+                            gd.save_image();
+                        }
+                        last_gen = gen;
                     }
-                    last_gen = gen;
                 }
             }
         }
         basins.push(num);
     }
-    let mut d = aoc::PrintGridDrawer::new(|i: i64| {
-        if i == -1 {
-            '*'
-        } else {
-            char::from_digit(i as u32, 10).unwrap()
-        }
-    });
-    d.draw(&map);
+    #[cfg(feature = "vis")]
+    {
+        let mut d = aoc::PrintGridDrawer::new(|i: i64| {
+            if i == -1 {
+                '*'
+            } else {
+                char::from_digit(i as u32, 10).unwrap()
+            }
+        });
+        d.draw(&map);
+    }
     basins.sort_unstable();
     basins.iter().rev().take(3).product()
 }
@@ -100,16 +111,7 @@ fn parse(lines: &[String]) -> Parsed {
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else if part == 2 {
-        part2(&parsed, false)
-    } else {
-        part2(&parsed, true)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

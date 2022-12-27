@@ -44,7 +44,7 @@ fn part1(grid: &Parsed) -> Answer {
     (0..100).map(|_| step(&mut g)).sum::<usize>() as Answer
 }
 
-fn part2(grid: &Parsed, draw: bool) -> Answer {
+fn part2(grid: &Parsed) -> Answer {
     let mut g = grid.clone();
     let total = g.len() * g[0].len();
     let mut gd = aoc::BitmapSpriteGridDrawer::new(
@@ -56,6 +56,7 @@ fn part2(grid: &Parsed, draw: bool) -> Answer {
         "ppm/day11",
     );
     let mut i = 0;
+    let draw = cfg!(feature = "vis");
     loop {
         let num = step(&mut g);
         if draw {
@@ -75,16 +76,7 @@ fn parse(lines: &[String]) -> Parsed {
 }
 
 fn main() {
-    let (part, lines) = aoc::read_lines();
-    let parsed = parse(&lines);
-    let result = if part == 1 {
-        part1(&parsed)
-    } else if part == 2 {
-        part2(&parsed, false)
-    } else {
-        part2(&parsed, true)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

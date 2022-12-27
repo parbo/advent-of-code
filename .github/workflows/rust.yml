@@ -24,10 +24,15 @@ jobs:
       run: cargo test --verbose --manifest-path=aoc/Cargo.toml
     - name: Run clippy
       run: cargo clippy --manifest-path=aoc/Cargo.toml
-    - name: Check formatting of Rust code with rustfmt
-    - uses: actions-rust-lang/rustfmt@V1.1.0
+    - uses: actions-rs/toolchain@v1
       with:
-        manifest-path: aoc/Cargo.toml
+        components: rustfmt
+        override: true
+    - uses: LoliGothick/rustfmt-check@v0.2
+      with:
+        flags: --all
+        options: --manifest-path=aoc/Cargo.toml
+    - name: Check formatting of Rust code with rustfmt
 
   year2022:
 
@@ -43,10 +48,15 @@ jobs:
       run: cargo test --verbose --manifest-path=2022/Cargo.toml
     - name: Run clippy
       run: cargo clippy --manifest-path=2022/Cargo.toml
-    - name: Check formatting of Rust code with rustfmt
-    - uses: actions-rust-lang/rustfmt@V1.1.0
+    - uses: actions-rs/toolchain@v1
       with:
-        manifest-path: 2022/Cargo.toml
+        components: rustfmt
+        override: true
+    - uses: LoliGothick/rustfmt-check@v0.2
+      with:
+        flags: --all
+        options: --manifest-path=aoc/Cargo.toml
+    - name: Check formatting of Rust code with rustfmt
 
   year2021:
 

@@ -1,9 +1,5 @@
 use itertools::Itertools;
-use std::env;
-use std::fs::File;
-use std::io::prelude::*;
 use std::iter::*;
-use std::path::Path;
 
 fn is_sorted<I>(data: I) -> bool
 where
@@ -47,23 +43,20 @@ fn check2(number: i64) -> bool {
             > 0
 }
 
-fn part1(range: (i64, i64)) -> i64 {
-    let (low, high) = range;
+fn part1(range: &(i64, i64)) -> i64 {
+    let (low, high) = *range;
     let r = low..=high;
     r.filter(|&x| check(x)).count() as i64
 }
 
-fn part2(range: (i64, i64)) -> i64 {
-    let (low, high) = range;
+fn part2(range: &(i64, i64)) -> i64 {
+    let (low, high) = *range;
     let r = low..=high;
     r.filter(|&x| check2(x)).count() as i64
 }
 
-fn input(path: &Path) -> (i64, i64) {
-    let mut input = File::open(path).unwrap();
-    let mut buffer = String::new();
-    input.read_to_string(&mut buffer).unwrap();
-    let range: Vec<_> = buffer
+fn parse(lines: &[String]) -> (i64, i64) {
+    let range: Vec<_> = lines[0]
         .split('-')
         .map(|x| x.trim().parse::<i64>())
         .filter_map(Result::ok)
@@ -72,18 +65,7 @@ fn input(path: &Path) -> (i64, i64) {
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    let part = args[1].parse::<i32>().unwrap();
-    let filename = &args[2];
-
-    let parsed = input(Path::new(&filename));
-
-    let result = if part == 1 {
-        part1(parsed)
-    } else {
-        part2(parsed)
-    };
-    println!("{}", result);
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

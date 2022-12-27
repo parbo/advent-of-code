@@ -24,15 +24,20 @@ jobs:
       run: cargo test --verbose --manifest-path=aoc/Cargo.toml
     - name: Run clippy
       run: cargo clippy --manifest-path=aoc/Cargo.toml
-    - uses: actions-rs/toolchain@v1
-      with:
-        components: rustfmt
-        override: true
-    - uses: LoliGothick/rustfmt-check@v0.2
-      with:
-        flags: --all
-        options: --manifest-path=aoc/Cargo.toml
-    - name: Check formatting of Rust code with rustfmt
+
+  formatAoc:
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          components: rustfmt
+          override: true
+      - uses: LoliGothick/rustfmt-check@v0.2
+        with:
+          flags: --all
+          options: --manifest-path=aoc/Cargo.toml
 
   year2022:
 
@@ -48,15 +53,20 @@ jobs:
       run: cargo test --verbose --manifest-path=2022/Cargo.toml
     - name: Run clippy
       run: cargo clippy --manifest-path=2022/Cargo.toml
-    - uses: actions-rs/toolchain@v1
-      with:
-        components: rustfmt
-        override: true
-    - uses: LoliGothick/rustfmt-check@v0.2
-      with:
-        flags: --all
-        options: --manifest-path=aoc/Cargo.toml
-    - name: Check formatting of Rust code with rustfmt
+
+  formatYear2022:
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          components: rustfmt
+          override: true
+      - uses: LoliGothick/rustfmt-check@v0.2
+        with:
+          flags: --all
+          options: --manifest-path=aoc/Cargo.toml
 
   year2021:
 

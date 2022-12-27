@@ -32,6 +32,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
+          toolchain: stable
           components: rustfmt
           override: true
       - uses: LoliGothick/rustfmt-check@v0.2
@@ -61,12 +62,13 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
+          toolchain: stable
           components: rustfmt
           override: true
       - uses: LoliGothick/rustfmt-check@v0.2
         with:
           flags: --all
-          options: --manifest-path=aoc/Cargo.toml
+          options: --manifest-path=2022/Cargo.toml
 
   year2021:
 
@@ -83,6 +85,21 @@ jobs:
     - name: Run clippy
       run: cargo clippy --manifest-path=2021/Cargo.toml
 
+  formatYear2021:
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt
+          override: true
+      - uses: LoliGothick/rustfmt-check@v0.2
+        with:
+          flags: --all
+          options: --manifest-path=2021/Cargo.toml
+
   year2020:
 
     runs-on: ubuntu-latest
@@ -97,6 +114,21 @@ jobs:
       run: cargo test --verbose --manifest-path=2020/Cargo.toml
     - name: Run clippy
       run: cargo clippy --manifest-path=2020/Cargo.toml
+
+  formatYear2020:
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt
+          override: true
+      - uses: LoliGothick/rustfmt-check@v0.2
+        with:
+          flags: --all
+          options: --manifest-path=2020/Cargo.toml
 
   year2019:
 
@@ -113,6 +145,21 @@ jobs:
     - name: Run clippy
       run: cargo clippy --manifest-path=2019/Cargo.toml
 
+  formatYear2017:
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt
+          override: true
+      - uses: LoliGothick/rustfmt-check@v0.2
+        with:
+          flags: --all
+          options: --manifest-path=2019/Cargo.toml
+
   year2017:
 
     runs-on: ubuntu-latest
@@ -127,3 +174,19 @@ jobs:
       run: cargo test --verbose --manifest-path=2017/Cargo.toml
     - name: Run clippy
       run: cargo clippy --manifest-path=2017/Cargo.toml
+
+  formatYear2017:
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt
+          override: true
+      - uses: LoliGothick/rustfmt-check@v0.2
+        with:
+          flags: --all
+          options: --manifest-path=2017/Cargo.toml
+

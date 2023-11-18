@@ -16,3 +16,8 @@ history.txt
 ppm/**
 vis/**
 **/input.txt
+
+*.png
+*.gif
+
+*.DS_Store

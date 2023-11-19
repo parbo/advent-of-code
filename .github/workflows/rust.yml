@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - run: rustup toolchain install stable --profile minimal
     - uses: Swatinem/rust-cache@v2
     - name: Build
@@ -29,24 +29,25 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - run: echo "date=$(date -d '1 month ago' +'%Y-%m-%d')" >> $GITHUB_ENV
+      - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: nightly
+          toolchain: nightly-${{ env.date }}
           components: rustfmt
-          override: true
-      - uses: LoliGothick/rustfmt-check@v0.2
+      - uses: LoliGothick/rustfmt-check@v0.4.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          toolchain: nightly-${{ env.date }}
           flags: --all
-          options: --manifest-path=aoc/Cargo.toml
+          working-directory: aoc
 
   year2022:
 
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - run: rustup toolchain install stable --profile minimal
     - uses: Swatinem/rust-cache@v2
     - name: Build
@@ -60,24 +61,25 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - run: echo "date=$(date -d '1 month ago' +'%Y-%m-%d')" >> $GITHUB_ENV
+      - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: nightly
+          toolchain: nightly-${{ env.date }}
           components: rustfmt
-          override: true
-      - uses: LoliGothick/rustfmt-check@v0.2
+      - uses: LoliGothick/rustfmt-check@v0.4.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          toolchain: nightly-${{ env.date }}
           flags: --all
-          options: --manifest-path=2022/Cargo.toml
+          working-directory: 2022
 
   year2021:
 
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - run: rustup toolchain install stable --profile minimal
     - uses: Swatinem/rust-cache@v2
     - name: Build
@@ -91,24 +93,25 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - run: echo "date=$(date -d '1 month ago' +'%Y-%m-%d')" >> $GITHUB_ENV
+      - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: nightly
+          toolchain: nightly-${{ env.date }}
           components: rustfmt
-          override: true
-      - uses: LoliGothick/rustfmt-check@v0.2
+      - uses: LoliGothick/rustfmt-check@v0.4.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          toolchain: nightly-${{ env.date }}
           flags: --all
-          options: --manifest-path=2021/Cargo.toml
+          working-directory: 2021
 
   year2020:
 
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - run: rustup toolchain install stable --profile minimal
     - uses: Swatinem/rust-cache@v2
     - name: Build
@@ -122,24 +125,25 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - run: echo "date=$(date -d '1 month ago' +'%Y-%m-%d')" >> $GITHUB_ENV
+      - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: nightly
+          toolchain: nightly-${{ env.date }}
           components: rustfmt
-          override: true
-      - uses: LoliGothick/rustfmt-check@v0.2
+      - uses: LoliGothick/rustfmt-check@v0.4.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          toolchain: nightly-${{ env.date }}
           flags: --all
-          options: --manifest-path=2020/Cargo.toml
+          working-directory: 2020
 
   year2019:
 
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - run: rustup toolchain install stable --profile minimal
     - uses: Swatinem/rust-cache@v2
     - name: Build
@@ -153,24 +157,25 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - run: echo "date=$(date -d '1 month ago' +'%Y-%m-%d')" >> $GITHUB_ENV
+      - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: nightly
+          toolchain: nightly-${{ env.date }}
           components: rustfmt
-          override: true
-      - uses: LoliGothick/rustfmt-check@v0.2
+      - uses: LoliGothick/rustfmt-check@v0.4.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          toolchain: nightly-${{ env.date }}
           flags: --all
-          options: --manifest-path=2019/Cargo.toml
+          working-directory: 2019
 
   year2017:
 
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - run: rustup toolchain install stable --profile minimal
     - uses: Swatinem/rust-cache@v2
     - name: Build
@@ -184,24 +189,25 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - run: echo "date=$(date -d '1 month ago' +'%Y-%m-%d')" >> $GITHUB_ENV
+      - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: nightly
+          toolchain: nightly-${{ env.date }}
           components: rustfmt
-          override: true
-      - uses: LoliGothick/rustfmt-check@v0.2
+      - uses: LoliGothick/rustfmt-check@v0.4.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          toolchain: nightly-${{ env.date }}
           flags: --all
-          options: --manifest-path=2017/Cargo.toml
+          working-directory: 2017
 
   year2016:
 
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - run: rustup toolchain install stable --profile minimal
     - uses: Swatinem/rust-cache@v2
     - name: Build
@@ -215,14 +221,15 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - run: echo "date=$(date -d '1 month ago' +'%Y-%m-%d')" >> $GITHUB_ENV
+      - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: nightly
+          toolchain: nightly-${{ env.date }}
           components: rustfmt
-          override: true
-      - uses: LoliGothick/rustfmt-check@v0.2
+      - uses: LoliGothick/rustfmt-check@v0.4.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          toolchain: nightly-${{ env.date }}
           flags: --all
-          options: --manifest-path=2016/Cargo.toml
+          working-directory: 2016

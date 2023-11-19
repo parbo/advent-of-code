@@ -2611,7 +2611,7 @@ mod tests {
 
     #[test]
     fn test_things() {
-        let [a,b,c,d] = things::<i64>("apa 1 giraff 3 elefant 5 6")[..] else {
+        let [a, b, c, d] = things::<i64>("apa 1 giraff 3 elefant 5 6")[..] else {
             unreachable!()
         };
         assert_eq!(a, 1);

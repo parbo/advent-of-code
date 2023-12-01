@@ -4,20 +4,18 @@ type ParsedItem = String;
 type Parsed = Vec<ParsedItem>;
 
 fn find_digits(s: &str, mappings: &[(&str, u32)]) -> Vec<u32> {
-    let mut d = vec![];
-    for pos in 0..s.len() {
-        mappings
-            .iter()
-            .filter_map(|mapping| {
+    (0..s.len())
+        .map(|pos| {
+            mappings.iter().filter_map(move |mapping| {
                 if s[pos..].starts_with(mapping.0) {
                     Some(mapping.1)
                 } else {
                     None
                 }
             })
-            .for_each(|x| d.push(x))
-    }
-    d
+        })
+        .flatten()
+        .collect()
 }
 
 fn solve(data: &Parsed, mappings: &[(&str, u32)]) -> u32 {

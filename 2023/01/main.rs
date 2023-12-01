@@ -21,8 +21,10 @@ fn find_digits(s: &str, mappings: &[(&str, u32)]) -> Vec<u32> {
 }
 
 fn solve(data: &Parsed, mappings: &[(&str, u32)]) -> u32 {
-    let data: Vec<Vec<u32>> = data.iter().map(|x| find_digits(x, mappings)).collect();
-    data.iter().map(|d| d[0] * 10 + d[d.len() - 1]).sum()
+    data.iter()
+        .map(|x| find_digits(x, mappings))
+        .map(|d| d[0] * 10 + d[d.len() - 1])
+        .sum()
 }
 
 fn part1(data: &Parsed) -> u32 {

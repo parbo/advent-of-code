@@ -1,104 +1,67 @@
 use std::iter::*;
 
-// #[derive(parse_display::Display, parse_display::FromStr, Debug, Clone, PartialEq, Eq, Hash)]
-// #[display("{thing}: {al}-{ah} or {bl}-{bh}")]
-// struct Rule {
-//     thing: String,
-//     al: i64,
-//     ah: i64,
-//     bl: i64,
-//     bh: i64,
-// }
-
 type ParsedItem = String;
 type Parsed = Vec<ParsedItem>;
 
-fn part1(data: &Parsed) -> i64 {
-    let data: Vec<Vec<u32>> = data
-        .iter()
-        .map(|x| x.chars().filter_map(|x| x.to_digit(10)).collect())
-        .collect();
-    let mut s = 0;
-    for d in data {
-        s += d[0] * 10 + d[d.len() - 1]
-    }
-    s as i64
-}
-
-fn find_digits(s: &str) -> Vec<u32> {
+fn find_digits(s: &str, mappings: &[(&str, u32)]) -> Vec<u32> {
     let mut d = vec![];
-    let mut pos = 0;
-    while pos < s.len() {
-        if s[pos..].starts_with("one") {
-            d.push(1);
-            pos += 1;
-        } else if s[pos..].starts_with("two") {
-            d.push(2);
-            pos += 1;
-        } else if s[pos..].starts_with("three") {
-            d.push(3);
-            pos += 1;
-        } else if s[pos..].starts_with("four") {
-            d.push(4);
-            pos += 1;
-        } else if s[pos..].starts_with("five") {
-            d.push(5);
-            pos += 1;
-        } else if s[pos..].starts_with("six") {
-            d.push(6);
-            pos += 1;
-        } else if s[pos..].starts_with("seven") {
-            d.push(7);
-            pos += 1;
-        } else if s[pos..].starts_with("eight") {
-            d.push(8);
-            pos += 1;
-        } else if s[pos..].starts_with("nine") {
-            d.push(9);
-            pos += 1;
-        } else if s[pos..].starts_with("1") {
-            d.push(1);
-            pos += 1;
-        } else if s[pos..].starts_with("2") {
-            d.push(2);
-            pos += 1;
-        } else if s[pos..].starts_with("3") {
-            d.push(3);
-            pos += 1;
-        } else if s[pos..].starts_with("4") {
-            d.push(4);
-            pos += 1;
-        } else if s[pos..].starts_with("5") {
-            d.push(5);
-            pos += 1;
-        } else if s[pos..].starts_with("6") {
-            d.push(6);
-            pos += 1;
-        } else if s[pos..].starts_with("7") {
-            d.push(7);
-            pos += 1;
-        } else if s[pos..].starts_with("8") {
-            d.push(8);
-            pos += 1;
-        } else if s[pos..].starts_with("9") {
-            d.push(9);
-            pos += 1;
-        } else {
-            pos += 1;
-        }
+    for pos in 0..s.len() {
+        mappings
+            .iter()
+            .filter_map(|mapping| {
+                if s[pos..].starts_with(mapping.0) {
+                    Some(mapping.1)
+                } else {
+                    None
+                }
+            })
+            .for_each(|x| d.push(x))
     }
-    dbg!(s);
-    dbg!(&d);
-    return d;
+    d
 }
 
-fn part2(data: &Parsed) -> i64 {
-    let data: Vec<Vec<u32>> = data.iter().map(|x| find_digits(&x)).collect();
-    let mut s = 0;
-    for d in data {
-        s += d[0] * 10 + d[d.len() - 1]
-    }
-    s as i64
+fn solve(data: &Parsed, mappings: &[(&str, u32)]) -> u32 {
+    let data: Vec<Vec<u32>> = data.iter().map(|x| find_digits(x, mappings)).collect();
+    data.iter().map(|d| d[0] * 10 + d[d.len() - 1]).sum()
+}
+
+fn part1(data: &Parsed) -> u32 {
+    let mappings = vec![
+        ("1", 1),
+        ("2", 2),
+        ("3", 3),
+        ("4", 4),
+        ("5", 5),
+        ("6", 6),
+        ("7", 7),
+        ("8", 8),
+        ("9", 9),
+    ];
+    solve(data, &mappings)
+}
+
+fn part2(data: &Parsed) -> u32 {
+    let mappings = vec![
+        ("one", 1),
+        ("two", 2),
+        ("three", 3),
+        ("four", 4),
+        ("five", 5),
+        ("six", 6),
+        ("seven", 7),
+        ("eight", 8),
+        ("nine", 9),
+        ("1", 1),
+        ("2", 2),
+        ("3", 3),
+        ("4", 4),
+        ("5", 5),
+        ("6", 6),
+        ("7", 7),
+        ("8", 8),
+        ("9", 9),
+    ];
+    solve(data, &mappings)
 }
 
 fn parse(lines: &[String]) -> Parsed {

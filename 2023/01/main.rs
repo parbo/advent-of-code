@@ -6,7 +6,7 @@ type Parsed = Vec<ParsedItem>;
 fn find_digits(s: &str, mappings: &[(&str, u32)]) -> Vec<u32> {
     (0..s.len())
         .map(|pos| {
-            mappings.iter().filter_map(move |mapping| {
+            mappings.iter().find_map(move |mapping| {
                 if s[pos..].starts_with(mapping.0) {
                     Some(mapping.1)
                 } else {

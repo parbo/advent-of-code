@@ -32,46 +32,23 @@ impl FromStr for Game {
 
 impl Game {
     fn is_valid(&self) -> bool {
-        for p in &self.picks {
-            if let Some(c) = p.get("red") {
-                if *c > 12 {
-                    return false;
-                }
-            }
-            if let Some(c) = p.get("green") {
-                if *c > 13 {
-                    return false;
-                }
-            }
-            if let Some(c) = p.get("blue") {
-                if *c > 14 {
-                    return false;
-                }
-            }
-        }
-        true
+        !self.picks.iter().any(|p| {
+            *p.get("red").unwrap_or(&0) > 12
+                || *p.get("green").unwrap_or(&0) > 13
+                || *p.get("blue").unwrap_or(&0) > 14
+        })
+    }
+
+    fn max_color(&self, color: &str) -> i64 {
+        self.picks
+            .iter()
+            .map(|x| *x.get(color).unwrap_or(&0))
+            .max()
+            .unwrap_or(0)
     }
 
     fn power(&self) -> i64 {
-        let max_red = self
-            .picks
-            .iter()
-            .map(|x| *x.get("red").unwrap_or(&0))
-            .max()
-            .unwrap_or(0);
-        let max_green = self
-            .picks
-            .iter()
-            .map(|x| *x.get("green").unwrap_or(&0))
-            .max()
-            .unwrap_or(0);
-        let max_blue = self
-            .picks
-            .iter()
-            .map(|x| *x.get("blue").unwrap_or(&0))
-            .max()
-            .unwrap_or(0);
-        max_red * max_green * max_blue
+        self.max_color("red") * self.max_color("green") * self.max_color("blue")
     }
 }
 

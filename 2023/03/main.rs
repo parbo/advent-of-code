@@ -15,7 +15,7 @@ fn vec_to_num(num: &[u32]) -> u32 {
 }
 
 fn makenum(num: &mut Vec<u32>, adjacent: &mut bool) -> u32 {
-    let n = vec_to_num(&num);
+    let n = vec_to_num(num);
     num.clear();
     if *adjacent {
         *adjacent = false;
@@ -36,7 +36,7 @@ fn part1(data: &Parsed) -> i64 {
                 if !adjacent {
                     for nb in aoc::neighbors_incl_diagonals([x as i64, y as i64]) {
                         if let Some(v) = data.get_value(nb) {
-                            if v.is_digit(10) || v == '.' {
+                            if v.is_ascii_digit() || v == '.' {
                                 // nop
                             } else {
                                 adjacent = true;
@@ -59,11 +59,11 @@ fn makegear(
     adjacent: &mut Vec<aoc::Point>,
     gears: &mut HashMap<aoc::Point, Vec<u32>>,
 ) {
-    let n = vec_to_num(&num);
+    let n = vec_to_num(num);
     num.clear();
     if !adjacent.is_empty() {
         for nb in adjacent.iter() {
-            gears.entry(*nb).or_insert(vec![]).push(n);
+            gears.entry(*nb).or_default().push(n);
         }
         adjacent.clear()
     }
@@ -79,10 +79,8 @@ fn part2(data: &Parsed) -> i64 {
                 num.push(n);
                 for nb in aoc::neighbors_incl_diagonals([x as i64, y as i64]) {
                     if let Some(v) = data.get_value(nb) {
-                        if v == '*' {
-                            if !adjacent.contains(&nb) {
-                                adjacent.push(nb);
-                            }
+                        if v == '*' && !adjacent.contains(&nb) {
+                            adjacent.push(nb);
                         }
                     }
                 }

@@ -4,13 +4,18 @@ use std::{collections::HashMap, iter::*};
 type ParsedItem = Vec<char>;
 type Parsed = Vec<ParsedItem>;
 
-fn makenum(num: &mut Vec<u32>, adjacent: &mut bool) -> u32 {
+fn vec_to_num(num: &[u32]) -> u32 {
     let mut tens = 1;
     let mut n = 0;
     for nn in num.iter().rev() {
         n += nn * tens;
         tens *= 10;
     }
+    n
+}
+
+fn makenum(num: &mut Vec<u32>, adjacent: &mut bool) -> u32 {
+    let n = vec_to_num(&num);
     num.clear();
     if *adjacent {
         *adjacent = false;
@@ -54,12 +59,7 @@ fn makegear(
     adjacent: &mut Vec<aoc::Point>,
     gears: &mut HashMap<aoc::Point, Vec<u32>>,
 ) {
-    let mut tens = 1;
-    let mut n = 0;
-    for nn in num.iter().rev() {
-        n += nn * tens;
-        tens *= 10;
-    }
+    let n = vec_to_num(&num);
     num.clear();
     if !adjacent.is_empty() {
         for nb in adjacent.iter() {

@@ -23,7 +23,7 @@ jobs:
     - name: Run tests
       run: cargo test --verbose --manifest-path=aoc/Cargo.toml
     - name: Run clippy
-      run: cargo clippy --manifest-path=aoc/Cargo.toml -Dwarnings
+      run: cargo clippy --manifest-path=aoc/Cargo.toml -- -Dwarnings
 
   formatAoc:
 
@@ -54,7 +54,7 @@ jobs:
     - name: Run tests
       run: cargo test --verbose --manifest-path=2023/Cargo.toml
     - name: Run clippy
-      run: cargo clippy --manifest-path=2023/Cargo.toml -Dwarnings
+      run: cargo clippy --manifest-path=2023/Cargo.toml -- -Dwarnings
 
   formatYear2023:
 
@@ -85,7 +85,7 @@ jobs:
     - name: Run tests
       run: cargo test --verbose --manifest-path=2022/Cargo.toml
     - name: Run clippy
-      run: cargo clippy --manifest-path=2022/Cargo.toml -Dwarnings
+      run: cargo clippy --manifest-path=2022/Cargo.toml -- -Dwarnings
 
   formatYear2022:
 
@@ -116,7 +116,7 @@ jobs:
     - name: Run tests
       run: cargo test --verbose --manifest-path=2021/Cargo.toml
     - name: Run clippy
-      run: cargo clippy --manifest-path=2021/Cargo.toml -Dwarnings
+      run: cargo clippy --manifest-path=2021/Cargo.toml -- -Dwarnings
 
   formatYear2021:
 
@@ -147,7 +147,7 @@ jobs:
     - name: Run tests
       run: cargo test --verbose --manifest-path=2020/Cargo.toml
     - name: Run clippy
-      run: cargo clippy --manifest-path=2020/Cargo.toml -Dwarnings
+      run: cargo clippy --manifest-path=2020/Cargo.toml -- -Dwarnings
 
   formatYear2020:
 
@@ -178,7 +178,7 @@ jobs:
     - name: Run tests
       run: cargo test --verbose --manifest-path=2019/Cargo.toml
     - name: Run clippy
-      run: cargo clippy --manifest-path=2019/Cargo.toml -Dwarnings
+      run: cargo clippy --manifest-path=2019/Cargo.toml -- -Dwarnings
 
   formatYear2019:
 
@@ -209,7 +209,7 @@ jobs:
     - name: Run tests
       run: cargo test --verbose --manifest-path=2017/Cargo.toml
     - name: Run clippy
-      run: cargo clippy --manifest-path=2017/Cargo.toml -Dwarnings
+      run: cargo clippy --manifest-path=2017/Cargo.toml -- -Dwarnings
 
   formatYear2017:
 
@@ -240,7 +240,7 @@ jobs:
     - name: Run tests
       run: cargo test --verbose --manifest-path=2016/Cargo.toml
     - name: Run clippy
-      run: cargo clippy --manifest-path=2016/Cargo.toml -Dwarnings
+      run: cargo clippy --manifest-path=2016/Cargo.toml -- -Dwarnings
 
   formatYear2016:
 

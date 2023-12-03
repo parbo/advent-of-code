@@ -77,10 +77,10 @@ fn part2(data: &Parsed) -> i64 {
         for (x, c) in line.iter().enumerate() {
             if let Some(n) = c.to_digit(10) {
                 num.push(n);
-                if adjacent.is_empty() {
-                    for nb in aoc::neighbors_incl_diagonals([x as i64, y as i64]) {
-                        if let Some(v) = data.get_value(nb) {
-                            if v == '*' {
+                for nb in aoc::neighbors_incl_diagonals([x as i64, y as i64]) {
+                    if let Some(v) = data.get_value(nb) {
+                        if v == '*' {
+                            if !adjacent.contains(&nb) {
                                 adjacent.push(nb);
                             }
                         }

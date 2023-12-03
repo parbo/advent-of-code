@@ -134,4 +134,10 @@ mod tests {
     fn test_part2() {
         assert_eq!(part2(&parse(&example())), 467835);
     }
+
+    #[test]
+    fn test_part2_multi_gear() {
+        let v = vec![".123.".into(), "*...*".into(), ".345.".into()];
+        assert_eq!(part2(&parse(&v)), 84870);
+    }
 }

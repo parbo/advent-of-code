@@ -89,8 +89,7 @@ fn is_blocking(grid: &[u8], num: i64, p: aoc::Point, a: u8) -> bool {
 
 fn solve(parsed_grid: &Vec<Vec<u8>>, num: i64) -> Option<i64> {
     // Make a flat grid with only amphipods and empty positions
-    let mut start = vec![];
-    start.reserve(parsed_grid.len() * parsed_grid[0].len());
+    let mut start = Vec::with_capacity(parsed_grid.len() * parsed_grid[0].len());
     for p in parsed_grid.points() {
         start.push(parsed_grid.get_value(p).unwrap());
     }

@@ -58,7 +58,7 @@ fn part2(data: &Parsed) -> i64 {
             pos = aoc::point_add(pos, dir);
             #[cfg(feature = "vis")]
             gd.draw(&seen);
-            if !seen.insert(pos, '*').is_none() {
+            if seen.insert(pos, '*').is_some() {
                 break 'outer;
             }
         }

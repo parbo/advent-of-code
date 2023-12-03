@@ -45,7 +45,7 @@ fn part1(data: &Parsed) -> Answer {
     let mut last_min_ix = None;
     let mut cnt = 0;
     loop {
-        for mut p in &mut particles {
+        for p in &mut particles {
             p.vel = vec_add(p.vel, p.acc);
             p.pos = vec_add(p.pos, p.vel);
         }
@@ -80,7 +80,7 @@ fn part2(data: &Parsed) -> Answer {
     let mut particles = data.to_vec();
     let mut cnt = 0;
     loop {
-        for mut p in &mut particles {
+        for p in &mut particles {
             p.vel = vec_add(p.vel, p.acc);
             p.pos = vec_add(p.pos, p.vel);
         }

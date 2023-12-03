@@ -84,7 +84,7 @@ fn part1(input: &Parsed) -> Answer {
 }
 
 fn find_monsters(grid: &HashMap<aoc::Point, char>) -> Vec<aoc::Point> {
-    let monster = vec![
+    let monster = [
         "                  # ",
         "#    ##    ##    ###",
         " #  #  #  #  #  #   ",

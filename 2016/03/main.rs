@@ -42,7 +42,7 @@ fn transpose(a: &mut [Triangle]) {
 
 fn part2(data: &Parsed) -> i64 {
     let mut d = data.clone();
-    d.chunks_mut(3).for_each(|x| transpose(x));
+    d.chunks_mut(3).for_each(transpose);
     part1(&d)
 }
 

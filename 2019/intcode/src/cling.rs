@@ -297,7 +297,7 @@ fn is_identifier_rest(c: char) -> bool {
 }
 
 fn is_decimal_number(c: char) -> bool {
-    matches!(c, '0'..='9')
+    c.is_ascii_digit()
 }
 
 fn match_keyword(a: &str) -> Option<Keyword> {
@@ -316,7 +316,7 @@ fn match_keyword(a: &str) -> Option<Keyword> {
 }
 
 fn is_keyword(a: &str) -> bool {
-    matches!(match_keyword(a), Some(_))
+    match_keyword(a).is_some()
 }
 
 fn match_identifier(a: &str) -> Option<&str> {

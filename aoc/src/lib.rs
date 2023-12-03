@@ -2393,7 +2393,7 @@ pub fn read_lines_from<P: AsRef<Path>>(filename: P) -> Vec<String> {
     let buffered = BufReader::new(input);
     buffered
         .lines()
-        .filter_map(Result::ok)
+        .map_while(Result::ok)
         .map(|x| x.trim_end_matches('\n').to_string())
         .collect()
 }

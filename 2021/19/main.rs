@@ -109,8 +109,7 @@ fn solve(sensors: &[ParsedItem]) -> (FxHashSet<Vec4>, Vec<Vec4>) {
         .collect::<Vec<Vec<FxHashSet<_>>>>();
     let mut translated = sensors[0].iter().copied().collect::<FxHashSet<_>>();
     translated.reserve(sensors[0].len() * (sensors.len() + 1));
-    let mut dists = vec![];
-    dists.reserve(sensors.len());
+    let mut dists = Vec::with_capacity(sensors.len());
     let mut ti = (1..sensors.len()).collect::<FxHashSet<_>>();
     while !ti.is_empty() {
         let mut remove = vec![];

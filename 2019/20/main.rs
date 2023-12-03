@@ -190,7 +190,7 @@ fn shortest_path(
 }
 
 fn to_label(ch_a: char, ch_b: char, a: (usize, usize), b: (usize, usize)) -> (char, char) {
-    let mut v = vec![(a, ch_a), (b, ch_b)];
+    let mut v = [(a, ch_a), (b, ch_b)];
     v.sort();
     (v[0].1, v[1].1)
 }

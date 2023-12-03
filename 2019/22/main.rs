@@ -57,7 +57,7 @@ fn reverse_shuffle_idx(how: &[Shuffle], len: i128, idx: i128) -> i128 {
 }
 
 fn shuffle(how: &Vec<Shuffle>, len: i128) -> Vec<i128> {
-    let deck: Vec<i128> = (0..len).into_iter().collect();
+    let deck: Vec<i128> = (0..len).collect();
     let mut new_deck = vec![0; len as usize];
     for i in 0..len {
         let x = shuffle_idx(how, len, i);

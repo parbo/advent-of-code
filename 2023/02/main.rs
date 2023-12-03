@@ -1,4 +1,3 @@
-use std::num::ParseIntError;
 use std::str::FromStr;
 use std::{collections::BTreeMap, iter::*};
 
@@ -9,11 +8,11 @@ struct Game {
 }
 
 impl FromStr for Game {
-    type Err = ParseIntError;
+    type Err = aoc::ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let gg = aoc::split_ch(s, ':');
-        let pp = aoc::split_ch(gg[gg.len() - 1], ';');
+        let (gg, rest) = s.split_once(':').unwrap();
+        let pp = aoc::split_ch(rest, ';');
         let mut picks = vec![];
         for p in pp {
             let mut m = BTreeMap::new();
@@ -24,7 +23,7 @@ impl FromStr for Game {
             }
             picks.push(m);
         }
-        let id = aoc::split_w(gg[0])[1].parse()?;
+        let id = aoc::split_w(gg)[1].parse()?;
 
         Ok(Game { id, picks })
     }

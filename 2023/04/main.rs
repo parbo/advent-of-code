@@ -11,10 +11,16 @@ impl FromStr for Card {
     type Err = aoc::ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (gg, rest) = s.split_once(':').unwrap();
-        let (w, n) = rest.split_once('|').unwrap();
-        let winning = aoc::split_w(w).iter().map(|x| x.parse().unwrap()).collect();
-        let numbers = aoc::split_w(n).iter().map(|x| x.parse().unwrap()).collect();
+        let (gg, rest) = s.split_once(':').ok_or(Self::Err::Generic)?;
+        let (w, n) = rest.split_once('|').ok_or(Self::Err::Generic)?;
+        let winning = aoc::split_w(w)
+            .iter()
+            .map(|x| x.parse())
+            .collect::<Result<_, _>>()?;
+        let numbers = aoc::split_w(n)
+            .iter()
+            .map(|x| x.parse())
+            .collect::<Result<_, _>>()?;
         let num = aoc::split_w(gg)[1].parse()?;
 
         Ok(Card {

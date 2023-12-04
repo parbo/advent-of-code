@@ -11,7 +11,7 @@ impl FromStr for Game {
     type Err = aoc::ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (gg, rest) = s.split_once(':').unwrap();
+        let (gg, rest) = s.split_once(':').ok_or(Self::Err::Generic)?;
         let pp = aoc::split_ch(rest, ';');
         let mut picks = vec![];
         for p in pp {
@@ -19,11 +19,14 @@ impl FromStr for Game {
             let cubes = aoc::split_ch(p, ',');
             for c in cubes {
                 let vals = aoc::split_w(c);
-                m.insert(vals[1].to_string(), vals[0].parse()?);
+                m.insert(
+                    vals.get(1).ok_or(Self::Err::Generic)?.to_string(),
+                    vals.first().ok_or(Self::Err::Generic)?.parse()?,
+                );
             }
             picks.push(m);
         }
-        let id = aoc::split_w(gg)[1].parse()?;
+        let id = aoc::split_w(gg).get(1).ok_or(Self::Err::Generic)?.parse()?;
 
         Ok(Game { id, picks })
     }

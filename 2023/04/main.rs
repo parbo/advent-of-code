@@ -21,7 +21,7 @@ impl FromStr for Card {
             .iter()
             .map(|x| x.parse())
             .collect::<Result<_, _>>()?;
-        let num = aoc::split_w(gg)[1].parse()?;
+        let num = aoc::split_w(gg).get(1).ok_or(Self::Err::Generic)?.parse()?;
 
         Ok(Card {
             num,

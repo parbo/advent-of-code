@@ -41,20 +41,19 @@ fn part1(data: &Parsed) -> i64 {
 }
 
 fn part2(data: &Parsed) -> i64 {
-    let mut cards: Vec<usize> = (0..data.len()).collect();
+    let mut cards: Vec<usize> = std::iter::repeat(1).take(data.len()).collect();
     cards.reserve(10000000);
-    let mut pos = 0;
-    while pos < cards.len() {
-        let card = &data[cards[pos]];
+    for pos in 0..data.len() {
+        let card = &data[pos];
         let matching = card.winning.intersection(&card.numbers);
         let c = matching.count();
         if c > 0 {
-            let pos = card.num - 1;
-            cards.extend(pos + 1..=pos + c);
+            for ix in pos + 1..=pos + c {
+                cards[ix] += cards[pos]
+            }
         }
-        pos += 1;
     }
-    cards.len() as i64
+    cards.iter().sum::<usize>() as i64
 }
 
 fn parse(lines: &[String]) -> Parsed {

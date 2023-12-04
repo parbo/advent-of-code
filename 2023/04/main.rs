@@ -29,22 +29,22 @@ type ParsedItem = Card;
 type Parsed = Vec<ParsedItem>;
 
 fn part1(data: &Parsed) -> i64 {
-    let mut s = 0;
-    for card in data {
-        let matching = card.winning.intersection(&card.numbers);
-        let c = matching.count();
-        if c > 0 {
-            s += 1 << (c - 1);
-        }
-    }
-    s
+    data.iter()
+        .filter_map(|card| {
+            let matching = card.winning.intersection(&card.numbers);
+            let c = matching.count();
+            if c > 0 {
+                Some(1 << (c - 1))
+            } else {
+                None
+            }
+        })
+        .sum::<usize>() as i64
 }
 
 fn part2(data: &Parsed) -> i64 {
     let mut cards: Vec<usize> = std::iter::repeat(1).take(data.len()).collect();
-    cards.reserve(10000000);
-    for pos in 0..data.len() {
-        let card = &data[pos];
+    data.iter().enumerate().for_each(|(pos, card)| {
         let matching = card.winning.intersection(&card.numbers);
         let c = matching.count();
         if c > 0 {
@@ -52,7 +52,7 @@ fn part2(data: &Parsed) -> i64 {
                 cards[ix] += cards[pos]
             }
         }
-    }
+    });
     cards.iter().sum::<usize>() as i64
 }
 

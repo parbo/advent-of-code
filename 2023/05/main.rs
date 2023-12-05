@@ -14,35 +14,31 @@ struct Almanac {
 }
 
 impl Almanac {
-    fn location(&self, seed: i64) -> i64 {
-        let mut curr = seed;
-        for mapping in &self.mappings {
-            for &[dest, source, num] in &mapping.ranges {
-                if source <= curr && curr < source + num {
-                    let diff = curr - source;
-                    curr = dest + diff;
-                    break;
-                }
-            }
-        }
-        curr
-    }
-
     fn location_ranges(&self, seeds: Vec<[i64; 2]>) -> Vec<[i64; 2]> {
         let mut curr = seeds;
         for mapping in &self.mappings {
-            let mut next = vec![];
-            for &[dest, source, num] in &mapping.ranges {
-                for cc in &curr {
-                    let overlap = [source.max(cc[0]), (source + num).min(cc[0] + cc[1])];
-                    if overlap[0] < overlap[1] {
-                        let diff = overlap[0] - source;
-                        let nn = [dest + diff, overlap[1] - overlap[0]];
-                        next.push(nn);
+            curr = curr
+                .iter()
+                .flat_map(|cc| {
+                    let mut nxt: Vec<_> = mapping
+                        .ranges
+                        .iter()
+                        .filter_map(|&[dest, source, num]| {
+                            let overlap = [source.max(cc[0]), (source + num).min(cc[0] + cc[1])];
+                            if overlap[0] < overlap[1] {
+                                let diff = overlap[0] - source;
+                                Some([dest + diff, overlap[1] - overlap[0]])
+                            } else {
+                                None
+                            }
+                        })
+                        .collect();
+                    if nxt.is_empty() {
+                        nxt.push(*cc);
                     }
-                }
-            }
-            curr = next;
+                    nxt
+                })
+                .collect();
         }
         curr
     }
@@ -51,7 +47,9 @@ impl Almanac {
 type Parsed = Almanac;
 
 fn part1(data: &Parsed) -> i64 {
-    data.seeds.iter().map(|x| data.location(*x)).min().unwrap()
+    let seeds = data.seeds.iter().map(|s| [*s, 1]).collect();
+    let ranges = data.location_ranges(seeds);
+    ranges.iter().map(|x| x[0]).min().unwrap()
 }
 
 fn part2(data: &Parsed) -> i64 {

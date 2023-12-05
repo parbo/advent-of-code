@@ -1,16 +1,12 @@
 use std::iter::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct Mapping {
-    from: String,
-    to: String,
-    ranges: Vec<[i64; 3]>,
-}
+struct Mapping(Vec<[i64; 3]>);
 
 impl Mapping {
     fn map(&self, cc: [i64; 2]) -> Vec<[i64; 2]> {
         let mut nxt: Vec<_> = self
-            .ranges
+            .0
             .iter()
             .filter_map(|&[dest, source, num]| {
                 let overlap = [source.max(cc[0]), (source + num).min(cc[0] + cc[1])];
@@ -64,17 +60,9 @@ fn parse(lines: &[String]) -> Parsed {
     let seeds: Vec<i64> = aoc::things(&groups[0][0][7..]);
     let mut mappings = vec![];
     for group in &groups[1..] {
-        let map_type = &group[0];
-        let map_type = aoc::split_ch(&map_type[0..map_type.len() - 5], '-');
-        let map_type = (map_type[0], map_type[2]);
         let ranges: Vec<Vec<i64>> = group[1..].iter().map(|x| aoc::things(x)).collect();
         let ranges = ranges.iter().map(|x| [x[0], x[1], x[2]]).collect();
-        let m = Mapping {
-            from: map_type.0.to_string(),
-            to: map_type.1.to_string(),
-            ranges,
-        };
-        mappings.push(m)
+        mappings.push(Mapping(ranges))
     }
     Almanac { seeds, mappings }
 }

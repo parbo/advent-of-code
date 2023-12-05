@@ -7,6 +7,28 @@ struct Mapping {
     ranges: Vec<[i64; 3]>,
 }
 
+impl Mapping {
+    fn map(&self, cc: [i64; 2]) -> Vec<[i64; 2]> {
+        let mut nxt: Vec<_> = self
+            .ranges
+            .iter()
+            .filter_map(|&[dest, source, num]| {
+                let overlap = [source.max(cc[0]), (source + num).min(cc[0] + cc[1])];
+                if overlap[0] < overlap[1] {
+                    let diff = overlap[0] - source;
+                    Some([dest + diff, overlap[1] - overlap[0]])
+                } else {
+                    None
+                }
+            })
+            .collect();
+        if nxt.is_empty() {
+            nxt.push(cc);
+        }
+        nxt
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Almanac {
     seeds: Vec<i64>,
@@ -17,28 +39,7 @@ impl Almanac {
     fn location_ranges(&self, seeds: Vec<[i64; 2]>) -> Vec<[i64; 2]> {
         let mut curr = seeds;
         for mapping in &self.mappings {
-            curr = curr
-                .iter()
-                .flat_map(|cc| {
-                    let mut nxt: Vec<_> = mapping
-                        .ranges
-                        .iter()
-                        .filter_map(|&[dest, source, num]| {
-                            let overlap = [source.max(cc[0]), (source + num).min(cc[0] + cc[1])];
-                            if overlap[0] < overlap[1] {
-                                let diff = overlap[0] - source;
-                                Some([dest + diff, overlap[1] - overlap[0]])
-                            } else {
-                                None
-                            }
-                        })
-                        .collect();
-                    if nxt.is_empty() {
-                        nxt.push(*cc);
-                    }
-                    nxt
-                })
-                .collect();
+            curr = curr.iter().flat_map(|cc| mapping.map(*cc)).collect();
         }
         curr
     }

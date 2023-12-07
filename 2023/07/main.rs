@@ -1,9 +1,7 @@
 use std::{
-    cell::RefCell,
     cmp::Ordering,
     collections::{BTreeMap, HashSet},
     iter::*,
-    str::FromStr,
 };
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -17,23 +15,7 @@ struct Hand {
     cards: String,
     bid: i64,
     rules: Rules,
-    cached_type: RefCell<Option<HandType>>,
-}
-
-impl FromStr for Hand {
-    type Err = aoc::ParseError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (cards, bid) = s.split_once(' ').ok_or(aoc::ParseError::Generic)?;
-        let cards = cards.to_string();
-        let bid = bid.parse::<i64>()?;
-        Ok(Hand {
-            cards,
-            bid,
-            rules: Rules::Part1,
-            cached_type: RefCell::new(None),
-        })
-    }
+    hand_type: HandType,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -49,17 +31,19 @@ enum HandType {
 
 impl Ord for Hand {
     fn cmp(&self, other: &Self) -> Ordering {
-        let st = self.get_type();
-        let ot = other.get_type();
-        let (mut so, mut oo) = (0, 0);
-        for (ca, cb) in self.cards.chars().zip(other.cards.chars()) {
-            if ca != cb {
-                so = get_card_order(self.rules, ca);
-                oo = get_card_order(other.rules, cb);
-                break;
+        let st = self.hand_type;
+        let ot = other.hand_type;
+        st.cmp(&ot).then_with(|| {
+            let (mut so, mut oo) = (0, 0);
+            for (ca, cb) in self.cards.chars().zip(other.cards.chars()) {
+                if ca != cb {
+                    so = get_card_order(self.rules, ca);
+                    oo = get_card_order(other.rules, cb);
+                    break;
+                }
             }
-        }
-        (st, so).cmp(&(ot, oo))
+            so.cmp(&oo)
+        })
     }
 }
 
@@ -69,27 +53,53 @@ impl PartialOrd for Hand {
     }
 }
 
-fn get_type(cards: &str) -> HandType {
-    let mut counts: BTreeMap<char, i64> = BTreeMap::new();
-    for c in cards.chars() {
-        *counts.entry(c).or_default() += 1;
-    }
-    let mut counts = counts.into_iter().collect::<Vec<_>>();
-    counts.sort_by(|a, b| b.1.cmp(&a.1));
-    if counts[0].1 == 5 {
-        HandType::FiveOfAKind
-    } else if counts[0].1 == 4 {
-        HandType::FourOfAKind
-    } else if counts[0].1 == 3 && counts[1].1 == 2 {
-        HandType::FullHouse
-    } else if counts[0].1 == 3 {
-        HandType::ThreeOfAKind
-    } else if counts[0].1 == 2 && counts[1].1 == 2 {
-        HandType::TwoPair
-    } else if counts[0].1 == 2 {
-        HandType::OnePair
-    } else {
-        HandType::HighCard
+fn get_type(cards: &str, rules: Rules) -> HandType {
+    match rules {
+        Rules::Part1 => {
+            let mut counts: BTreeMap<char, i64> = BTreeMap::new();
+            for c in cards.chars() {
+                *counts.entry(c).or_default() += 1;
+            }
+            let mut counts = counts.into_iter().collect::<Vec<_>>();
+            counts.sort_by(|a, b| b.1.cmp(&a.1));
+            if counts[0].1 == 5 {
+                HandType::FiveOfAKind
+            } else if counts[0].1 == 4 {
+                HandType::FourOfAKind
+            } else if counts[0].1 == 3 && counts[1].1 == 2 {
+                HandType::FullHouse
+            } else if counts[0].1 == 3 {
+                HandType::ThreeOfAKind
+            } else if counts[0].1 == 2 && counts[1].1 == 2 {
+                HandType::TwoPair
+            } else if counts[0].1 == 2 {
+                HandType::OnePair
+            } else {
+                HandType::HighCard
+            }
+        }
+        Rules::Part2 => {
+            let cards = cards.chars().collect::<Vec<_>>();
+            let mut h = possible_hands(&cards)
+                .into_iter()
+                .map(|x| x.iter().collect::<String>())
+                .map(|x| (get_type(&x, Rules::Part1), x))
+                .collect::<Vec<(HandType, String)>>();
+            h.sort_by(|a, b| {
+                a.0.cmp(&b.0).then_with(|| {
+                    let (mut so, mut oo) = (0, 0);
+                    for (ca, cb) in a.1.chars().zip(b.1.chars()) {
+                        if ca != cb {
+                            so = get_card_order(Rules::Part2, ca);
+                            oo = get_card_order(Rules::Part2, cb);
+                            break;
+                        }
+                    }
+                    so.cmp(&oo)
+                })
+            });
+            h[0].0
+        }
     }
 }
 
@@ -151,49 +161,29 @@ fn possible_hands(cards: &[char]) -> HashSet<Vec<char>> {
     possible
 }
 
-impl Hand {
-    fn get_type(&self) -> HandType {
-        if let Some(cached_type) = *self.cached_type.borrow() {
-            return cached_type;
-        }
-        match self.rules {
-            Rules::Part1 => {
-                let t = get_type(&self.cards);
-                *self.cached_type.borrow_mut() = Some(t);
-                t
-            }
-            Rules::Part2 => {
-                let cards = self.cards.chars().collect::<Vec<_>>();
-                let mut h = possible_hands(&cards)
-                    .into_iter()
-                    .map(|x| x.iter().collect())
-                    .collect::<Vec<String>>();
-                h.sort_by(|a, b| {
-                    get_type(a).cmp(&get_type(b)).then_with(|| {
-                        let (mut so, mut oo) = (0, 0);
-                        for (ca, cb) in a.chars().zip(b.chars()) {
-                            if ca != cb {
-                                so = get_card_order(Rules::Part2, ca);
-                                oo = get_card_order(Rules::Part2, cb);
-                                break;
-                            }
-                        }
-                        so.cmp(&oo)
-                    })
-                });
-                let t = get_type(&h[0]);
-                *self.cached_type.borrow_mut() = Some(t);
-                t
-            }
-        }
-    }
-}
-
-type ParsedItem = Hand;
+type ParsedItem = String;
 type Parsed = Vec<ParsedItem>;
 
+fn parse_rules(lines: &[String], rules: Rules) -> Vec<Hand> {
+    lines
+        .iter()
+        .map(|s| {
+            let (cards, bid) = s.split_once(' ').unwrap();
+            let cards = cards.to_string();
+            let bid = bid.parse::<i64>().unwrap();
+            let hand_type = get_type(&cards, rules);
+            Hand {
+                cards,
+                bid,
+                rules,
+                hand_type,
+            }
+        })
+        .collect()
+}
+
 fn part1(data: &Parsed) -> i64 {
-    let mut data = data.to_vec();
+    let mut data = parse_rules(data, Rules::Part1);
     data.sort();
     data.iter()
         .rev()
@@ -203,15 +193,7 @@ fn part1(data: &Parsed) -> i64 {
 }
 
 fn part2(data: &Parsed) -> i64 {
-    let mut data = data
-        .iter()
-        .map(|x| Hand {
-            cards: x.cards.clone(),
-            bid: x.bid,
-            rules: Rules::Part2,
-            cached_type: RefCell::new(None),
-        })
-        .collect::<Vec<_>>();
+    let mut data = parse_rules(data, Rules::Part2);
     data.sort();
     data.iter()
         .rev()
@@ -221,7 +203,7 @@ fn part2(data: &Parsed) -> i64 {
 }
 
 fn parse(lines: &[String]) -> Parsed {
-    lines.iter().map(|x| x.parse().unwrap()).collect()
+    lines.to_vec()
 }
 
 fn main() {

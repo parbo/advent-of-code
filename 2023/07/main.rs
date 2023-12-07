@@ -1,8 +1,4 @@
-use std::{
-    cmp::Ordering,
-    collections::{BTreeMap, HashSet},
-    iter::*,
-};
+use std::{cmp::Ordering, iter::*};
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 enum Rules {
@@ -56,7 +52,7 @@ impl PartialOrd for Hand {
 fn get_type(cards: &str, rules: Rules) -> HandType {
     match rules {
         Rules::Part1 => {
-            let mut counts: BTreeMap<char, i64> = BTreeMap::new();
+            let mut counts: aoc::FxHashMap<char, i64> = aoc::FxHashMap::default();
             for c in cards.chars() {
                 *counts.entry(c).or_default() += 1;
             }
@@ -140,8 +136,8 @@ fn get_card_order(rules: Rules, k: char) -> i64 {
     }
 }
 
-fn possible_hands(cards: &[char]) -> HashSet<Vec<char>> {
-    let mut possible = HashSet::new();
+fn possible_hands(cards: &[char]) -> aoc::FxHashSet<Vec<char>> {
+    let mut possible = aoc::FxHashSet::default();
     for i in 0..5 {
         if cards[i] == 'J' {
             for cc in ['A', 'K', 'Q', 'T', '9', '8', '7', '6', '5', '4', '3', '2'] {

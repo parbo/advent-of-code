@@ -135,11 +135,13 @@ fn possible_hands(cards: &[char]) -> HashSet<Vec<char>> {
     for i in 0..5 {
         if cards[i] == 'J' {
             for cc in ['A', 'K', 'Q', 'T', '9', '8', '7', '6', '5', '4', '3', '2'] {
-                let mut hh = cards.to_vec();
-                hh[i] = cc;
-                let pp = possible_hands(&hh);
-                for p in pp {
-                    possible.insert(p);
+                if cards.contains(&cc) || possible.is_empty() {
+                    let mut hh = cards.to_vec();
+                    hh[i] = cc;
+                    let pp = possible_hands(&hh);
+                    for p in pp {
+                        possible.insert(p);
+                    }
                 }
             }
             return possible;

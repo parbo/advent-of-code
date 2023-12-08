@@ -26,14 +26,11 @@ type Parsed = (Vec<char>, Vec<Node>);
 fn part1(data: &Parsed) -> i64 {
     let mut pos = "AAA".to_string();
     let mut ix = 0;
-    loop {
+    while pos != "ZZZ" {
         pos = get_next(&data.1, &pos, data.0[ix % data.0.len()]);
-        if pos == "ZZZ" {
-            break;
-        }
         ix += 1;
     }
-    (ix + 1) as i64
+    ix as i64
 }
 
 fn part2(data: &Parsed) -> i64 {
@@ -50,7 +47,7 @@ fn part2(data: &Parsed) -> i64 {
         .collect();
     let mut ix = 0;
     let mut periods = vec![];
-    loop {
+    while periods.len() != pos.len() {
         pos = pos
             .iter()
             .map(|p| get_next(&data.1, p, data.0[ix % data.0.len()]))
@@ -62,9 +59,6 @@ fn part2(data: &Parsed) -> i64 {
                 None
             }
         }));
-        if periods.len() == pos.len() {
-            break;
-        };
         ix += 1;
     }
     aoc::lcm_arr(&periods)

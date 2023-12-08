@@ -657,6 +657,14 @@ where
     (a * b).abs() / egcd(a, b).0
 }
 
+pub fn lcm_arr<T>(arr: &[T]) -> T
+where
+    T: std::cmp::PartialEq + num::Signed + Copy,
+{
+    arr.iter()
+        .fold(T::one(), |ans, a| (*a * ans) / egcd(*a, ans).0)
+}
+
 pub fn egcd<T>(a: T, b: T) -> (T, T, T)
 where
     T: std::cmp::PartialEq + num::Signed + Copy,

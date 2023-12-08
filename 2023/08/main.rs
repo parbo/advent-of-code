@@ -1,4 +1,4 @@
-use std::{collections::HashMap, iter::*};
+use std::iter::*;
 
 #[derive(parse_display::Display, parse_display::FromStr, Debug, Clone, PartialEq, Eq, Hash)]
 #[display("{from} = ({left}, {right})")]
@@ -8,23 +8,26 @@ struct Node {
     right: String,
 }
 
+fn get_next(nodes: &[Node], s: &str, d: char) -> String {
+    for n in nodes {
+        if n.from == s {
+            return match d {
+                'L' => n.left.clone(),
+                'R' => n.right.clone(),
+                _ => panic!(),
+            };
+        }
+    }
+    panic!()
+}
+
 type Parsed = (Vec<char>, Vec<Node>);
 
 fn part1(data: &Parsed) -> i64 {
-    let graph: HashMap<String, (String, String)> = data
-        .1
-        .iter()
-        .map(|x| (x.from.clone(), (x.left.clone(), x.right.clone())))
-        .collect();
     let mut pos = "AAA".to_string();
     let mut ix = 0;
     loop {
-        let (l, r) = graph.get(&pos).unwrap();
-        match data.0[ix % data.0.len()] {
-            'L' => pos = l.clone(),
-            'R' => pos = r.clone(),
-            _ => panic!(),
-        }
+        pos = get_next(&data.1, &pos, data.0[ix % data.0.len()]);
         if pos == "ZZZ" {
             break;
         }
@@ -33,24 +36,7 @@ fn part1(data: &Parsed) -> i64 {
     (ix + 1) as i64
 }
 
-fn lcm_arr(arr: &[i64]) -> i64 {
-    let mut ans = arr[0];
-
-    // ans contains LCM of arr[0], ..arr[i]
-    // after i'th iteration,
-    for a in arr[1..].iter() {
-        ans = (a * ans) / (aoc::egcd(*a, ans).0);
-    }
-
-    ans
-}
-
 fn part2(data: &Parsed) -> i64 {
-    let graph: HashMap<String, (String, String)> = data
-        .1
-        .iter()
-        .map(|x| (x.from.clone(), (x.left.clone(), x.right.clone())))
-        .collect();
     let mut pos: Vec<String> = data
         .1
         .iter()
@@ -67,26 +53,21 @@ fn part2(data: &Parsed) -> i64 {
     loop {
         pos = pos
             .iter()
-            .map(|p| {
-                let (l, r) = graph.get(p).unwrap();
-                match data.0[ix % data.0.len()] {
-                    'L' => l.clone(),
-                    'R' => r.clone(),
-                    _ => panic!(),
-                }
-            })
+            .map(|p| get_next(&data.1, p, data.0[ix % data.0.len()]))
             .collect();
-        for pp in &pos {
+        periods.extend(pos.iter().filter_map(|pp| {
             if pp.ends_with('Z') {
-                periods.push((ix + 1) as i64);
+                Some((ix + 1) as i64)
+            } else {
+                None
             }
-        }
+        }));
         if periods.len() == pos.len() {
             break;
         };
         ix += 1;
     }
-    lcm_arr(&periods)
+    aoc::lcm_arr(&periods)
 }
 
 fn parse(lines: &[String]) -> Parsed {

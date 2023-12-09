@@ -22,11 +22,11 @@ fn extrapolate(h: &[i64]) -> (i64, i64) {
 }
 
 fn part1(data: &Parsed) -> i64 {
-    data.iter().map(|x| extrapolate(&x).0).sum()
+    data.iter().map(|x| extrapolate(x).0).sum()
 }
 
 fn part2(data: &Parsed) -> i64 {
-    data.iter().map(|x| extrapolate(&x).1).sum()
+    data.iter().map(|x| extrapolate(x).1).sum()
 }
 
 fn parse(lines: &[String]) -> Parsed {

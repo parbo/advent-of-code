@@ -12,15 +12,13 @@ fn extrapolate(h: &[i64]) -> (i64, i64) {
             break;
         }
     }
-    let mut e = 0;
-    for d in diffslist.iter().rev() {
-        e += d.last().unwrap();
-    }
-    let mut e2 = 0;
-    for d in diffslist.iter().rev() {
-        e2 = d.first().unwrap() - e2;
-    }
-    (e, e2)
+    (
+        diffslist.iter().rev().fold(0, |e, d| e + d.last().unwrap()),
+        diffslist
+            .iter()
+            .rev()
+            .fold(0, |e, d| d.first().unwrap() - e),
+    )
 }
 
 fn part1(data: &Parsed) -> i64 {

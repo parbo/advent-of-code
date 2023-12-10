@@ -27,7 +27,6 @@ fn get_loop(data: &Parsed) -> Vec<aoc::Point> {
         (SOUTH, vec!['|', 'J', 'L', 'S']),
     ]);
     let mut frontier = vec![vec![s]];
-    let mut paths = vec![];
     while let Some(path) = frontier.pop() {
         let pos = *path.last().unwrap();
         let c = data.get_value(pos).unwrap();
@@ -36,8 +35,7 @@ fn get_loop(data: &Parsed) -> Vec<aoc::Point> {
                 let new_pos = aoc::point_add(pos, *nb);
                 if let Some(new_c) = data.get_value(new_pos) {
                     if path.len() > 2 && new_c == 'S' {
-                        paths.push(path.clone());
-                        continue;
+                        return path;
                     }
                     if !path.contains(&new_pos) && poss2.get(nb).unwrap().contains(&new_c) {
                         let mut new_path = path.clone();
@@ -48,7 +46,7 @@ fn get_loop(data: &Parsed) -> Vec<aoc::Point> {
             }
         }
     }
-    paths[0].clone()
+    panic!();
 }
 
 fn part1(data: &Parsed) -> i64 {
@@ -72,29 +70,15 @@ fn part2(data: &Parsed) -> i64 {
     for mv in lp.windows(2) {
         let dir = aoc::point_sub(mv[1], mv[0]);
         let r = *aoc::DIRECTION_ROTATE_RIGHT.get(&dir).unwrap();
-        let nbr = aoc::point_add(mv[0], r);
-        let nbr2 = aoc::point_add(mv[1], r);
-        if let Some(c) = data.get_value(nbr) {
-            if c == '.' {
-                right.insert(nbr);
-            }
-        }
-        if let Some(c) = data.get_value(nbr2) {
-            if c == '.' {
-                right.insert(nbr2);
+        for p in [aoc::point_add(mv[0], r), aoc::point_add(mv[1], r)] {
+            if let Some('.') = data.get_value(p) {
+                right.insert(p);
             }
         }
         let l = *aoc::DIRECTION_ROTATE_LEFT.get(&dir).unwrap();
-        let nbr = aoc::point_add(mv[0], l);
-        let nbr2 = aoc::point_add(mv[1], l);
-        if let Some(c) = data.get_value(nbr) {
-            if c == '.' {
-                left.insert(nbr);
-            }
-        }
-        if let Some(c) = data.get_value(nbr2) {
-            if c == '.' {
-                left.insert(nbr2);
+        for p in [aoc::point_add(mv[0], l), aoc::point_add(mv[1], l)] {
+            if let Some('.') = data.get_value(p) {
+                left.insert(p);
             }
         }
     }
@@ -104,33 +88,25 @@ fn part2(data: &Parsed) -> i64 {
     for p in left {
         data.fill(p, 'l');
     }
-    let ([min_x, min_y], [max_x, max_y]) = data.extents();
-    let mut inside = '.';
-    let edge = (min_x..=max_x)
-        .map(|x| [x, 0])
-        .chain((min_x..=max_x).map(|x| [x, max_y]))
-        .chain((min_y..=max_y).map(|y| [0, y]))
-        .chain((min_y..=max_y).map(|y| [max_x, y]));
-    for p in edge {
-        match data.get_value(p) {
-            Some('l') => {
-                inside = 'r';
-                break;
-            }
-            Some('r') => {
-                inside = 'l';
-                break;
-            }
-            _ => (),
-        }
-    }
     let unknown = data
         .points()
         .filter_map(|x| data.get_value(x))
         .filter(|x| *x == '.')
         .count() as i64;
     assert_eq!(unknown, 0);
-    assert_ne!(inside, '.');
+    // Anything touching the edge is the outside
+    let ([min_x, min_y], [max_x, max_y]) = data.extents();
+    let inside = (min_x..=max_x)
+        .map(|x| [x, 0])
+        .chain((min_x..=max_x).map(|x| [x, max_y]))
+        .chain((min_y..=max_y).map(|y| [0, y]))
+        .chain((min_y..=max_y).map(|y| [max_x, y]))
+        .find_map(|p| match data.get_value(p) {
+            Some('l') => Some('r'),
+            Some('r') => Some('l'),
+            _ => None,
+        })
+        .unwrap();
     data.points()
         .filter_map(|x| data.get_value(x))
         .filter(|x| *x == inside)

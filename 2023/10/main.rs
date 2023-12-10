@@ -57,6 +57,7 @@ fn part1(data: &Parsed) -> i64 {
 fn part2(data: &Parsed) -> i64 {
     let lp = get_loop(data);
     let mut data = data.clone();
+    // Remove non-path junk
     let ([min_x, min_y], [max_x, max_y]) = data.extents();
     for y in min_y..=max_y {
         for x in min_x..=max_x {
@@ -65,6 +66,7 @@ fn part2(data: &Parsed) -> i64 {
             }
         }
     }
+    // Walk along path and mark right and left sides
     let mut right = HashSet::new();
     let mut left = HashSet::new();
     for mv in lp.windows(2) {
@@ -82,12 +84,14 @@ fn part2(data: &Parsed) -> i64 {
             }
         }
     }
+    // Flood fill left and right
     for p in right {
         data.fill(p, 'r');
     }
     for p in left {
         data.fill(p, 'l');
     }
+    // Assert that we got all of it
     let unknown = data
         .points()
         .filter_map(|x| data.get_value(x))

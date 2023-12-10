@@ -6,12 +6,11 @@ use std::{
 
 type Parsed = Vec<Vec<char>>;
 
-fn get_loop(data: &Parsed) -> (Vec<aoc::Point>, HashMap<aoc::Point, i64>) {
+fn get_loop(data: &Parsed) -> Vec<aoc::Point> {
     let s = data
         .points()
         .find(|p| data.get_value(*p).unwrap() == 'S')
         .unwrap();
-    let mut distances = HashMap::from([(s, 0)]);
     let poss = HashMap::from([
         ('-', vec![EAST, WEST]),
         ('|', vec![NORTH, SOUTH]),
@@ -33,7 +32,6 @@ fn get_loop(data: &Parsed) -> (Vec<aoc::Point>, HashMap<aoc::Point, i64>) {
         let pos = *path.last().unwrap();
         let c = data.get_value(pos).unwrap();
         if let Some(nbs) = poss.get(&c) {
-            let d = *distances.get(&pos).unwrap_or(&0);
             for nb in nbs {
                 let new_pos = aoc::point_add(pos, *nb);
                 if let Some(new_c) = data.get_value(new_pos) {
@@ -42,11 +40,6 @@ fn get_loop(data: &Parsed) -> (Vec<aoc::Point>, HashMap<aoc::Point, i64>) {
                         continue;
                     }
                     if !path.contains(&new_pos) && poss2.get(nb).unwrap().contains(&new_c) {
-                        let dd = d + 1;
-                        let e = distances.entry(new_pos).or_insert(dd);
-                        if dd <= *e {
-                            *e = dd;
-                        }
                         let mut new_path = path.clone();
                         new_path.push(new_pos);
                         frontier.push(new_path);
@@ -55,16 +48,16 @@ fn get_loop(data: &Parsed) -> (Vec<aoc::Point>, HashMap<aoc::Point, i64>) {
             }
         }
     }
-    (paths[0].clone(), distances)
+    paths[0].clone()
 }
 
 fn part1(data: &Parsed) -> i64 {
-    let distances = get_loop(data).1;
-    *distances.values().max().unwrap()
+    let lp = get_loop(data);
+    (lp.len() / 2) as i64
 }
 
 fn part2(data: &Parsed) -> i64 {
-    let lp = get_loop(data).0;
+    let lp = get_loop(data);
     let mut data = data.clone();
     let ([min_x, min_y], [max_x, max_y]) = data.extents();
     for y in min_y..=max_y {

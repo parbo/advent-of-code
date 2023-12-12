@@ -75,7 +75,7 @@ fn count_ways2(springs: &[char], groups: &[i64]) -> i64 {
         - groups.iter().sum::<i64>();
     // let rem = rem - (groups.len() - 1) as i64;
     let mut frontier = vec![(0, 0, '.', rem /*, vec![], vec![]*/)];
-    frontier.reserve(springs.len());
+    frontier.reserve(100000);
     let mut num = 0;
     while let Some((pos, spos, curr, rem /*, result, grps*/)) = frontier.pop() {
         let rem_g = (groups.len() - pos) as i64;
@@ -191,6 +191,7 @@ fn count_ways3(springs: &[char], groups: &[i64]) -> i64 {
                 }
                 if l == 0 {
                     let mut d = divs.clone();
+                    d.reserve(ranges.len());
                     d.push((start, end, pp, pos));
                     // dbg!(&d);
                     todo.push((d, r + 1, pos));
@@ -207,6 +208,7 @@ fn count_ways3(springs: &[char], groups: &[i64]) -> i64 {
     let mut memo = aoc::FxHashMap::default(); //lru::LruCache::new(std::num::NonZeroUsize::new(100000).unwrap());
     dbg!(subdivisions.len());
     let mut hits = 0;
+    let mut misses = 0;
     for sub in subdivisions {
         // dbg!(&sub);
         let mut p = 1;
@@ -217,6 +219,7 @@ fn count_ways3(springs: &[char], groups: &[i64]) -> i64 {
             } else {
                 let v = count_ways2(&springs[start..end], &groups[p1..p2]);
                 memo.insert((start, end, p1, p2), v);
+                misses += 1;
                 v
             };
             // dbg!(v);
@@ -227,6 +230,7 @@ fn count_ways3(springs: &[char], groups: &[i64]) -> i64 {
     memo.clear();
     memo.shrink_to(0);
     dbg!(hits);
+    dbg!(misses);
     s
 }
 
@@ -259,7 +263,7 @@ fn unfold(springs: &[char], groups: &[i64]) -> (Vec<char>, Vec<i64>) {
 }
 
 fn part2(data: &Parsed) -> i64 {
-    data.par_iter()
+    data.iter()
         .enumerate()
         .map(move |(ix, x)| {
             println!("{}/{}", ix, data.len());

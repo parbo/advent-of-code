@@ -52,7 +52,7 @@ fn count_ways(springs: &[char], groups: &[i64]) -> i64 {
 
 fn count(s: &[char], c: char) -> (i64, i64) {
     (
-        s.iter().take_while(|x| **x == c || **x != '?').count() as i64,
+        s.iter().take_while(|x| **x == c && **x != '?').count() as i64,
         s.iter().take_while(|x| **x == c || **x == '?').count() as i64,
     )
 }

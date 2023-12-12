@@ -1,5 +1,5 @@
 use rayon::prelude::*;
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
 use std::iter::*;
 
 type ParsedItem = (Vec<char>, Vec<i64>);
@@ -11,8 +11,7 @@ fn count_ways(springs: &[char], groups: &[i64]) -> i64 {
     let mut stack = vec![springs.to_vec()];
     stack.reserve(1000000);
     let mut num = 0;
-    let mut grps = vec![];
-    grps.reserve(groups.len());
+    let mut grps = Vec::with_capacity(groups.len());
     'outer: while let Some(s) = stack.pop() {
         grps.clear();
         // dbg!(&s);
@@ -158,25 +157,25 @@ fn count_ways3(springs: &[char], groups: &[i64]) -> i64 {
             if *c == '#' || *c == '?' {
                 start = Some(i);
             }
-        } else {
-            if *c == '.' {
-                ranges.push_back((start.unwrap(), i));
-                start = None;
-            }
+        } else if *c == '.' {
+            ranges.push_back((start.unwrap(), i));
+            start = None;
         }
     }
     if let Some(s) = start {
         ranges.push_back((s, springs.len()));
     }
     println!("ranges: {:?}", ranges);
-    let mut subdivisions = vec![];
-    subdivisions.reserve(100000);
     let mut todo = vec![(vec![], 0, 0)];
     todo.reserve(100000);
+    let mut s = 0;
+    let mut memo = aoc::FxHashMap::default(); //lru::LruCache::new(std::num::NonZeroUsize::new(100000).unwrap());
+    let mut hits = 0;
+    let mut misses = 0;
     while let Some((divs, r, pp)) = todo.pop() {
         if let Some(&(start, end)) = ranges.get(r) {
             let len = (end - start) as i64;
-            let num_hash = (len + 1) / 2;
+            // let num_hash = (len + 1) / 2;
             // dbg!((len, num_hash, start, end, &ranges));
             for mut l in 0..=len {
                 let mut pos = pp;
@@ -200,35 +199,24 @@ fn count_ways3(springs: &[char], groups: &[i64]) -> i64 {
             // println!("1");
         } else if pp == groups.len() {
             // dbg!(&divs);
-            subdivisions.push(divs);
+            let mut p = 1;
+            for (start, end, p1, p2) in divs {
+                let v = if let Some(v) = memo.get(&(start, end, p1, p2)) {
+                    hits += 1;
+                    *v
+                } else {
+                    let v = count_ways2(&springs[start..end], &groups[p1..p2]);
+                    memo.insert((start, end, p1, p2), v);
+                    misses += 1;
+                    v
+                };
+                // dbg!(v);
+                p *= v;
+            }
+            s += p;
         }
         // println!("2");
     }
-    let mut s = 0;
-    let mut memo = aoc::FxHashMap::default(); //lru::LruCache::new(std::num::NonZeroUsize::new(100000).unwrap());
-    dbg!(subdivisions.len());
-    let mut hits = 0;
-    let mut misses = 0;
-    for sub in subdivisions {
-        // dbg!(&sub);
-        let mut p = 1;
-        for (start, end, p1, p2) in sub {
-            let v = if let Some(v) = memo.get(&(start, end, p1, p2)) {
-                hits += 1;
-                *v
-            } else {
-                let v = count_ways2(&springs[start..end], &groups[p1..p2]);
-                memo.insert((start, end, p1, p2), v);
-                misses += 1;
-                v
-            };
-            // dbg!(v);
-            p *= v;
-        }
-        s += p;
-    }
-    memo.clear();
-    memo.shrink_to(0);
     dbg!(hits);
     dbg!(misses);
     s
@@ -263,7 +251,7 @@ fn unfold(springs: &[char], groups: &[i64]) -> (Vec<char>, Vec<i64>) {
 }
 
 fn part2(data: &Parsed) -> i64 {
-    data.iter()
+    data.par_iter()
         .enumerate()
         .map(move |(ix, x)| {
             println!("{}/{}", ix, data.len());

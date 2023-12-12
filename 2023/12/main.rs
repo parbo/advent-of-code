@@ -65,6 +65,9 @@ fn count_ways2(springs: &[char], groups: &[i64]) -> i64 {
     let mut frontier = vec![(0, 0, '.', rem /*, vec![], vec![]*/)];
     frontier.reserve(100000);
     let mut num = 0;
+    let mut cnt_memo = aoc::FxHashMap::default();
+    let mut gg_memo = aoc::FxHashMap::default();
+    let mut end_memo = aoc::FxHashMap::default();
     while let Some((pos, spos, curr, rem /*, result, grps*/)) = frontier.pop() {
         let rem_g = (groups.len() - pos) as i64;
         let rem_g = rem_g - 1;
@@ -73,7 +76,13 @@ fn count_ways2(springs: &[char], groups: &[i64]) -> i64 {
         if rem < rem_g {
             continue;
         }
-        let (min, max) = count(&springs[spos..], curr);
+        let (min, max) = if let Some(v) = cnt_memo.get(&(spos, curr)) {
+            *v
+        } else {
+            let v = count(&springs[spos..], curr);
+            cnt_memo.insert((spos, curr), v);
+            v
+        };
         let mut min = min;
         if pos > 0 && min == 0 {
             min = 1;
@@ -91,7 +100,14 @@ fn count_ways2(springs: &[char], groups: &[i64]) -> i64 {
         //     groups,
         // );
         if pos == groups.len() {
-            if springs[spos..].iter().all(|x| *x == '.' || *x == '?') {
+            let end = if let Some(v) = end_memo.get(&spos) {
+                *v
+            } else {
+                let v = springs[spos..].iter().all(|x| *x == '.' || *x == '?');
+                end_memo.insert(spos, v);
+                v
+            };
+            if end {
                 num += 1;
                 // if num % 1000000 == 0 {
                 //     println!("num: {}", num);
@@ -116,10 +132,16 @@ fn count_ways2(springs: &[char], groups: &[i64]) -> i64 {
             }
         } else if pos < groups.len() {
             let g = groups[pos];
-            let gg = springs[spos..]
-                .iter()
-                .filter(|x| **x == '#' || **x == '?')
-                .count() as i64;
+            let gg = if let Some(v) = gg_memo.get(&spos) {
+                *v
+            } else {
+                let v = springs[spos..]
+                    .iter()
+                    .filter(|x| **x == '#' || **x == '?')
+                    .count() as i64;
+                gg_memo.insert(spos, v);
+                v
+            };
             let ggg = groups[(pos + 1)..].iter().sum::<i64>();
             if g >= min && g <= max && ggg <= gg {
                 // println!("pick {} #", g);

@@ -1,5 +1,5 @@
 use rayon::prelude::*;
-use std::collections::HashSet;
+use std::collections::{HashMap, VecDeque};
 use std::iter::*;
 
 type ParsedItem = (Vec<char>, Vec<i64>);
@@ -70,7 +70,6 @@ fn count(s: &[char], c: char) -> (i64, i64) {
 }
 
 fn count_ways2(springs: &[char], groups: &[i64]) -> i64 {
-    println!("{:?} {:?}", springs, groups);
     let rem: i64 = springs.len() as i64
         // - springs.iter().filter(|x| **x == '#').count() as i64
         - groups.iter().sum::<i64>();
@@ -78,7 +77,6 @@ fn count_ways2(springs: &[char], groups: &[i64]) -> i64 {
     let mut frontier = vec![(0, 0, '.', rem /*, vec![], vec![]*/)];
     frontier.reserve(springs.len());
     let mut num = 0;
-    // let mut failed = HashSet::new();
     while let Some((pos, spos, curr, rem /*, result, grps*/)) = frontier.pop() {
         let rem_g = (groups.len() - pos) as i64;
         let rem_g = rem_g - 1;
@@ -107,13 +105,12 @@ fn count_ways2(springs: &[char], groups: &[i64]) -> i64 {
         if pos == groups.len() {
             if springs[spos..].iter().all(|x| *x == '.' || *x == '?') {
                 num += 1;
-                if num % 1000000 == 0 {
-                    println!("num: {}", num);
-                }
+                // if num % 1000000 == 0 {
+                //     println!("num: {}", num);
+                // }
             }
             continue;
         }
-        let bef = frontier.len();
         if curr == '.' {
             let max = max.min(rem);
             for i in (min..=max).rev() {
@@ -127,9 +124,7 @@ fn count_ways2(springs: &[char], groups: &[i64]) -> i64 {
                     '#',
                     rem - i, /*r, grps.clone()*/
                 );
-                // if !failed.contains(&next) {
                 frontier.push(next);
-                // }
             }
         } else if pos < groups.len() {
             let g = groups[pos];
@@ -147,26 +142,104 @@ fn count_ways2(springs: &[char], groups: &[i64]) -> i64 {
                 // gg.push(g);
                 // assert!(groups.starts_with(&gg));
                 let next = (pos + 1, spos + g as usize, '.', rem /*, r, gg*/);
-                // if !failed.contains(&next) {
                 frontier.push(next);
-                // }
             }
         }
-        // if frontier.len() == bef {
-        //     failed.insert((pos, spos, curr, rem));
-        // }
     }
     num
+}
+
+fn count_ways3(springs: &[char], groups: &[i64]) -> i64 {
+    // Divide and conquer
+    let mut ranges = VecDeque::new();
+    let mut start = None;
+    for (i, c) in springs.iter().enumerate() {
+        if start.is_none() {
+            if *c == '#' || *c == '?' {
+                start = Some(i);
+            }
+        } else {
+            if *c == '.' {
+                ranges.push_back((start.unwrap(), i));
+                start = None;
+            }
+        }
+    }
+    if let Some(s) = start {
+        ranges.push_back((s, springs.len()));
+    }
+    println!("ranges: {:?}", ranges);
+    let mut subdivisions = vec![];
+    subdivisions.reserve(100000);
+    let mut todo = vec![(vec![], 0, 0)];
+    todo.reserve(100000);
+    while let Some((divs, r, pp)) = todo.pop() {
+        if let Some(&(start, end)) = ranges.get(r) {
+            let len = (end - start) as i64;
+            let num_hash = (len + 1) / 2;
+            // dbg!((len, num_hash, start, end, &ranges));
+            for mut l in 0..=len {
+                let mut pos = pp;
+                while l > 0 && pos < groups.len() {
+                    let g = groups[pos];
+                    if g <= l {
+                        pos += 1;
+                        l -= g;
+                    } else {
+                        break;
+                    }
+                }
+                if l == 0 {
+                    let mut d = divs.clone();
+                    d.push((start, end, pp, pos));
+                    // dbg!(&d);
+                    todo.push((d, r + 1, pos));
+                }
+            }
+            // println!("1");
+        } else if pp == groups.len() {
+            // dbg!(&divs);
+            subdivisions.push(divs);
+        }
+        // println!("2");
+    }
+    let mut s = 0;
+    let mut memo = aoc::FxHashMap::default(); //lru::LruCache::new(std::num::NonZeroUsize::new(100000).unwrap());
+    dbg!(subdivisions.len());
+    let mut hits = 0;
+    for sub in subdivisions {
+        // dbg!(&sub);
+        let mut p = 1;
+        for (start, end, p1, p2) in sub {
+            let v = if let Some(v) = memo.get(&(start, end, p1, p2)) {
+                hits += 1;
+                *v
+            } else {
+                let v = count_ways2(&springs[start..end], &groups[p1..p2]);
+                memo.insert((start, end, p1, p2), v);
+                v
+            };
+            // dbg!(v);
+            p *= v;
+        }
+        s += p;
+    }
+    memo.clear();
+    memo.shrink_to(0);
+    dbg!(hits);
+    s
 }
 
 fn part1(data: &Parsed) -> i64 {
     for x in data {
         let a = count_ways(&x.0, &x.1);
         let b = count_ways2(&x.0, &x.1);
-        println!("{:?}, {}, {}", x, a, b);
+        let c = count_ways3(&x.0, &x.1);
+        println!("{:?}, {}, {}, {}", x, a, b, c);
         assert_eq!(a, b);
+        assert_eq!(a, c);
     }
-    data.iter().map(|x| count_ways2(&x.0, &x.1)).sum()
+    data.par_iter().map(|x| count_ways2(&x.0, &x.1)).sum()
 }
 
 fn unfold(springs: &[char], groups: &[i64]) -> (Vec<char>, Vec<i64>) {
@@ -188,17 +261,20 @@ fn unfold(springs: &[char], groups: &[i64]) -> (Vec<char>, Vec<i64>) {
 fn part2(data: &Parsed) -> i64 {
     data.par_iter()
         .enumerate()
-        .map(|(ix, x)| {
+        .map(move |(ix, x)| {
             println!("{}/{}", ix, data.len());
             let (s, g) = unfold(&x.0, &x.1);
-            count_ways2(&s, &g)
+            println!("{:?} {:?}", s, g);
+            let x = count_ways3(&s, &g);
+            println!("{}", x);
+            x
         })
         .sum()
 }
 
 fn parse(lines: &[String]) -> Parsed {
     lines
-        .par_iter()
+        .iter()
         .map(|x| {
             let (springs, groups) = x.split_once(' ').unwrap();
             (springs.chars().collect(), aoc::things(groups))
@@ -303,10 +379,17 @@ mod tests {
         assert_eq!(count_ways2(&s, &g), 506250);
     }
 
+    // #[test]
+    // fn test_count_ways_unfolded_7() {
+    //     let (s, g) = &parse(&["???..??????? 1,1,1,1".to_string()])[0];
+    //     let (s, g) = unfold(s, g);
+    //     assert_eq!(count_ways2(&s, &g), 506250);
+    // }
+
     #[test]
-    fn test_count_ways_unfolded_7() {
+    fn test_count_ways_unfolded_7_2() {
         let (s, g) = &parse(&["???..??????? 1,1,1,1".to_string()])[0];
         let (s, g) = unfold(s, g);
-        assert_eq!(count_ways2(&s, &g), 506250);
+        assert_eq!(count_ways3(&s, &g), 405968);
     }
 }

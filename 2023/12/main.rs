@@ -166,13 +166,13 @@ fn count_ways3(springs: &[char], groups: &[i64]) -> i64 {
         ranges.push_back((s, springs.len()));
     }
     println!("ranges: {:?}", ranges);
-    let mut todo = vec![(vec![], 0, 0)];
+    let mut todo = vec![(1, 0, 0)];
     todo.reserve(100000);
     let mut s = 0;
     let mut memo = aoc::FxHashMap::default(); //lru::LruCache::new(std::num::NonZeroUsize::new(100000).unwrap());
     let mut hits = 0;
     let mut misses = 0;
-    while let Some((divs, r, pp)) = todo.pop() {
+    while let Some((p, r, pp)) = todo.pop() {
         if let Some(&(start, end)) = ranges.get(r) {
             let len = (end - start) as i64;
             // let num_hash = (len + 1) / 2;
@@ -189,30 +189,26 @@ fn count_ways3(springs: &[char], groups: &[i64]) -> i64 {
                     }
                 }
                 if l == 0 {
-                    let mut d = divs.clone();
-                    d.reserve(ranges.len());
-                    d.push((start, end, pp, pos));
-                    // dbg!(&d);
-                    todo.push((d, r + 1, pos));
+                    // dbg!((start, end, pp, pos));
+                    let v = if let Some(v) = memo.get(&(start, end, pp, pos)) {
+                        hits += 1;
+                        *v
+                    } else {
+                        let v = count_ways2(&springs[start..end], &groups[pp..pos]);
+                        memo.insert((start, end, pp, pos), v);
+                        misses += 1;
+                        v
+                    };
+                    // dbg!(v);
+                    let mut new_p = p;
+                    new_p *= v;
+                    // dbg!(new_p);
+                    todo.push((new_p, r + 1, pos));
                 }
             }
             // println!("1");
         } else if pp == groups.len() {
             // dbg!(&divs);
-            let mut p = 1;
-            for (start, end, p1, p2) in divs {
-                let v = if let Some(v) = memo.get(&(start, end, p1, p2)) {
-                    hits += 1;
-                    *v
-                } else {
-                    let v = count_ways2(&springs[start..end], &groups[p1..p2]);
-                    memo.insert((start, end, p1, p2), v);
-                    misses += 1;
-                    v
-                };
-                // dbg!(v);
-                p *= v;
-            }
             s += p;
         }
         // println!("2");

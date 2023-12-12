@@ -22,21 +22,20 @@ impl Room {
     }
 
     fn decrypt(&self) -> String {
-        let mut r = String::new();
-        for c in self.name.chars() {
-            if c == '-' {
-                r.push(' ')
-            } else {
-                r.push(
+        self.name
+            .chars()
+            .map(|c| {
+                if c == '-' {
+                    ' '
+                } else {
                     char::from_u32(
                         (((c.to_ascii_lowercase() as u8 - b'a') as u32 + self.sector as u32) % 26)
                             + 'a' as u32,
                     )
-                    .unwrap(),
-                )
-            }
-        }
-        r
+                    .unwrap()
+                }
+            })
+            .collect()
     }
 }
 

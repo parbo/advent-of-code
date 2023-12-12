@@ -51,21 +51,10 @@ fn count_ways(springs: &[char], groups: &[i64]) -> i64 {
 }
 
 fn count(s: &[char], c: char) -> (i64, i64) {
-    let mut min = 0;
-    let mut max = 0;
-    let mut inc = 1;
-    for x in s {
-        if *x == c {
-            min += inc;
-            max += 1;
-        } else if *x == '?' {
-            max += 1;
-            inc = 0;
-        } else {
-            break;
-        }
-    }
-    (min, max)
+    (
+        s.iter().take_while(|x| **x == c || **x != '?').count() as i64,
+        s.iter().take_while(|x| **x == c || **x == '?').count() as i64,
+    )
 }
 
 fn count_ways2(springs: &[char], groups: &[i64]) -> i64 {

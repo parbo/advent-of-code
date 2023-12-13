@@ -7,100 +7,61 @@ type Parsed = Vec<ParsedItem>;
 fn do_count_ways(
     s: &[char],
     sa: usize,
-    curr: char,
+    curr: Option<char>,
     g: &[i64],
     ga: usize,
-    was_hash: bool,
     num_g: i64,
-    acc: Vec<char>,
-    cache: &mut aoc::FxHashMap<(usize, usize, char, bool, i64), i64>,
+    cache: &mut aoc::FxHashMap<(usize, usize, Option<char>, i64), i64>,
 ) -> i64 {
-    let k = (sa, ga, curr, was_hash, num_g);
-    dbg!(k, &acc);
+    let k = (sa, ga, curr, num_g);
     if let Some(v) = cache.get(&k) {
-        println!("v: {}", *v);
         return *v;
-    } else if g.len() - ga == 0 {
-        let v = if (curr == '.' || curr == '?')
-            && s[(sa + 1)..].iter().all(|x| *x == '.' || *x == '?')
-        {
-            println!("ok");
-            1
+    } else if sa == s.len() {
+        if (ga == g.len() && num_g == 0) || (g.len() - ga == 1 && num_g == g[ga]) {
+            cache.insert(k, 1);
+            return 1;
         } else {
-            0
-        };
-        cache.insert(k, v);
-        return v;
-    } else if g.len() - ga == 1 && num_g == g[ga] {
-        cache.insert(k, 1);
-        println!("ok 2");
-        return 1;
+            cache.insert(k, 0);
+            return 0;
+        }
     } else {
-        let c = curr;
-        dbg!(c);
-        if c == '?' {
-            let mut num = 0;
-            for cc in ['#', '.'] {
-                if cc == '#' && was_hash {
-                    continue;
+        let c = curr.unwrap_or(s[sa]);
+        match c {
+            '?' => {
+                let mut num = 0;
+                for cc in ['#', '.'] {
+                    num += do_count_ways(s, sa, Some(cc), g, ga, num_g, cache);
                 }
-                dbg!(cc);
-                let mut acc = acc.clone();
-                acc[sa] = cc;
-                num += do_count_ways(s, sa, cc, g, ga, was_hash, num_g, acc, cache);
+                // dbg!(num);
+                cache.insert(k, num);
+                return num;
             }
-            dbg!(num);
-            cache.insert(k, num);
-            return num;
-        } else if c == '#' {
-            let mut acc = acc.clone();
-            if sa + 1 < s.len() {
-                return do_count_ways(s, sa + 1, s[sa + 1], g, ga, true, num_g + 1, acc, cache);
-            } else if g.len() - ga == 1 && num_g + 1 == g[ga] {
-                cache.insert(k, 1);
-                println!("ok 3");
-                return 1;
-            } else {
-                cache.insert(k, 0);
-                println!("fail");
-                return 0;
+            '#' => {
+                return do_count_ways(s, sa + 1, None, g, ga, num_g + 1, cache);
             }
-        } else if let Some(&n) = g.get(ga) {
-            if num_g == n {
-                let mut acc = acc.clone();
-                return do_count_ways(s, sa + 1, s[sa + 1], g, ga + 1, true, 0, acc, cache);
-            } else if num_g > 0 {
-                cache.insert(k, 0);
-                println!("fail");
-                return 0;
+            '.' => {
+                let n = g.get(ga);
+                if Some(&num_g) == n {
+                    return do_count_ways(s, sa + 1, None, g, ga + 1, 0, cache);
+                } else if num_g == 0 {
+                    return do_count_ways(s, sa + 1, None, g, ga, 0, cache);
+                } else {
+                    cache.insert(k, 0);
+                    return 0;
+                }
             }
-        } else {
-            let mut acc = acc.clone();
-            return do_count_ways(s, sa + 1, s[sa + 1], g, ga, false, num_g, acc, cache);
+            _ => panic!(),
         }
     }
-    println!("fail 2");
-    cache.insert(k, 0);
-    0
 }
 
 fn count_ways(springs: &[char], groups: &[i64]) -> i64 {
     let mut cache = aoc::FxHashMap::default();
-    do_count_ways(
-        springs,
-        0,
-        springs[0],
-        groups,
-        0,
-        false,
-        0,
-        springs.to_vec(),
-        &mut cache,
-    )
+    do_count_ways(springs, 0, None, groups, 0, 0, &mut cache)
 }
 
 fn part1(data: &Parsed) -> i64 {
-    data.iter().map(|x| count_ways(&x.0, &x.1)).sum()
+    data.par_iter().map(|x| count_ways(&x.0, &x.1)).sum()
 }
 
 fn unfold(springs: &[char], groups: &[i64]) -> (Vec<char>, Vec<i64>) {
@@ -120,7 +81,7 @@ fn unfold(springs: &[char], groups: &[i64]) -> (Vec<char>, Vec<i64>) {
 }
 
 fn part2(data: &Parsed) -> i64 {
-    data.iter()
+    data.par_iter()
         .map(move |(s, g)| {
             let (s, g) = unfold(s, g);
             count_ways(&s, &g)
@@ -146,84 +107,84 @@ fn main() {
 mod tests {
     use super::*;
 
-    // #[test]
-    // fn test_count_ways_1() {
-    //     let (s, g) = &parse(&["???.### 1,1,3".to_string()])[0];
-    //     assert_eq!(count_ways(s, g), 1);
-    // }
-    // #[test]
-    // fn test_count_ways_2() {
-    //     let (s, g) = &parse(&[".??..??...?##. 1,1,3".to_string()])[0];
-    //     assert_eq!(count_ways(s, g), 4);
-    // }
-    // #[test]
-    // fn test_count_ways_3() {
-    //     let (s, g) = &parse(&["?#?#?#?#?#?#?#? 1,3,1,6".to_string()])[0];
-    //     assert_eq!(count_ways(s, g), 1);
-    // }
-    // #[test]
-    // fn test_count_ways_4() {
-    //     let (s, g) = &parse(&["????.#...#... 4,1,1".to_string()])[0];
-    //     assert_eq!(count_ways(s, g), 1);
-    // }
-    // #[test]
-    // fn test_count_ways_5() {
-    //     let (s, g) = &parse(&["????.######..#####. 1,6,5".to_string()])[0];
-    //     assert_eq!(count_ways(s, g), 4);
-    // }
-    // #[test]
-    // fn test_count_ways_6() {
-    //     let (s, g) = &parse(&["?###???????? 3,2,1".to_string()])[0];
-    //     assert_eq!(count_ways(s, g), 10);
-    // }
+    #[test]
+    fn test_count_ways_1() {
+        let (s, g) = &parse(&["???.### 1,1,3".to_string()])[0];
+        assert_eq!(count_ways(s, g), 1);
+    }
+    #[test]
+    fn test_count_ways_2() {
+        let (s, g) = &parse(&[".??..??...?##. 1,1,3".to_string()])[0];
+        assert_eq!(count_ways(s, g), 4);
+    }
+    #[test]
+    fn test_count_ways_3() {
+        let (s, g) = &parse(&["?#?#?#?#?#?#?#? 1,3,1,6".to_string()])[0];
+        assert_eq!(count_ways(s, g), 1);
+    }
+    #[test]
+    fn test_count_ways_4() {
+        let (s, g) = &parse(&["????.#...#... 4,1,1".to_string()])[0];
+        assert_eq!(count_ways(s, g), 1);
+    }
+    #[test]
+    fn test_count_ways_5() {
+        let (s, g) = &parse(&["????.######..#####. 1,6,5".to_string()])[0];
+        assert_eq!(count_ways(s, g), 4);
+    }
+    #[test]
+    fn test_count_ways_6() {
+        let (s, g) = &parse(&["?###???????? 3,2,1".to_string()])[0];
+        assert_eq!(count_ways(s, g), 10);
+    }
 
-    // #[test]
-    // fn test_count_ways_a() {
-    //     let (s, g) = &parse(&["?.?????#???#? 1, 1, 2, 2".to_string()])[0];
-    //     assert_eq!(count_ways(s, g), 22);
-    // }
+    #[test]
+    fn test_count_ways_a() {
+        let (s, g) = &parse(&["?.?????#???#? 1, 1, 2, 2".to_string()])[0];
+        assert_eq!(count_ways(s, g), 22);
+    }
 
-    // #[test]
-    // fn test_count_ways_unfolded_1() {
-    //     let (s, g) = &parse(&["???.### 1,1,3".to_string()])[0];
-    //     let (s, g) = unfold(s, g);
-    //     assert_eq!(count_ways(&s, &g), 1);
-    // }
+    #[test]
+    fn test_count_ways_unfolded_1() {
+        let (s, g) = &parse(&["???.### 1,1,3".to_string()])[0];
+        let (s, g) = unfold(s, g);
+        assert_eq!(count_ways(&s, &g), 1);
+    }
 
-    // #[test]
-    // fn test_count_ways_unfolded_2() {
-    //     let (s, g) = &parse(&[".??..??...?##. 1,1,3".to_string()])[0];
-    //     let (s, g) = unfold(s, g);
-    //     assert_eq!(count_ways(&s, &g), 16384);
-    // }
+    #[test]
+    fn test_count_ways_unfolded_2() {
+        let (s, g) = &parse(&[".??..??...?##. 1,1,3".to_string()])[0];
+        let (s, g) = unfold(s, g);
+        assert_eq!(count_ways(&s, &g), 16384);
+    }
 
-    // #[test]
-    // fn test_count_ways_unfolded_3() {
-    //     let (s, g) = &parse(&["?#?#?#?#?#?#?#? 1,3,1,6".to_string()])[0];
-    //     let (s, g) = unfold(s, g);
-    //     assert_eq!(count_ways(&s, &g), 1);
-    // }
+    #[test]
+    fn test_count_ways_unfolded_3() {
+        let (s, g) = &parse(&["?#?#?#?#?#?#?#? 1,3,1,6".to_string()])[0];
+        let (s, g) = unfold(s, g);
+        assert_eq!(count_ways(&s, &g), 1);
+    }
 
-    // #[test]
-    // fn test_count_ways_unfolded_4() {
-    //     let (s, g) = &parse(&["????.#...#... 4,1,1".to_string()])[0];
-    //     let (s, g) = unfold(s, g);
-    //     assert_eq!(count_ways(&s, &g), 16);
-    // }
+    #[test]
+    fn test_count_ways_unfolded_4() {
+        let (s, g) = &parse(&["????.#...#... 4,1,1".to_string()])[0];
+        let (s, g) = unfold(s, g);
+        assert_eq!(count_ways(&s, &g), 16);
+    }
 
-    // #[test]
-    // fn test_count_ways_unfolded_5() {
-    //     let (s, g) = &parse(&["????.######..#####. 1,6,5".to_string()])[0];
-    //     let (s, g) = unfold(s, g);
-    //     assert_eq!(count_ways(&s, &g), 2500);
-    // }
+    #[test]
+    fn test_count_ways_unfolded_5() {
+        let (s, g) = &parse(&["????.######..#####. 1,6,5".to_string()])[0];
+        let (s, g) = unfold(s, g);
+        assert_eq!(count_ways(&s, &g), 2500);
+    }
 
-    // #[test]
-    // fn test_count_ways_unfolded_6() {
-    //     let (s, g) = &parse(&["?###???????? 3,2,1".to_string()])[0];
-    //     let (s, g) = unfold(s, g);
-    //     assert_eq!(count_ways(&s, &g), 506250);
-    // }
+    #[test]
+    fn test_count_ways_unfolded_6() {
+        let (s, g) = &parse(&["?###???????? 3,2,1".to_string()])[0];
+        let (s, g) = unfold(s, g);
+        assert_eq!(count_ways(&s, &g), 506250);
+    }
 
     #[test]
     fn test_count_ways_dp1() {

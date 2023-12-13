@@ -32,24 +32,22 @@ fn do_count_ways(
                     }
                     let mut ss = s.to_vec();
                     ss[i] = cc;
-                    num += do_count_ways(&ss, &g, was_hash, cache);
+                    num += do_count_ways(&ss, g, was_hash, cache);
                 }
                 cache.insert(k, num);
                 return num;
             } else if *c == '#' {
                 assert!(!was_hash || i > 0);
                 num_g += 1;
-            } else {
-                if let Some(&n) = g.first() {
-                    if num_g == n {
-                        return do_count_ways(&s[i..], &g[1..], true, cache);
-                    } else if num_g > 0 {
-                        cache.insert(k, 0);
-                        return 0;
-                    }
-                } else {
-                    return do_count_ways(&s[i..], &g, false, cache);
+            } else if let Some(&n) = g.first() {
+                if num_g == n {
+                    return do_count_ways(&s[i..], &g[1..], true, cache);
+                } else if num_g > 0 {
+                    cache.insert(k, 0);
+                    return 0;
                 }
+            } else {
+                return do_count_ways(&s[i..], g, false, cache);
             }
         }
         if g.len() == 1 && num_g == *g.last().unwrap() {
@@ -58,7 +56,7 @@ fn do_count_ways(
         }
     }
     cache.insert(k, 0);
-    return 0;
+    0
 }
 
 fn count_ways(springs: &[char], groups: &[i64]) -> i64 {
@@ -89,7 +87,7 @@ fn unfold(springs: &[char], groups: &[i64]) -> (Vec<char>, Vec<i64>) {
 fn part2(data: &Parsed) -> i64 {
     data.par_iter()
         .map(move |(s, g)| {
-            let (s, g) = unfold(&s, &g);
+            let (s, g) = unfold(s, g);
             count_ways(&s, &g)
         })
         .sum()

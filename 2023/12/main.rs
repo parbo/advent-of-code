@@ -19,15 +19,11 @@ fn do_count_ways(
         } else {
             0
         };
-        // dbg!(v);
         cache.insert(k, v);
         return v;
     } else {
-        // dbg!(s, g, was_hash);
         let mut num_g = 0;
-        // dbg!(s, g);
         for (i, c) in s.iter().enumerate() {
-            // dbg!(i, c);
             if *c == '?' {
                 let mut num = 0;
                 for cc in ['#', '.'] {
@@ -36,7 +32,6 @@ fn do_count_ways(
                     }
                     let mut ss = s.to_vec();
                     ss[i] = cc;
-                    // dbg!(cc, &ss);
                     num += do_count_ways(&ss, &g, was_hash, cache);
                 }
                 cache.insert(k, num);
@@ -47,13 +42,9 @@ fn do_count_ways(
             } else {
                 if let Some(&n) = g.first() {
                     if num_g == n {
-                        // dbg!(num_g, &s[i..], &g[1..]);
                         return do_count_ways(&s[i..], &g[1..], true, cache);
                     } else if num_g > 0 {
-                        // dbg!(s, g);
-                        // dbg!(num_g, i, c);
                         cache.insert(k, 0);
-                        // println!("invalid 2");
                         return 0;
                     }
                 } else {
@@ -62,7 +53,6 @@ fn do_count_ways(
             }
         }
         if g.len() == 1 && num_g == *g.last().unwrap() {
-            // println!("Ok");
             cache.insert(k, 1);
             return 1;
         }

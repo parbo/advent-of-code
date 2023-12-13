@@ -1,3 +1,4 @@
+use aoc::Itertools;
 use rayon::prelude::*;
 use std::iter::*;
 
@@ -15,14 +16,14 @@ fn do_count_ways(
 ) -> i64 {
     let k = (sa, ga, curr, num_g);
     if let Some(v) = cache.get(&k) {
-        return *v;
+        *v
     } else if sa == s.len() {
         if (ga == g.len() && num_g == 0) || (g.len() - ga == 1 && num_g == g[ga]) {
             cache.insert(k, 1);
-            return 1;
+            1
         } else {
             cache.insert(k, 0);
-            return 0;
+            0
         }
     } else {
         let c = curr.unwrap_or(s[sa]);
@@ -33,20 +34,18 @@ fn do_count_ways(
                     num += do_count_ways(s, sa, Some(cc), g, ga, num_g, cache);
                 }
                 cache.insert(k, num);
-                return num;
+                num
             }
-            '#' => {
-                return do_count_ways(s, sa + 1, None, g, ga, num_g + 1, cache);
-            }
+            '#' => do_count_ways(s, sa + 1, None, g, ga, num_g + 1, cache),
             '.' => {
                 let n = g.get(ga);
                 if Some(&num_g) == n {
-                    return do_count_ways(s, sa + 1, None, g, ga + 1, 0, cache);
+                    do_count_ways(s, sa + 1, None, g, ga + 1, 0, cache)
                 } else if num_g == 0 {
-                    return do_count_ways(s, sa + 1, None, g, ga, 0, cache);
+                    do_count_ways(s, sa + 1, None, g, ga, 0, cache)
                 } else {
                     cache.insert(k, 0);
-                    return 0;
+                    0
                 }
             }
             _ => panic!(),
@@ -64,14 +63,11 @@ fn part1(data: &Parsed) -> i64 {
 }
 
 fn unfold(springs: &[char], groups: &[i64]) -> (Vec<char>, Vec<i64>) {
-    let mut s = vec![];
-    for i in 0..5 {
-        s.push(springs.to_vec());
-        if i != 4 {
-            s.push(vec!['?']);
-        }
-    }
-    let s = s.into_iter().flatten().collect::<Vec<_>>();
+    let s = (0..5)
+        .map(|_| springs.iter().collect::<String>())
+        .join("?")
+        .chars()
+        .collect();
     let g = std::iter::repeat(groups.to_vec())
         .take(5)
         .flatten()

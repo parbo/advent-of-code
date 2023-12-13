@@ -32,7 +32,6 @@ fn do_count_ways(
                 for cc in ['#', '.'] {
                     num += do_count_ways(s, sa, Some(cc), g, ga, num_g, cache);
                 }
-                // dbg!(num);
                 cache.insert(k, num);
                 return num;
             }

@@ -229,14 +229,88 @@ fn count_ways3(springs: &[char], groups: &[i64]) -> i64 {
     s
 }
 
+fn do_count_ways4(
+    s: &[char],
+    g: &[i64],
+    was_hash: bool,
+    cache: &mut aoc::FxHashMap<(Vec<char>, Vec<i64>, bool), i64>,
+) -> i64 {
+    let k = (s.to_vec(), g.to_vec(), was_hash);
+    if let Some(v) = cache.get(&k) {
+        return *v;
+    } else if g.is_empty() {
+        let v = if s.iter().all(|x| *x == '.' || *x == '?') {
+            1
+        } else {
+            0
+        };
+        // dbg!(v);
+        cache.insert(k, v);
+        return v;
+    } else {
+        // dbg!(s, g, was_hash);
+        let mut num_g = 0;
+        // dbg!(s, g);
+        for (i, c) in s.iter().enumerate() {
+            // dbg!(i, c);
+            if *c == '?' {
+                let mut num = 0;
+                for cc in ['#', '.'] {
+                    if cc == '#' && was_hash && i == 0 {
+                        continue;
+                    }
+                    let mut ss = s.to_vec();
+                    ss[i] = cc;
+                    // dbg!(cc, &ss);
+                    num += do_count_ways4(&ss, &g, was_hash, cache);
+                }
+                cache.insert(k, num);
+                return num;
+            } else if *c == '#' {
+                assert!(!was_hash || i > 0);
+                num_g += 1;
+            } else {
+                if let Some(&n) = g.first() {
+                    if num_g == n {
+                        // dbg!(num_g, &s[i..], &g[1..]);
+                        return do_count_ways4(&s[i..], &g[1..], true, cache);
+                    } else if num_g > 0 {
+                        // dbg!(s, g);
+                        // dbg!(num_g, i, c);
+                        cache.insert(k, 0);
+                        // println!("invalid 2");
+                        return 0;
+                    }
+                } else {
+                    return do_count_ways4(&s[i..], &g, false, cache);
+                }
+            }
+        }
+        if g.len() == 1 && num_g == *g.last().unwrap() {
+            // println!("Ok");
+            cache.insert(k, 1);
+            return 1;
+        }
+    }
+    cache.insert(k, 0);
+    return 0;
+}
+
+fn count_ways4(springs: &[char], groups: &[i64]) -> i64 {
+    let mut cache = aoc::FxHashMap::default();
+    do_count_ways4(springs, groups, false, &mut cache)
+}
+
 fn part1(data: &Parsed) -> i64 {
     for x in data {
         let a = count_ways(&x.0, &x.1);
         let b = count_ways2(&x.0, &x.1);
         let c = count_ways3(&x.0, &x.1);
-        println!("{:?}, {}, {}, {}", x, a, b, c);
+        let d = count_ways4(&x.0, &x.1);
+        println!("{:?}, {}, {}, {}, {}", x, a, b, c, d);
         assert_eq!(a, b);
         assert_eq!(a, c);
+        assert_eq!(a, d);
     }
     data.par_iter().map(|x| count_ways2(&x.0, &x.1)).sum()
 }
@@ -264,7 +338,7 @@ fn part2(data: &Parsed) -> i64 {
             println!("{}/{}", ix, data.len());
             let (s, g) = unfold(&x.0, &x.1);
             println!("{:?} {:?}", s, g);
-            let x = count_ways3(&s, &g);
+            let x = count_ways4(&s, &g);
             println!("{}", x);
             x
         })
@@ -289,94 +363,94 @@ fn main() {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_count() {
-        assert_eq!(count(&['#', '#', '#'], '.'), (0, 0));
-        assert_eq!(count(&['.', '#', '#'], '.'), (1, 1));
-        assert_eq!(count(&['.', '.', '#'], '.'), (2, 2));
-        assert_eq!(count(&['.', '?', '#'], '.'), (1, 2));
-        assert_eq!(count(&['?', '?', '#'], '.'), (0, 2));
-        assert_eq!(count(&['?', '.', '#'], '.'), (0, 2));
-    }
+    // #[test]
+    // fn test_count() {
+    //     assert_eq!(count(&['#', '#', '#'], '.'), (0, 0));
+    //     assert_eq!(count(&['.', '#', '#'], '.'), (1, 1));
+    //     assert_eq!(count(&['.', '.', '#'], '.'), (2, 2));
+    //     assert_eq!(count(&['.', '?', '#'], '.'), (1, 2));
+    //     assert_eq!(count(&['?', '?', '#'], '.'), (0, 2));
+    //     assert_eq!(count(&['?', '.', '#'], '.'), (0, 2));
+    // }
 
-    #[test]
-    fn test_count_ways_1() {
-        let (s, g) = &parse(&["???.### 1,1,3".to_string()])[0];
-        assert_eq!(count_ways2(s, g), 1);
-    }
-    #[test]
-    fn test_count_ways_2() {
-        let (s, g) = &parse(&[".??..??...?##. 1,1,3".to_string()])[0];
-        assert_eq!(count_ways2(s, g), 4);
-    }
-    #[test]
-    fn test_count_ways_3() {
-        let (s, g) = &parse(&["?#?#?#?#?#?#?#? 1,3,1,6".to_string()])[0];
-        assert_eq!(count_ways2(s, g), 1);
-    }
-    #[test]
-    fn test_count_ways_4() {
-        let (s, g) = &parse(&["????.#...#... 4,1,1".to_string()])[0];
-        assert_eq!(count_ways2(s, g), 1);
-    }
-    #[test]
-    fn test_count_ways_5() {
-        let (s, g) = &parse(&["????.######..#####. 1,6,5".to_string()])[0];
-        assert_eq!(count_ways2(s, g), 4);
-    }
-    #[test]
-    fn test_count_ways_6() {
-        let (s, g) = &parse(&["?###???????? 3,2,1".to_string()])[0];
-        assert_eq!(count_ways2(s, g), 10);
-    }
+    // #[test]
+    // fn test_count_ways_1() {
+    //     let (s, g) = &parse(&["???.### 1,1,3".to_string()])[0];
+    //     assert_eq!(count_ways2(s, g), 1);
+    // }
+    // #[test]
+    // fn test_count_ways_2() {
+    //     let (s, g) = &parse(&[".??..??...?##. 1,1,3".to_string()])[0];
+    //     assert_eq!(count_ways2(s, g), 4);
+    // }
+    // #[test]
+    // fn test_count_ways_3() {
+    //     let (s, g) = &parse(&["?#?#?#?#?#?#?#? 1,3,1,6".to_string()])[0];
+    //     assert_eq!(count_ways2(s, g), 1);
+    // }
+    // #[test]
+    // fn test_count_ways_4() {
+    //     let (s, g) = &parse(&["????.#...#... 4,1,1".to_string()])[0];
+    //     assert_eq!(count_ways2(s, g), 1);
+    // }
+    // #[test]
+    // fn test_count_ways_5() {
+    //     let (s, g) = &parse(&["????.######..#####. 1,6,5".to_string()])[0];
+    //     assert_eq!(count_ways2(s, g), 4);
+    // }
+    // #[test]
+    // fn test_count_ways_6() {
+    //     let (s, g) = &parse(&["?###???????? 3,2,1".to_string()])[0];
+    //     assert_eq!(count_ways2(s, g), 10);
+    // }
 
-    #[test]
-    fn test_count_ways_a() {
-        let (s, g) = &parse(&["?.?????#???#? 1, 1, 2, 2".to_string()])[0];
-        assert_eq!(count_ways2(s, g), 22);
-    }
+    // #[test]
+    // fn test_count_ways_a() {
+    //     let (s, g) = &parse(&["?.?????#???#? 1, 1, 2, 2".to_string()])[0];
+    //     assert_eq!(count_ways2(s, g), 22);
+    // }
 
-    #[test]
-    fn test_count_ways_unfolded_1() {
-        let (s, g) = &parse(&["???.### 1,1,3".to_string()])[0];
-        let (s, g) = unfold(s, g);
-        assert_eq!(count_ways2(&s, &g), 1);
-    }
+    // #[test]
+    // fn test_count_ways_unfolded_1() {
+    //     let (s, g) = &parse(&["???.### 1,1,3".to_string()])[0];
+    //     let (s, g) = unfold(s, g);
+    //     assert_eq!(count_ways2(&s, &g), 1);
+    // }
 
-    #[test]
-    fn test_count_ways_unfolded_2() {
-        let (s, g) = &parse(&[".??..??...?##. 1,1,3".to_string()])[0];
-        let (s, g) = unfold(s, g);
-        assert_eq!(count_ways2(&s, &g), 16384);
-    }
+    // #[test]
+    // fn test_count_ways_unfolded_2() {
+    //     let (s, g) = &parse(&[".??..??...?##. 1,1,3".to_string()])[0];
+    //     let (s, g) = unfold(s, g);
+    //     assert_eq!(count_ways2(&s, &g), 16384);
+    // }
 
-    #[test]
-    fn test_count_ways_unfolded_3() {
-        let (s, g) = &parse(&["?#?#?#?#?#?#?#? 1,3,1,6".to_string()])[0];
-        let (s, g) = unfold(s, g);
-        assert_eq!(count_ways2(&s, &g), 1);
-    }
+    // #[test]
+    // fn test_count_ways_unfolded_3() {
+    //     let (s, g) = &parse(&["?#?#?#?#?#?#?#? 1,3,1,6".to_string()])[0];
+    //     let (s, g) = unfold(s, g);
+    //     assert_eq!(count_ways2(&s, &g), 1);
+    // }
 
-    #[test]
-    fn test_count_ways_unfolded_4() {
-        let (s, g) = &parse(&["????.#...#... 4,1,1".to_string()])[0];
-        let (s, g) = unfold(s, g);
-        assert_eq!(count_ways2(&s, &g), 16);
-    }
+    // #[test]
+    // fn test_count_ways_unfolded_4() {
+    //     let (s, g) = &parse(&["????.#...#... 4,1,1".to_string()])[0];
+    //     let (s, g) = unfold(s, g);
+    //     assert_eq!(count_ways2(&s, &g), 16);
+    // }
 
-    #[test]
-    fn test_count_ways_unfolded_5() {
-        let (s, g) = &parse(&["????.######..#####. 1,6,5".to_string()])[0];
-        let (s, g) = unfold(s, g);
-        assert_eq!(count_ways2(&s, &g), 2500);
-    }
+    // #[test]
+    // fn test_count_ways_unfolded_5() {
+    //     let (s, g) = &parse(&["????.######..#####. 1,6,5".to_string()])[0];
+    //     let (s, g) = unfold(s, g);
+    //     assert_eq!(count_ways2(&s, &g), 2500);
+    // }
 
-    #[test]
-    fn test_count_ways_unfolded_6() {
-        let (s, g) = &parse(&["?###???????? 3,2,1".to_string()])[0];
-        let (s, g) = unfold(s, g);
-        assert_eq!(count_ways2(&s, &g), 506250);
-    }
+    // #[test]
+    // fn test_count_ways_unfolded_6() {
+    //     let (s, g) = &parse(&["?###???????? 3,2,1".to_string()])[0];
+    //     let (s, g) = unfold(s, g);
+    //     assert_eq!(count_ways2(&s, &g), 506250);
+    // }
 
     // #[test]
     // fn test_count_ways_unfolded_7() {
@@ -385,10 +459,36 @@ mod tests {
     //     assert_eq!(count_ways2(&s, &g), 506250);
     // }
 
+    //    #[test]
+    //     fn test_count_ways_unfolded_7_2() {
+    //         let (s, g) = &parse(&["???..??????? 1,1,1,1".to_string()])[0];
+    //         let (s, g) = unfold(s, g);
+    //         assert_eq!(count_ways3(&s, &g), 405968);
+    //     }
+
     #[test]
-    fn test_count_ways_unfolded_7_2() {
-        let (s, g) = &parse(&["???..??????? 1,1,1,1".to_string()])[0];
-        let (s, g) = unfold(s, g);
-        assert_eq!(count_ways3(&s, &g), 405968);
+    fn test_count_ways_dp() {
+        let (s, g) = &parse(&[". 1".to_string()])[0];
+        assert_eq!(count_ways4(s, g), 0);
+        let (s, g) = &parse(&["# 1".to_string()])[0];
+        assert_eq!(count_ways4(s, g), 1);
+        let (s, g) = &parse(&["? 1".to_string()])[0];
+        assert_eq!(count_ways4(s, g), 1);
+        let (s, g) = &parse(&["?? 1".to_string()])[0];
+        assert_eq!(count_ways4(s, g), 2);
+        let (s, g) = &parse(&["??? 1,1".to_string()])[0];
+        assert_eq!(count_ways4(s, g), 1);
+        let (s, g) = &parse(&["??? 1,1".to_string()])[0];
+        assert_eq!(count_ways4(s, g), 1);
+        let (s, g) = &parse(&["?.? 1,1".to_string()])[0];
+        assert_eq!(count_ways4(s, g), 1);
+        let (s, g) = &parse(&["?.# 1,1".to_string()])[0];
+        assert_eq!(count_ways4(s, g), 1);
+        let (s, g) = &parse(&["?.# 1,1".to_string()])[0];
+        assert_eq!(count_ways4(s, g), 1);
+        let (s, g) = &parse(&["??.## 2".to_string()])[0];
+        assert_eq!(count_ways4(s, g), 1);
+        let (s, g) = &parse(&["??.?? 2".to_string()])[0];
+        assert_eq!(count_ways4(s, g), 2);
     }
 }

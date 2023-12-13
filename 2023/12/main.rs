@@ -11,15 +11,16 @@ fn do_count_ways(
     g: &[i64],
     ga: usize,
     was_hash: bool,
+    num_g: i64,
     acc: Vec<char>,
-    cache: &mut aoc::FxHashMap<(usize, usize, char, bool), i64>,
+    cache: &mut aoc::FxHashMap<(usize, usize, char, bool, i64), i64>,
 ) -> i64 {
-    let k = (sa, ga, curr, was_hash);
+    let k = (sa, ga, curr, was_hash, num_g);
     dbg!(k, &acc);
     if let Some(v) = cache.get(&k) {
         println!("v: {}", *v);
         return *v;
-    } else if g.is_empty() {
+    } else if g.len() - ga == 0 {
         let v = if (curr == '.' || curr == '?')
             && s[(sa + 1)..].iter().all(|x| *x == '.' || *x == '?')
         {
@@ -30,47 +31,52 @@ fn do_count_ways(
         };
         cache.insert(k, v);
         return v;
+    } else if g.len() - ga == 1 && num_g == g[ga] {
+        cache.insert(k, 1);
+        println!("ok 2");
+        return 1;
     } else {
-        let mut num_g = 0;
-        for i in sa..s.len() {
-            let c = if i == sa { curr } else { s[i] };
-            dbg!(c, i);
-            if c == '?' {
-                let mut num = 0;
-                for cc in ['#', '.'] {
-                    if cc == '#' && was_hash && i == sa {
-                        continue;
-                    }
-                    dbg!(cc);
-                    let mut acc = acc.clone();
-                    acc[i] = cc;
-                    let wh = if i == sa { was_hash } else { s[i - 1] == '#' };
-                    num += do_count_ways(s, sa + i, cc, g, ga, wh, acc, cache);
+        let c = curr;
+        dbg!(c);
+        if c == '?' {
+            let mut num = 0;
+            for cc in ['#', '.'] {
+                if cc == '#' && was_hash {
+                    continue;
                 }
-                dbg!(num);
-                cache.insert(k, num);
-                return num;
-            } else if c == '#' {
-                assert!(!was_hash || i > sa);
-                num_g += 1;
-            } else if let Some(&n) = g.first() {
-                if num_g == n {
-                    let mut acc = acc.clone();
-                    return do_count_ways(s, sa + i, s[sa + i], g, ga + 1, true, acc, cache);
-                } else if num_g > 0 {
-                    cache.insert(k, 0);
-                    println!("fail");
-                    return 0;
-                }
-            } else {
+                dbg!(cc);
                 let mut acc = acc.clone();
-                return do_count_ways(s, sa + i, s[sa + i], g, ga, false, acc, cache);
+                acc[sa] = cc;
+                num += do_count_ways(s, sa, cc, g, ga, was_hash, num_g, acc, cache);
             }
-        }
-        if g.len() - ga == 1 && num_g == g[ga] {
-            cache.insert(k, 1);
-            println!("ok 2");
-            return 1;
+            dbg!(num);
+            cache.insert(k, num);
+            return num;
+        } else if c == '#' {
+            let mut acc = acc.clone();
+            if sa + 1 < s.len() {
+                return do_count_ways(s, sa + 1, s[sa + 1], g, ga, true, num_g + 1, acc, cache);
+            } else if g.len() - ga == 1 && num_g + 1 == g[ga] {
+                cache.insert(k, 1);
+                println!("ok 3");
+                return 1;
+            } else {
+                cache.insert(k, 0);
+                println!("fail");
+                return 0;
+            }
+        } else if let Some(&n) = g.get(ga) {
+            if num_g == n {
+                let mut acc = acc.clone();
+                return do_count_ways(s, sa + 1, s[sa + 1], g, ga + 1, true, 0, acc, cache);
+            } else if num_g > 0 {
+                cache.insert(k, 0);
+                println!("fail");
+                return 0;
+            }
+        } else {
+            let mut acc = acc.clone();
+            return do_count_ways(s, sa + 1, s[sa + 1], g, ga, false, num_g, acc, cache);
         }
     }
     println!("fail 2");
@@ -87,6 +93,7 @@ fn count_ways(springs: &[char], groups: &[i64]) -> i64 {
         groups,
         0,
         false,
+        0,
         springs.to_vec(),
         &mut cache,
     )

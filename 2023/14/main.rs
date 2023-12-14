@@ -1,4 +1,4 @@
-use aoc::Grid;
+use aoc::{Grid, Point};
 use std::{collections::HashSet, iter::*};
 
 type Parsed = Vec<Vec<char>>;
@@ -815,7 +815,7 @@ mod vis {
     }
 }
 
-fn slide_rocks(data: &mut Parsed) {
+fn slide_rocks_moves(data: &Parsed) -> Vec<(Point, Point)> {
     let ([min_x, min_y], [max_x, max_y]) = data.extents();
     let mut moves = vec![];
     for x in min_x..=max_x {
@@ -828,18 +828,28 @@ fn slide_rocks(data: &mut Parsed) {
                 }
                 Some('O') => {
                     // Slide this up
-                    moves.push((p, [x, max_free_y]));
+                    let pp = [x, max_free_y];
+                    if pp != p {
+                        moves.push((p, pp));
+                    }
                     max_free_y += 1;
                 }
                 _ => {}
             }
         }
     }
-    // Mutate
+    moves
+}
+
+fn slide_rocks_mutate(data: &mut Parsed, moves: &[(Point, Point)]) {
     for (p1, p2) in moves {
-        data.set_value(p1, '.');
-        data.set_value(p2, 'O');
+        data.set_value(*p1, '.');
+        data.set_value(*p2, 'O');
     }
+}
+
+fn slide_rocks(data: &mut Parsed) {
+    slide_rocks_mutate(data, &slide_rocks_moves(data));
 }
 
 fn get_load(data: &Parsed) -> i64 {
@@ -879,31 +889,57 @@ fn slide_loop(data: &mut Parsed) {
 }
 
 #[cfg(feature = "vis")]
+fn slide_rocks_mutate_animated(
+    data: &mut Parsed,
+    moves: &[(Point, Point)],
+    drawer: &mut vis::Drawer,
+    rot: i64,
+) {
+    let mut moves = moves.to_vec();
+    while !moves.is_empty() {
+        let mut new_moves = vec![];
+        for (p1, p2) in moves {
+            let pp = aoc::point_add(p1, aoc::NORTH);
+            let v = data.get_value(p1).unwrap();
+            let v2 = data.get_value(pp).unwrap();
+            data.set_value(pp, v);
+            data.set_value(p1, v2);
+            if pp != p2 {
+                new_moves.push((pp, p2));
+            }
+        }
+        let mut dd = data.clone();
+        match rot {
+            90 => dd.rotate_90_cw(),
+            180 => dd.rotate_180_cw(),
+            270 => dd.rotate_270_cw(),
+            0 => {}
+            _ => panic!(),
+        }
+        drawer.draw(&dd);
+        moves = new_moves;
+    }
+}
+
+#[cfg(feature = "vis")]
 fn slide_loop_vis(data: &mut Parsed, drawer: &mut vis::Drawer) {
     // North
-    slide_rocks(data);
-    drawer.draw(data);
+    let moves = slide_rocks_moves(data);
+    slide_rocks_mutate_animated(data, &moves, drawer, 0);
     // West
     data.rotate_90_cw();
-    slide_rocks(data);
-    let mut dd = data.clone();
-    dd.rotate_270_cw();
-    drawer.draw(&dd);
+    let moves = slide_rocks_moves(data);
+    slide_rocks_mutate_animated(data, &moves, drawer, 270);
     // South
     data.rotate_90_cw();
-    slide_rocks(data);
-    let mut dd = data.clone();
-    dd.rotate_180_cw();
-    drawer.draw(&dd);
+    let moves = slide_rocks_moves(data);
+    slide_rocks_mutate_animated(data, &moves, drawer, 180);
     // East
     data.rotate_90_cw();
-    slide_rocks(data);
-    let mut dd = data.clone();
-    dd.rotate_90_cw();
-    drawer.draw(&dd);
+    let moves = slide_rocks_moves(data);
+    slide_rocks_mutate_animated(data, &moves, drawer, 90);
     // Back again
     data.rotate_90_cw();
-    drawer.draw(data);
 }
 
 fn part2(data: &Parsed) -> i64 {
@@ -917,7 +953,11 @@ fn part2(data: &Parsed) -> i64 {
     let mut drawer = vis::Drawer::new("vis/14/part2");
     loop {
         #[cfg(feature = "vis")]
-        slide_loop_vis(&mut data, &mut drawer);
+        if first_loop != 0 {
+            slide_loop_vis(&mut data, &mut drawer);
+        } else {
+            slide_loop(&mut data);
+        }
         #[cfg(not(feature = "vis"))]
         slide_loop(&mut data);
         if first_loop == 0 {

@@ -817,29 +817,28 @@ mod vis {
 
 fn slide_rocks(data: &mut Parsed) {
     let ([min_x, min_y], [max_x, max_y]) = data.extents();
+    let mut moves = vec![];
     for x in min_x..=max_x {
+        let mut max_free_y = min_y;
         for y in min_y..=max_y {
             let p = [x, y];
-            if let Some('O') = data.get_value(p) {
-                // Slide this north
-                let mut pp = p;
-                for _ in min_y..y {
-                    pp = aoc::point_add(pp, aoc::NORTH);
-                    let v = data.get_value(pp);
-                    if v == Some('#') || v == Some('O') {
-                        pp = aoc::point_add(pp, aoc::SOUTH);
-                        break;
-                    }
+            match data.get_value(p) {
+                Some('#') => {
+                    max_free_y = y + 1;
                 }
-                // Move it
-                if pp != p {
-                    data.set_value(p, '.');
-                    data.set_value(pp, 'O');
+                Some('O') => {
+                    // Slide this up
+                    moves.push((p, [x, max_free_y]));
+                    max_free_y += 1;
                 }
-                // gd.draw(data);
-                // println!();
+                _ => {}
             }
         }
+    }
+    // Mutate
+    for (p1, p2) in moves {
+        data.set_value(p1, '.');
+        data.set_value(p2, 'O');
     }
 }
 

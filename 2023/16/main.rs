@@ -62,10 +62,11 @@ mod vis {
 }
 
 fn solve(data: &Parsed, start: (aoc::Point, aoc::Point), drawer: &mut vis::Drawer) -> i64 {
-    let mut todo = VecDeque::from([start]);
+    let mut todo = VecDeque::from([(start.0, start.1, 0)]);
     let mut energized = HashMap::from([(start.1, '.')]);
     let mut seen = HashSet::new();
-    while let Some((dir, p)) = todo.pop_back() {
+    let mut last_t = 0;
+    while let Some((dir, p, t)) = todo.pop_back() {
         if seen.contains(&(dir, p)) {
             continue;
         }
@@ -75,45 +76,48 @@ fn solve(data: &Parsed, start: (aoc::Point, aoc::Point), drawer: &mut vis::Drawe
             continue;
         }
         energized.insert(p, '#');
-        drawer.draw(&energized);
+        if t != last_t {
+            drawer.draw(&energized);
+            last_t = t;
+        }
         match v {
             Some('.') => {
-                todo.push_front((dir, aoc::point_add(p, dir)));
+                todo.push_front((dir, aoc::point_add(p, dir), t + 1));
             }
             Some('-') => {
                 if dir == aoc::EAST || dir == aoc::WEST {
-                    todo.push_front((dir, aoc::point_add(p, dir)));
+                    todo.push_front((dir, aoc::point_add(p, dir), t + 1));
                 } else {
                     for dir in [aoc::EAST, aoc::WEST] {
-                        todo.push_front((dir, aoc::point_add(p, dir)));
+                        todo.push_front((dir, aoc::point_add(p, dir), t + 1));
                     }
                 }
             }
             Some('|') => {
                 if dir == aoc::NORTH || dir == aoc::SOUTH {
-                    todo.push_front((dir, aoc::point_add(p, dir)));
+                    todo.push_front((dir, aoc::point_add(p, dir), t + 1));
                 } else {
                     for dir in [aoc::NORTH, aoc::SOUTH] {
-                        todo.push_front((dir, aoc::point_add(p, dir)));
+                        todo.push_front((dir, aoc::point_add(p, dir), t + 1));
                     }
                 }
             }
             Some('/') => {
                 if dir == aoc::EAST || dir == aoc::WEST {
                     let dir = *aoc::DIRECTION_ROTATE_LEFT.get(&dir).unwrap();
-                    todo.push_front((dir, aoc::point_add(p, dir)));
+                    todo.push_front((dir, aoc::point_add(p, dir), t + 1));
                 } else {
                     let dir = *aoc::DIRECTION_ROTATE_RIGHT.get(&dir).unwrap();
-                    todo.push_front((dir, aoc::point_add(p, dir)));
+                    todo.push_front((dir, aoc::point_add(p, dir), t + 1));
                 }
             }
             Some('\\') => {
                 if dir == aoc::EAST || dir == aoc::WEST {
                     let dir = *aoc::DIRECTION_ROTATE_RIGHT.get(&dir).unwrap();
-                    todo.push_front((dir, aoc::point_add(p, dir)));
+                    todo.push_front((dir, aoc::point_add(p, dir), t + 1));
                 } else {
                     let dir = *aoc::DIRECTION_ROTATE_LEFT.get(&dir).unwrap();
-                    todo.push_front((dir, aoc::point_add(p, dir)));
+                    todo.push_front((dir, aoc::point_add(p, dir), t + 1));
                 }
             }
             _ => {}

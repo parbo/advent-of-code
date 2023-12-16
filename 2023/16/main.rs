@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, HashSet, VecDeque},
+    collections::{HashMap, VecDeque},
     iter::*,
 };
 
@@ -35,9 +35,9 @@ mod vis {
             }
         }
 
-        pub fn draw(&mut self, _grid: &HashMap<aoc::Point, char>) {
+        pub fn draw(&mut self, _grid: &aoc::FxHashMap<aoc::Point, char>) {
             #[cfg(feature = "vis")]
-            self.grids.push(_grid.clone());
+            self.grids.push(_grid.into());
         }
     }
 
@@ -63,8 +63,9 @@ mod vis {
 
 fn solve(data: &Parsed, start: (aoc::Point, aoc::Point), drawer: &mut vis::Drawer) -> i64 {
     let mut todo = VecDeque::from([(start.0, start.1, 0)]);
-    let mut energized = HashMap::from([(start.1, '.')]);
-    let mut seen = HashSet::new();
+    let mut energized = aoc::FxHashMap::default();
+    energized.insert(start.1, '.');
+    let mut seen = aoc::FxHashSet::default();
     let mut last_t = 0;
     while let Some((dir, p, t)) = todo.pop_back() {
         if seen.contains(&(dir, p)) {

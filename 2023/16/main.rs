@@ -1,9 +1,9 @@
+use aoc::Grid;
+use rayon::prelude::*;
 use std::{
     collections::{HashMap, VecDeque},
     iter::*,
 };
-
-use aoc::Grid;
 
 type Parsed = Vec<Vec<char>>;
 
@@ -61,7 +61,11 @@ mod vis {
     }
 }
 
-fn solve(data: &Parsed, start: (aoc::Point, aoc::Point), drawer: &mut vis::Drawer) -> i64 {
+fn solve(
+    data: &Parsed,
+    start: (aoc::Point, aoc::Point),
+    mut drawer: impl FnMut(&aoc::FxHashMap<aoc::Point, char>) -> (),
+) -> i64 {
     let mut todo = VecDeque::from([(start.0, start.1, 0)]);
     let mut energized = aoc::FxHashMap::default();
     energized.insert(start.1, '.');
@@ -78,7 +82,7 @@ fn solve(data: &Parsed, start: (aoc::Point, aoc::Point), drawer: &mut vis::Drawe
         }
         energized.insert(p, '#');
         if t != last_t {
-            drawer.draw(&energized);
+            drawer(&energized);
             last_t = t;
         }
         match v {
@@ -129,21 +133,30 @@ fn solve(data: &Parsed, start: (aoc::Point, aoc::Point), drawer: &mut vis::Drawe
 
 fn part1(data: &Parsed) -> i64 {
     let mut drawer = vis::Drawer::new("vis/16/part1");
-    solve(data, (aoc::EAST, [0, 0]), &mut drawer)
+    solve(data, (aoc::EAST, [0, 0]), |x| drawer.draw(x))
 }
 
 fn part2(data: &Parsed) -> i64 {
-    let mut drawer = vis::Drawer::new("vis/16/part2");
+    let mut _drawer = vis::Drawer::new("vis/16/part2");
     let ([min_x, min_y], [max_x, max_y]) = data.extents();
     let edges = (min_x..=max_x)
         .map(|x| (aoc::SOUTH, [x, 0]))
         .chain((min_x..=max_x).map(|x| (aoc::NORTH, [x, max_y])))
         .chain((min_y..=max_y).map(|y| (aoc::EAST, [0, y])))
-        .chain((min_y..=max_y).map(|y| (aoc::WEST, [max_x, y])));
-    edges
-        .map(|start| solve(data, start, &mut drawer))
+        .chain((min_y..=max_y).map(|y| (aoc::WEST, [max_x, y])))
+        .collect::<Vec<_>>();
+    #[cfg(feature = "vis")]
+    let s = edges
+        .map(|start| solve(data, start, |x| _drawer.draw(x)))
         .max()
-        .unwrap()
+        .unwrap();
+    #[cfg(not(feature = "vis"))]
+    let s = edges
+        .into_par_iter()
+        .map(|start| solve(data, start, |_| {}))
+        .max()
+        .unwrap();
+    s
 }
 
 fn parse(lines: &[String]) -> Parsed {

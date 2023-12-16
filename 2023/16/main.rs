@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{HashMap, HashSet, VecDeque},
     iter::*,
 };
 
@@ -62,10 +62,10 @@ mod vis {
 }
 
 fn solve(data: &Parsed, start: (aoc::Point, aoc::Point), drawer: &mut vis::Drawer) -> i64 {
-    let mut todo = vec![start];
+    let mut todo = VecDeque::from([start]);
     let mut energized = HashMap::from([(start.1, '.')]);
     let mut seen = HashSet::new();
-    while let Some((dir, p)) = todo.pop() {
+    while let Some((dir, p)) = todo.pop_back() {
         if seen.contains(&(dir, p)) {
             continue;
         }
@@ -78,42 +78,42 @@ fn solve(data: &Parsed, start: (aoc::Point, aoc::Point), drawer: &mut vis::Drawe
         drawer.draw(&energized);
         match v {
             Some('.') => {
-                todo.push((dir, aoc::point_add(p, dir)));
+                todo.push_front((dir, aoc::point_add(p, dir)));
             }
             Some('-') => {
                 if dir == aoc::EAST || dir == aoc::WEST {
-                    todo.push((dir, aoc::point_add(p, dir)));
+                    todo.push_front((dir, aoc::point_add(p, dir)));
                 } else {
                     for dir in [aoc::EAST, aoc::WEST] {
-                        todo.push((dir, aoc::point_add(p, dir)));
+                        todo.push_front((dir, aoc::point_add(p, dir)));
                     }
                 }
             }
             Some('|') => {
                 if dir == aoc::NORTH || dir == aoc::SOUTH {
-                    todo.push((dir, aoc::point_add(p, dir)));
+                    todo.push_front((dir, aoc::point_add(p, dir)));
                 } else {
                     for dir in [aoc::NORTH, aoc::SOUTH] {
-                        todo.push((dir, aoc::point_add(p, dir)));
+                        todo.push_front((dir, aoc::point_add(p, dir)));
                     }
                 }
             }
             Some('/') => {
                 if dir == aoc::EAST || dir == aoc::WEST {
                     let dir = *aoc::DIRECTION_ROTATE_LEFT.get(&dir).unwrap();
-                    todo.push((dir, aoc::point_add(p, dir)));
+                    todo.push_front((dir, aoc::point_add(p, dir)));
                 } else {
                     let dir = *aoc::DIRECTION_ROTATE_RIGHT.get(&dir).unwrap();
-                    todo.push((dir, aoc::point_add(p, dir)));
+                    todo.push_front((dir, aoc::point_add(p, dir)));
                 }
             }
             Some('\\') => {
                 if dir == aoc::EAST || dir == aoc::WEST {
                     let dir = *aoc::DIRECTION_ROTATE_RIGHT.get(&dir).unwrap();
-                    todo.push((dir, aoc::point_add(p, dir)));
+                    todo.push_front((dir, aoc::point_add(p, dir)));
                 } else {
                     let dir = *aoc::DIRECTION_ROTATE_LEFT.get(&dir).unwrap();
-                    todo.push((dir, aoc::point_add(p, dir)));
+                    todo.push_front((dir, aoc::point_add(p, dir)));
                 }
             }
             _ => {}

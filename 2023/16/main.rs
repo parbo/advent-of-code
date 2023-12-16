@@ -35,13 +35,17 @@ mod vis {
             }
         }
 
-        pub fn draw(&mut self, grid: &HashMap<aoc::Point, char>) {
-            self.grids.push(grid.clone());
+        pub fn draw(&mut self, _grid: &HashMap<aoc::Point, char>) {
+            #[cfg(feature = "vis")]
+            self.grids.push(_grid.clone());
         }
     }
 
     impl Drop for Drawer {
         fn drop(&mut self) {
+            if self.grids.is_empty() {
+                return;
+            }
             let extents = self.grids.iter().map(|g| g.extents()).collect::<Vec<_>>();
             let minx = extents.iter().map(|(minp, _)| minp[0]).min().unwrap();
             let maxx = extents.iter().map(|(_, maxp)| maxp[0]).max().unwrap();
@@ -71,7 +75,6 @@ fn solve(data: &Parsed, start: (aoc::Point, aoc::Point), drawer: &mut vis::Drawe
             continue;
         }
         energized.insert(p, '#');
-        #[cfg(feature = "vis")]
         drawer.draw(&energized);
         match v {
             Some('.') => {

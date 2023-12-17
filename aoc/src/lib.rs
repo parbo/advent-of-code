@@ -162,8 +162,8 @@ pub fn hex_neighbors(p: Vec3) -> impl Iterator<Item = Vec3> {
 }
 
 lazy_static! {
-    pub static ref DIRECTION_ROTATE_LEFT: HashMap<Point, Point> = {
-        let mut map = HashMap::new();
+    pub static ref DIRECTION_ROTATE_LEFT: FxHashMap<Point, Point> = {
+        let mut map = FxHashMap::default();
         map.insert(NORTH, WEST);
         map.insert(WEST, SOUTH);
         map.insert(SOUTH, EAST);
@@ -173,8 +173,8 @@ lazy_static! {
 }
 
 lazy_static! {
-    pub static ref DIRECTION_ROTATE_RIGHT: HashMap<Point, Point> = {
-        let mut map = HashMap::new();
+    pub static ref DIRECTION_ROTATE_RIGHT: FxHashMap<Point, Point> = {
+        let mut map = FxHashMap::default();
         map.insert(NORTH, EAST);
         map.insert(EAST, SOUTH);
         map.insert(SOUTH, WEST);
@@ -184,8 +184,8 @@ lazy_static! {
 }
 
 lazy_static! {
-    pub static ref DIRECTION_OPPOSITE: HashMap<Point, Point> = {
-        let mut map = HashMap::new();
+    pub static ref DIRECTION_OPPOSITE: FxHashMap<Point, Point> = {
+        let mut map = FxHashMap::default();
         map.insert(NORTH, SOUTH);
         map.insert(WEST, EAST);
         map.insert(SOUTH, NORTH);
@@ -195,8 +195,8 @@ lazy_static! {
 }
 
 lazy_static! {
-    pub static ref DIRECTION_MAP: HashMap<&'static str, Point> = {
-        let mut map = HashMap::new();
+    pub static ref DIRECTION_MAP: FxHashMap<&'static str, Point> = {
+        let mut map = FxHashMap::default();
         map.insert("U", NORTH);
         map.insert("u", NORTH);
         map.insert("D", SOUTH);
@@ -226,8 +226,8 @@ lazy_static! {
 }
 
 lazy_static! {
-    pub static ref HEX_DIRECTION_MAP: HashMap<&'static str, Vec3> = {
-        let mut map = HashMap::new();
+    pub static ref HEX_DIRECTION_MAP: FxHashMap<&'static str, Vec3> = {
+        let mut map = FxHashMap::default();
         map.insert("E", HEX_E);
         map.insert("e", HEX_E);
         map.insert("W", HEX_W);
@@ -245,8 +245,8 @@ lazy_static! {
 }
 
 lazy_static! {
-    pub static ref HEX_ALT_DIRECTION_MAP: HashMap<&'static str, Vec3> = {
-        let mut map = HashMap::new();
+    pub static ref HEX_ALT_DIRECTION_MAP: FxHashMap<&'static str, Vec3> = {
+        let mut map = FxHashMap::default();
         map.insert("N", HEX_ALT_N);
         map.insert("n", HEX_ALT_N);
         map.insert("S", HEX_ALT_S);

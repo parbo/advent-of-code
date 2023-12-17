@@ -1,7 +1,4 @@
-use std::{
-    cmp::Reverse,
-    collections::{BinaryHeap, HashSet},
-};
+use std::{cmp::Reverse, collections::BinaryHeap};
 
 use aoc::Grid;
 
@@ -46,7 +43,7 @@ fn draw(
 fn solve(grid: &Parsed, min: i64, max: i64) -> i64 {
     let (start, goal) = grid.extents();
     let mut frontier = BinaryHeap::new();
-    let mut visited = HashSet::new();
+    let mut visited = aoc::FxHashSet::default();
     #[cfg(feature = "vis")]
     let mut came_from: HashMap<(aoc::Point, i64, aoc::Point), (aoc::Point, i64, aoc::Point)> =
         HashMap::new();

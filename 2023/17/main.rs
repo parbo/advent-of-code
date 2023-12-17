@@ -3,7 +3,7 @@ use std::{
     collections::{BinaryHeap, HashMap, HashSet},
 };
 
-use aoc::{Grid, GridDrawer};
+use aoc::Grid;
 
 type Parsed = Vec<Vec<char>>;
 
@@ -44,7 +44,6 @@ fn part1(grid: &Parsed) -> i64 {
 }
 
 fn part2(grid: &Parsed) -> i64 {
-    let mut gd = aoc::PrintGridDrawer::new(|c| c);
     let (start, goal) = grid.extents();
     let mut frontier = BinaryHeap::new();
     let mut visited = HashSet::new();
@@ -59,27 +58,6 @@ fn part2(grid: &Parsed) -> i64 {
         let (dir, sm, current) = k;
         let curr = current;
         if curr == goal && sm > 2 {
-            dbg!(sm);
-            // let mut path = vec![(dir, goal)];
-            let mut curr = (dir, sm, goal);
-            let mut g = grid.clone();
-            while curr.2 != start {
-                g.set_value(
-                    curr.2,
-                    match curr.0 {
-                        aoc::NORTH => '^',
-                        aoc::SOUTH => 'v',
-                        aoc::WEST => '<',
-                        aoc::EAST => '>',
-                        _ => panic!(),
-                    },
-                );
-                curr = *came_from.get(&curr).unwrap();
-                // path.push(curr);
-            }
-            gd.draw(&g);
-            println!();
-            dbg!(score);
             return score;
         }
         for nb in aoc::neighbors(curr) {

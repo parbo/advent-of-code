@@ -184,6 +184,17 @@ lazy_static! {
 }
 
 lazy_static! {
+    pub static ref DIRECTION_OPPOSITE: HashMap<Point, Point> = {
+        let mut map = HashMap::new();
+        map.insert(NORTH, SOUTH);
+        map.insert(WEST, EAST);
+        map.insert(SOUTH, NORTH);
+        map.insert(EAST, WEST);
+        map
+    };
+}
+
+lazy_static! {
     pub static ref DIRECTION_MAP: HashMap<&'static str, Point> = {
         let mut map = HashMap::new();
         map.insert("U", NORTH);

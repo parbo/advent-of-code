@@ -801,6 +801,7 @@ mod vis {
             }
         }
 
+        #[allow(clippy::ptr_arg)]
         pub fn draw(&mut self, grid: &Vec<Vec<char>>) {
             self.grids.push(grid.clone());
         }
@@ -809,7 +810,7 @@ mod vis {
     impl Drop for Drawer {
         fn drop(&mut self) {
             for grid in &self.grids {
-                self.drawer.draw(&grid);
+                self.drawer.draw(grid);
             }
         }
     }

@@ -1,9 +1,11 @@
 use aoc::Grid;
-use rayon::prelude::*;
 use std::{
     collections::{HashMap, VecDeque},
     iter::*,
 };
+
+#[cfg(not(feature = "vis"))]
+use rayon::prelude::*;
 
 type Parsed = Vec<Vec<char>>;
 
@@ -37,7 +39,13 @@ mod vis {
 
         pub fn draw(&mut self, _grid: &aoc::FxHashMap<aoc::Point, char>) {
             #[cfg(feature = "vis")]
-            self.grids.push(_grid.into());
+            {
+                let mut g = HashMap::new();
+                for (k, v) in _grid {
+                    g.insert(*k, *v);
+                }
+                self.grids.push(g);
+            }
         }
     }
 
@@ -147,6 +155,7 @@ fn part2(data: &Parsed) -> i64 {
         .collect::<Vec<_>>();
     #[cfg(feature = "vis")]
     let s = edges
+        .into_iter()
         .map(|start| solve(data, start, |x| _drawer.draw(x)))
         .max()
         .unwrap();

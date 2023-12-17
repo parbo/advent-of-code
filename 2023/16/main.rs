@@ -64,7 +64,7 @@ mod vis {
 fn solve(
     data: &Parsed,
     start: (aoc::Point, aoc::Point),
-    mut drawer: impl FnMut(&aoc::FxHashMap<aoc::Point, char>) -> (),
+    mut drawer: impl FnMut(&aoc::FxHashMap<aoc::Point, char>),
 ) -> i64 {
     let mut todo = VecDeque::from([(start.0, start.1, 0)]);
     let mut energized = aoc::FxHashMap::default();

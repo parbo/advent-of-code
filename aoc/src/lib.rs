@@ -1,7 +1,7 @@
 use core::fmt::Write;
 use image::{GenericImageView, Rgb, RgbImage};
 use std::cmp::Reverse;
-use std::collections::{BTreeMap, BinaryHeap, HashMap, HashSet};
+use std::collections::{BTreeMap, BinaryHeap, HashMap};
 use std::env;
 use std::error;
 use std::fmt;
@@ -375,12 +375,12 @@ where
         .collect()
 }
 
-pub fn parse_grid_to_sparse<'a, I, J, T>(lines: I, f: fn(char) -> Option<T>) -> HashMap<Point, T>
+pub fn parse_grid_to_sparse<'a, I, J, T>(lines: I, f: fn(char) -> Option<T>) -> FxHashMap<Point, T>
 where
     I: IntoIterator<Item = &'a J>,
     J: AsRef<str> + 'a,
 {
-    let mut grid = HashMap::new();
+    let mut grid = FxHashMap::default();
     for (y, line) in lines.into_iter().enumerate() {
         for (x, c) in AsRef::as_ref(line).chars().enumerate() {
             if let Some(t) = f(c) {
@@ -531,9 +531,9 @@ where
     T: PartialEq + Copy,
 {
     let mut frontier = BinaryHeap::new();
-    let mut came_from = HashMap::new();
-    let mut gscore = HashMap::new();
-    let mut fscore = HashMap::new();
+    let mut came_from = FxHashMap::default();
+    let mut gscore = FxHashMap::default();
+    let mut fscore = FxHashMap::default();
     gscore.insert(start, 0);
     fscore.insert(start, manhattan(start, goal));
     frontier.push(Reverse((manhattan(start, goal), start)));
@@ -581,8 +581,8 @@ where
     T: PartialEq + Copy,
 {
     let mut frontier = BinaryHeap::new();
-    let mut visited: HashSet<Point> = HashSet::new();
-    let mut came_from = HashMap::new();
+    let mut visited: FxHashSet<Point> = FxHashSet::default();
+    let mut came_from = FxHashMap::default();
     frontier.push(Reverse((0, start)));
     while let Some(Reverse((score, current))) = frontier.pop() {
         if visited.contains(&current) {
@@ -995,7 +995,7 @@ where
     }
     fn flip_horizontal(&mut self) {
         let ([min_x, _min_y], [max_x, _max_y]) = self.extents();
-        let mut new_grid = HashMap::new();
+        let mut new_grid = FxHashMap::default();
         for ([x, y], v) in self.iter() {
             let new_x = max_x - (x - min_x);
             new_grid.insert([new_x, *y], *v);
@@ -1007,7 +1007,7 @@ where
     }
     fn flip_vertical(&mut self) {
         let ([_min_x, min_y], [_max_x, max_y]) = self.extents();
-        let mut new_grid = HashMap::new();
+        let mut new_grid = FxHashMap::default();
         for ([x, y], v) in self.iter() {
             let new_y = max_y - (y - min_y);
             new_grid.insert([*x, new_y], *v);
@@ -1018,7 +1018,7 @@ where
         }
     }
     fn transpose(&mut self) {
-        let mut new_grid = HashMap::new();
+        let mut new_grid = FxHashMap::default();
         for ([x, y], v) in self.iter() {
             new_grid.insert([*y, *x], *v);
         }
@@ -1048,7 +1048,7 @@ where
     }
     fn flip_horizontal(&mut self) {
         let ([min_x, _min_y], [max_x, _max_y]) = self.extents();
-        let mut new_grid = HashMap::new();
+        let mut new_grid = FxHashMap::default();
         for ([x, y], v) in self.iter() {
             let new_x = max_x - (x - min_x);
             new_grid.insert([new_x, *y], *v);
@@ -1060,7 +1060,7 @@ where
     }
     fn flip_vertical(&mut self) {
         let ([_min_x, min_y], [_max_x, max_y]) = self.extents();
-        let mut new_grid = HashMap::new();
+        let mut new_grid = FxHashMap::default();
         for ([x, y], v) in self.iter() {
             let new_y = max_y - (y - min_y);
             new_grid.insert([*x, new_y], *v);
@@ -1071,7 +1071,7 @@ where
         }
     }
     fn transpose(&mut self) {
-        let mut new_grid = HashMap::new();
+        let mut new_grid = FxHashMap::default();
         for ([x, y], v) in self.iter() {
             new_grid.insert([*y, *x], *v);
         }
@@ -1767,7 +1767,7 @@ where
     }
     fn flip_horizontal(&mut self) {
         let ([min_x, _min_y], [max_x, _max_y]) = self.oddr_extents();
-        let mut new_grid = HashMap::new();
+        let mut new_grid = FxHashMap::default();
         for (p, v) in self.iter() {
             let p = cube_to_oddr(*p);
             let new_x = max_x - (p[0] - min_x);
@@ -1781,7 +1781,7 @@ where
     }
     fn flip_vertical(&mut self) {
         let ([_min_x, min_y], [_max_x, max_y]) = self.oddr_extents();
-        let mut new_grid = HashMap::new();
+        let mut new_grid = FxHashMap::default();
         for (p, v) in self.iter() {
             let p = cube_to_oddr(*p);
             let new_y = max_y - (p[1] - min_y);
@@ -1798,7 +1798,7 @@ where
         let mid_x = (max_x - min_x + 1) / 2;
         let mid_y = (max_y - min_y + 1) / 2;
         let pivot = oddr_to_cube([mid_x, mid_y]);
-        let mut new_grid = HashMap::new();
+        let mut new_grid = FxHashMap::default();
         for ([x, y, z], v) in self.iter() {
             let p = vec_sub([*x, *y, *z], pivot);
             let p = vec_add([p[0], p[2], p[1]], pivot);
@@ -1810,7 +1810,7 @@ where
         }
     }
     fn flip_y(&mut self) {
-        let mut new_grid = HashMap::new();
+        let mut new_grid = FxHashMap::default();
         let ([min_x, min_y], [max_x, max_y]) = self.oddr_extents();
         let mid_x = (max_x - min_x + 1) / 2;
         let mid_y = (max_y - min_y + 1) / 2;
@@ -1826,7 +1826,7 @@ where
         }
     }
     fn flip_z(&mut self) {
-        let mut new_grid = HashMap::new();
+        let mut new_grid = FxHashMap::default();
         let ([min_x, min_y], [max_x, max_y]) = self.oddr_extents();
         let mid_x = (max_x - min_x + 1) / 2;
         let mid_y = (max_y - min_y + 1) / 2;
@@ -1842,7 +1842,7 @@ where
         }
     }
     fn rotate_60_cw(&mut self) {
-        let mut new_grid = HashMap::new();
+        let mut new_grid = FxHashMap::default();
         let ([min_x, min_y], [max_x, max_y]) = self.oddr_extents();
         let mid_x = (max_x - min_x + 1) / 2;
         let mid_y = (max_y - min_y + 1) / 2;
@@ -1858,7 +1858,7 @@ where
         }
     }
     fn rotate_120_cw(&mut self) {
-        let mut new_grid = HashMap::new();
+        let mut new_grid = FxHashMap::default();
         let ([min_x, min_y], [max_x, max_y]) = self.oddr_extents();
         let mid_x = (max_x - min_x + 1) / 2;
         let mid_y = (max_y - min_y + 1) / 2;
@@ -1874,7 +1874,7 @@ where
         }
     }
     fn rotate_180_cw(&mut self) {
-        let mut new_grid = HashMap::new();
+        let mut new_grid = FxHashMap::default();
         let ([min_x, min_y], [max_x, max_y]) = self.oddr_extents();
         let mid_x = (max_x - min_x + 1) / 2;
         let mid_y = (max_y - min_y + 1) / 2;
@@ -1890,7 +1890,7 @@ where
         }
     }
     fn rotate_240_cw(&mut self) {
-        let mut new_grid = HashMap::new();
+        let mut new_grid = FxHashMap::default();
         let ([min_x, min_y], [max_x, max_y]) = self.oddr_extents();
         let mid_x = (max_x - min_x + 1) / 2;
         let mid_y = (max_y - min_y + 1) / 2;
@@ -1906,7 +1906,7 @@ where
         }
     }
     fn rotate_300_cw(&mut self) {
-        let mut new_grid = HashMap::new();
+        let mut new_grid = FxHashMap::default();
         let ([min_x, min_y], [max_x, max_y]) = self.oddr_extents();
         let mid_x = (max_x - min_x + 1) / 2;
         let mid_y = (max_y - min_y + 1) / 2;
@@ -1956,8 +1956,8 @@ where
 {
     fn draw(&mut self, area: &G);
     // Convert to offset coordinate based sparse grid for printing
-    fn convert(&self, g: &G) -> HashMap<Point, T> {
-        let mut gg: HashMap<Point, T> = HashMap::new();
+    fn convert(&self, g: &G) -> FxHashMap<Point, T> {
+        let mut gg: FxHashMap<Point, T> = FxHashMap::default();
         // Convert coords
         for p in g.points() {
             if let Some(v) = g.get_value(p) {

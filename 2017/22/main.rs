@@ -1,10 +1,8 @@
-use std::collections::HashMap;
-
 use aoc::{
     point_add, point_neg, Grid, Point, DIRECTION_ROTATE_LEFT, DIRECTION_ROTATE_RIGHT, NORTH,
 };
 
-type Parsed = (usize, HashMap<Point, char>);
+type Parsed = (usize, aoc::FxHashMap<Point, char>);
 type Answer = i64;
 
 fn part1(data: &Parsed) -> Answer {

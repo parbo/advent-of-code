@@ -2,17 +2,17 @@ use aoc::{
     neighbors_incl_diagonals, point_add, Grid, Point, SmallVec, EAST, NORTH, NORTH_EAST,
     NORTH_WEST, SOUTH, SOUTH_EAST, SOUTH_WEST, WEST,
 };
-use std::{collections::HashMap, iter::*};
+use std::iter::*;
 
-type Parsed = HashMap<Point, char>;
+type Parsed = aoc::FxHashMap<Point, char>;
 
 #[cfg(feature = "vis")]
 mod vis {
     use super::*;
 
     pub struct Drawer {
-        drawer: Box<dyn aoc::GridDrawer<HashMap<aoc::Point, char>, char>>,
-        grids: Vec<HashMap<Point, char>>,
+        drawer: Box<dyn aoc::GridDrawer<aoc::FxHashMap<aoc::Point, char>, char>>,
+        grids: Vec<aoc::FxHashMap<Point, char>>,
     }
 
     fn make_col(c: char) -> [u8; 3] {
@@ -33,7 +33,7 @@ mod vis {
             }
         }
 
-        pub fn draw(&mut self, grid: &HashMap<Point, char>) {
+        pub fn draw(&mut self, grid: &aoc::FxHashMap<Point, char>) {
             self.grids.push(grid.clone());
         }
     }
@@ -67,7 +67,7 @@ fn solve(data: &Parsed, max: Option<usize>) -> (usize, usize) {
     let mut drawer = vis::Drawer::new(&format!("vis/23/part{}", if max.is_none() { 2 } else { 1 }));
     let mut rounds = 0;
     loop {
-        let mut proposed: HashMap<Point, SmallVec<[Point; 2]>> = HashMap::new();
+        let mut proposed: aoc::FxHashMap<Point, SmallVec<[Point; 2]>> = aoc::FxHashMap::default();
         for p in g.keys() {
             if neighbors_incl_diagonals(*p).any(|n| g.get_value(n).is_some()) {
                 for (nb, d) in &rules {

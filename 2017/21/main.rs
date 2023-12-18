@@ -1,16 +1,16 @@
-use std::{collections::HashMap, iter::*, str::FromStr};
+use std::{iter::*, str::FromStr};
 
 use aoc::{Grid, GridDrawer, GridTranspose, Point};
 
 #[derive(Debug, Clone)]
 struct Rule {
     sz: usize,
-    pattern: HashMap<Point, char>,
-    output: HashMap<Point, char>,
+    pattern: aoc::FxHashMap<Point, char>,
+    output: aoc::FxHashMap<Point, char>,
 }
 
-fn parse_to_grid(s: &str) -> (HashMap<Point, char>, usize) {
-    let mut pat = HashMap::new();
+fn parse_to_grid(s: &str) -> (aoc::FxHashMap<Point, char>, usize) {
+    let mut pat = aoc::FxHashMap::default();
     let mut y = 0;
     let mut x = 0;
     for c in s.chars() {
@@ -65,7 +65,7 @@ fn solve(data: &Parsed, iterations: usize, draw: bool) -> Answer {
         let sz = if g_sz % 2 == 0 { 2 } else { 3 };
         // construct new grid
         let new_sz = if sz == 2 { 3 } else { 4 };
-        let mut new_grid = HashMap::new();
+        let mut new_grid = aoc::FxHashMap::default();
         let mut y = 0;
         let mut out_y = 0;
         while y < g_sz {
@@ -73,7 +73,7 @@ fn solve(data: &Parsed, iterations: usize, draw: bool) -> Answer {
             let mut out_x = 0;
             while x < g_sz {
                 // Copy the subgrid so we can compare
-                let mut subgrid = HashMap::new();
+                let mut subgrid = aoc::FxHashMap::default();
                 for yy in y..(y + sz) {
                     for xx in x..(x + sz) {
                         let p = [xx as i64, yy as i64];

@@ -1,8 +1,7 @@
 use aoc::{BitmapSpriteGridDrawer, Grid, GridDrawer, Point};
-use std::collections::HashMap;
 use std::iter::*;
 
-type Parsed = (Vec<char>, HashMap<Point, char>);
+type Parsed = (Vec<char>, aoc::FxHashMap<Point, char>);
 type Answer = i64;
 
 pub fn kernel(p: Point) -> impl Iterator<Item = Point> {
@@ -27,7 +26,7 @@ fn solve(map: &Parsed, iterations: usize, draw: bool) -> Answer {
     let mut all_g = vec![(g.clone(), inf_c)];
     let mut max_ext = g.extents();
     for _i in 0..iterations {
-        let mut new_g = HashMap::new();
+        let mut new_g = aoc::FxHashMap::default();
         let ext = g.extents();
         let ([min_x, min_y], [max_x, max_y]) = ext;
         max_ext.0[0] = min_x.min(max_ext.0[0]);
@@ -84,7 +83,7 @@ fn solve(map: &Parsed, iterations: usize, draw: bool) -> Answer {
         gd.set_rect(max_ext);
         gd.set_unset('.');
         for (gg, ic) in all_g {
-            let mut ggg = HashMap::new();
+            let mut ggg = aoc::FxHashMap::default();
             let ext = gg.extents();
             for x in max_ext.0[0]..=max_ext.1[0] {
                 for y in max_ext.0[1]..=max_ext.1[1] {

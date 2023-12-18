@@ -1,12 +1,8 @@
-use std::{
-    cmp::Reverse,
-    collections::{BinaryHeap, HashMap},
-    iter::*,
-};
+use std::{cmp::Reverse, collections::BinaryHeap, iter::*};
 
 use aoc::{manhattan, point_add, Grid, Point};
 
-type Parsed = (i64, i64, HashMap<Point, char>);
+type Parsed = (i64, i64, aoc::FxHashMap<Point, char>);
 
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Clone, Copy)]
 struct State {
@@ -23,7 +19,7 @@ fn solve(data: &Parsed, trips: usize) -> i64 {
     let mut minute = 1;
     loop {
         // println!("{}", grids.len());
-        let mut g = HashMap::new();
+        let mut g = aoc::FxHashMap::default();
         for (p, d) in &data.2 {
             let mut pp = match d {
                 '>' => point_add(*p, [minute, 0]),
@@ -69,9 +65,9 @@ fn solve(data: &Parsed, trips: usize) -> i64 {
             ([max_x, max_y + 1], [1, 0])
         };
         let mut frontier = BinaryHeap::new();
-        let mut came_from = HashMap::new();
-        let mut gscore = HashMap::new();
-        let mut fscore = HashMap::new();
+        let mut came_from = aoc::FxHashMap::default();
+        let mut gscore = aoc::FxHashMap::default();
+        let mut fscore = aoc::FxHashMap::default();
         let state = State { pos: start, minute };
         gscore.insert(state, 0);
         fscore.insert(state, manhattan(start, goal));
@@ -120,7 +116,7 @@ fn solve(data: &Parsed, trips: usize) -> i64 {
     #[cfg(feature = "vis")]
     {
         use aoc::GridDrawer;
-        let mut sprites = HashMap::new();
+        let mut sprites = aoc::FxHashMap::default();
         let b = [140, 140, 255];
         for (c, col) in [
             ('<', b),

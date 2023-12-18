@@ -1,7 +1,7 @@
 use aoc::{
     point_add, Point, DIRECTION_ROTATE_LEFT, DIRECTION_ROTATE_RIGHT, EAST, NORTH, SOUTH, WEST,
 };
-use std::{collections::HashMap, iter::*};
+use std::iter::*;
 
 #[derive(Debug, Copy, Clone)]
 enum Move {
@@ -10,7 +10,7 @@ enum Move {
     Right,
 }
 
-type Parsed = (HashMap<Point, char>, Vec<Move>);
+type Parsed = (aoc::FxHashMap<Point, char>, Vec<Move>);
 
 fn part1(data: &Parsed) -> i64 {
     let (grid, moves) = data;
@@ -86,7 +86,7 @@ fn transition(
     face: i64,
     dir: Point,
     pos: Point,
-    extents: &HashMap<i64, (i64, i64, i64, i64)>,
+    extents: &aoc::FxHashMap<i64, (i64, i64, i64, i64)>,
 ) -> (i64, Point, Point) {
     let [x, y] = pos;
     let (f, d, dp) = match (face, dir) {
@@ -129,7 +129,7 @@ fn part2(data: &Parsed) -> i64 {
     let mut dir = EAST;
     let mut path = vec![(pos, dir)];
     let sz = 50;
-    let extents: HashMap<i64, (i64, i64, i64, i64)> = [
+    let extents: aoc::FxHashMap<i64, (i64, i64, i64, i64)> = [
         (0, (sz, 2 * sz - 1, 0, sz - 1)),
         (1, (2 * sz, 3 * sz - 1, 0, sz - 1)),
         (2, (sz, 2 * sz - 1, sz, 2 * sz - 1)),

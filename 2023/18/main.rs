@@ -9,13 +9,7 @@ fn parse1(lines: &[String]) -> Data {
         .iter()
         .map(|s| {
             let parts = aoc::split_w(s);
-            let dir = match parts[0] {
-                "L" => aoc::WEST,
-                "R" => aoc::EAST,
-                "U" => aoc::NORTH,
-                "D" => aoc::SOUTH,
-                _ => panic!(),
-            };
+            let dir = *aoc::DIRECTION_MAP.get(parts[0]).unwrap();
             let num = parts[1].parse::<i64>().unwrap();
             (dir, num)
         })
@@ -28,13 +22,7 @@ fn parse2(lines: &[String]) -> Data {
         .map(|s| {
             let parts = aoc::split_w(s);
             let num = i64::from_str_radix(&parts[2][2..7], 16).unwrap();
-            let dir = match parts[2].chars().nth(7).unwrap() {
-                '0' => aoc::EAST,
-                '1' => aoc::SOUTH,
-                '2' => aoc::WEST,
-                '3' => aoc::NORTH,
-                _ => panic!(),
-            };
+            let dir = *aoc::DIRECTION_MAP.get(&parts[2][7..8]).unwrap();
             (dir, num)
         })
         .collect()

@@ -221,6 +221,10 @@ lazy_static! {
         map.insert("ne", NORTH_WEST);
         map.insert("SE", SOUTH_EAST);
         map.insert("se", SOUTH_EAST);
+        map.insert("0", EAST);
+        map.insert("1", SOUTH);
+        map.insert("2", WEST);
+        map.insert("3", NORTH);
         map
     };
 }

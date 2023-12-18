@@ -78,24 +78,3 @@ fn parse(lines: &[String]) -> Parsed {
 fn main() {
     aoc::run_main(parse, part1, part2);
 }
-
-#[cfg(test)]
-mod tests {
-    // use super::*;
-
-    // fn example() -> Vec<String> {
-    //     let s = include_str!("example.txt");
-    //     s.lines().map(|x| x.to_string()).collect()
-    // }
-
-    // fn example() -> Vec<String> {
-    // 	   vec![
-    //         "0".into()
-    //     ]
-    // }
-
-    // #[test]
-    // fn test_part1() {
-    //     assert_eq!(part1(&parse(&example())), 0);
-    // }
-}

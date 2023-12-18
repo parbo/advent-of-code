@@ -40,28 +40,27 @@ fn parse2(lines: &[String]) -> Data {
         .collect()
 }
 
+fn area(vertices: &[aoc::Point]) -> i64 {
+    //shoelace formula
+    let mut area = 0;
+    let mut perimeter = 0;
+    for p in vertices.windows(2) {
+        area += p[0][1] * p[1][0] - p[0][0] * p[1][1];
+        let dx = p[1][0] - p[0][0];
+        let dy = p[1][1] - p[0][1];
+        perimeter += (dx + dy).abs();
+    }
+    (perimeter + area.abs()) / 2 + 1
+}
+
 fn solve(data: &Data) -> i64 {
     let mut pos = [0, 0];
     let mut vertices = vec![pos];
-    let mut garea = 0;
     for d in data {
-        for _ in 0..d.1 {
-            pos = aoc::point_add(pos, d.0);
-            vertices.push(pos);
-            garea += 1;
-        }
+        pos = aoc::point_add(pos, aoc::point_mul(d.0, d.1));
+        vertices.push(pos);
     }
-
-    //shoelace formula
-    let mut area = 0;
-    let n = vertices.len() as i64;
-    for p in vertices.windows(2) {
-        area += p[0][1] * p[1][0];
-        area -= p[0][0] * p[1][1];
-    }
-    let area = i64::abs(area) / 2;
-    let area = area - (n / 2) + 1;
-    garea + area
+    area(&vertices)
 }
 
 fn part1(lines: &Parsed) -> i64 {

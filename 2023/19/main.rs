@@ -93,13 +93,16 @@ fn is_accepted(workflows: &FxHashMap<String, Vec<Rule>>, rating: &Rating) -> boo
 
 fn part1(data: &Parsed) -> i64 {
     let (workflows, ratings) = data;
-    let mut accepted = vec![];
-    for rating in ratings {
-        if is_accepted(workflows, rating) {
-            accepted.push(rating);
-        }
-    }
-    accepted.iter().map(|r| r.x + r.m + r.a + r.s).sum()
+    ratings
+        .iter()
+        .filter_map(|r| {
+            if is_accepted(workflows, r) {
+                Some(r.x + r.m + r.a + r.s)
+            } else {
+                None
+            }
+        })
+        .sum()
 }
 
 fn part2(data: &Parsed) -> i64 {

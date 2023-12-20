@@ -4,7 +4,7 @@ use aoc::{FxHashMap, FxHashSet};
 
 type Parsed = FxHashMap<String, (char, Vec<String>)>;
 
-fn solve(data: &Parsed, max: i64) -> i64 {
+fn solve(data: &Parsed, max: Option<i64>) -> i64 {
     let mut low_pulses = 0;
     let mut high_pulses = 0;
     let mut state: FxHashMap<String, (bool, i64)> = FxHashMap::default();
@@ -17,7 +17,7 @@ fn solve(data: &Parsed, max: i64) -> i64 {
     }
     let mut ff_memory: FxHashMap<String, bool> = FxHashMap::default();
     let mut cj_memory: FxHashMap<String, FxHashMap<String, bool>> = FxHashMap::default();
-    for i in 0..max {
+    for i in 0..max.unwrap_or(10000000) {
         let mut todo = VecDeque::from([("broadcaster".to_string(), false, "button".to_string())]);
         while let Some((s, p, from)) = todo.pop_back() {
             if p {
@@ -27,25 +27,27 @@ fn solve(data: &Parsed, max: i64) -> i64 {
             }
             // println!("{} -{}-> {}", from, if p { "high" } else { "low" }, s);
             // Find the cycles
-            for s in ["xt", "zv", "sp", "lk"] {
-                let m = cj_memory.entry(s.to_string()).or_default();
-                let pp = inputs
-                    .get(s)
-                    .unwrap()
-                    .iter()
-                    .map(|x| *m.get(x).unwrap_or(&false))
-                    .all(|x| x);
-                let (last, cnt) = state.entry(s.to_string()).or_default();
-                if pp != *last {
-                    if *cnt > 0 {
-                        found.insert(s.to_string(), i + 1);
+            if max.is_none() {
+                for s in ["xt", "zv", "sp", "lk"] {
+                    let m = cj_memory.entry(s.to_string()).or_default();
+                    let pp = inputs
+                        .get(s)
+                        .unwrap()
+                        .iter()
+                        .map(|x| *m.get(x).unwrap_or(&false))
+                        .all(|x| x);
+                    let (last, cnt) = state.entry(s.to_string()).or_default();
+                    if pp != *last {
+                        if *cnt > 0 {
+                            found.insert(s.to_string(), i + 1);
+                        }
+                        *cnt += 1;
+                        *last = pp;
                     }
-                    *cnt += 1;
-                    *last = pp;
                 }
-            }
-            if found.len() == 4 {
-                return aoc::lcm_arr(&found.values().cloned().collect::<Vec<_>>());
+                if found.len() == 4 {
+                    return aoc::lcm_arr(&found.values().cloned().collect::<Vec<_>>());
+                }
             }
             if let Some((c, out)) = data.get(&s) {
                 match c {
@@ -86,11 +88,11 @@ fn solve(data: &Parsed, max: i64) -> i64 {
 }
 
 fn part1(data: &Parsed) -> i64 {
-    solve(data, 1000)
+    solve(data, Some(1000))
 }
 
 fn part2(data: &Parsed) -> i64 {
-    solve(data, 100000)
+    solve(data, None)
 }
 
 fn parse(lines: &[String]) -> Parsed {

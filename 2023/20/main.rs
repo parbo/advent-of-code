@@ -4,9 +4,11 @@ use aoc::{FxHashMap, FxHashSet};
 
 type Parsed = FxHashMap<String, Vec<String>>;
 
-fn part1(data: &Parsed) -> i64 {
+fn solve(data: &Parsed, max: i64) -> i64 {
     let mut low_pulses = 0;
     let mut high_pulses = 0;
+    let mut state: FxHashMap<String, (bool, i64)> = FxHashMap::default();
+    let mut found = FxHashMap::default();
     let data: FxHashMap<String, (char, Vec<String>)> = data
         .iter()
         .map(|(op, out)| {
@@ -28,101 +30,16 @@ fn part1(data: &Parsed) -> i64 {
     }
     let mut ff_memory: FxHashMap<String, bool> = FxHashMap::default();
     let mut cj_memory: FxHashMap<String, FxHashMap<String, bool>> = FxHashMap::default();
-    for i in 0..1000 {
+    for i in 0..max {
         let mut todo = VecDeque::from([("broadcaster".to_string(), false, "button".to_string())]);
         while let Some((s, p, from)) = todo.pop_back() {
-            // if high_pulses + low_pulses == 40 {
-            //     return 0;
-            // }
             if p {
                 high_pulses += 1;
             } else {
                 low_pulses += 1;
             }
             // println!("{} -{}-> {}", from, if p { "high" } else { "low" }, s);
-            if let Some((c, out)) = data.get(&s) {
-                match c {
-                    '$' => {
-                        for o in out {
-                            todo.push_front((o.clone(), p, s.clone()));
-                        }
-                    }
-                    '%' => {
-                        let m = ff_memory.entry(s.clone()).or_default();
-                        if !p {
-                            *m = !*m;
-                            for o in out {
-                                todo.push_front((o.clone(), *m, s.clone()));
-                            }
-                        }
-                    }
-                    '&' => {
-                        let m = cj_memory.entry(s.clone()).or_default();
-                        m.insert(from.clone(), p);
-                        // dbg!(inputs.get(&s).unwrap());
-                        let pp = !inputs
-                            .get(&s)
-                            .unwrap()
-                            .iter()
-                            .map(|x| *m.get(x).unwrap_or(&false))
-                            .all(|x| x);
-                        for o in out {
-                            todo.push_front((o.clone(), pp, s.clone()));
-                        }
-                    }
-                    _ => panic!(),
-                }
-            }
-        }
-    }
-    low_pulses * high_pulses
-}
-
-fn part2(data: &Parsed) -> i64 {
-    let data: FxHashMap<String, (char, Vec<String>)> = data
-        .iter()
-        .map(|(op, out)| {
-            if op == "broadcaster" {
-                (op.clone(), ('$', out.clone()))
-            } else {
-                (
-                    op[1..].to_string(),
-                    (op.chars().next().unwrap(), out.clone()),
-                )
-            }
-        })
-        .collect();
-    let mut inputs: FxHashMap<String, FxHashSet<String>> = FxHashMap::default();
-    for (s, (_, out)) in &data {
-        for o in out {
-            inputs.entry(o.clone()).or_default().insert(s.clone());
-        }
-    }
-    dbg!(&inputs);
-    let mut ff_memory: FxHashMap<String, bool> = FxHashMap::default();
-    let mut cj_memory: FxHashMap<String, FxHashMap<String, bool>> = FxHashMap::default();
-    let mut i = 0;
-    let mut state: FxHashMap<String, (bool, i64)> = FxHashMap::default();
-    let mut found = FxHashMap::default();
-    loop {
-        i += 1;
-        if i % 10000000 == 0 {
-            println!("{}", i);
-        }
-        let mut todo = VecDeque::from([("broadcaster".to_string(), false, "button".to_string())]);
-        while let Some((s, p, from)) = todo.pop_back() {
-            // println!("{} -{}-> {}", from, if p { "high" } else { "low" }, s);
-            // dbg!(i);
-            // for s in ["rx", "dg", "xt"] {
-            //     let m = cj_memory.entry(s.to_string()).or_default();
-            //     let inps = inputs
-            //         .get(s)
-            //         .unwrap()
-            //         .iter()
-            //         .map(|x| *m.get(x).unwrap_or(&false))
-            //         .collect::<Vec<_>>();
-            //     println!("{}, {:?}", s, inps);
-            // }
+            // Find the cycles
             for s in ["xt", "zv", "sp", "lk"] {
                 let m = cj_memory.entry(s.to_string()).or_default();
                 let pp = inputs
@@ -131,18 +48,10 @@ fn part2(data: &Parsed) -> i64 {
                     .iter()
                     .map(|x| *m.get(x).unwrap_or(&false))
                     .all(|x| x);
-                // let inps = inputs
-                //     .get(s)
-                //     .unwrap()
-                //     .iter()
-                //     .map(|x| *m.get(x).unwrap_or(&false))
-                //     .collect::<Vec<_>>();
-                // println!("{}, {}, {:?}", i, s, inps);
                 let (last, cnt) = state.entry(s.to_string()).or_default();
                 if pp != *last {
                     if *cnt > 0 {
-                        println!("{}, {}", i, s);
-                        found.insert(s.to_string(), i);
+                        found.insert(s.to_string(), i + 1);
                     }
                     *cnt += 1;
                     *last = pp;
@@ -183,23 +92,18 @@ fn part2(data: &Parsed) -> i64 {
                     }
                     _ => panic!(),
                 }
-            } else if !p {
-                dbg!(s);
-                for s in [/*"lk", "sp", "zv",*/ "xt"] {
-                    let m = cj_memory.entry(s.to_string()).or_default();
-                    let inps = inputs
-                        .get(s)
-                        .unwrap()
-                        .iter()
-                        .map(|x| *m.get(x).unwrap_or(&false))
-                        .collect::<Vec<_>>();
-                    dbg!(inps);
-                }
-                dbg!(i);
-                // return i;
             }
         }
     }
+    low_pulses * high_pulses
+}
+
+fn part1(data: &Parsed) -> i64 {
+    solve(data, 1000)
+}
+
+fn part2(data: &Parsed) -> i64 {
+    solve(data, 100000)
 }
 
 fn parse(lines: &[String]) -> Parsed {

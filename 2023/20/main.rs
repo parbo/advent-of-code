@@ -60,14 +60,12 @@ fn part1(data: &Parsed) -> i64 {
                         let m = cj_memory.entry(s.clone()).or_default();
                         m.insert(from.clone(), p);
                         // dbg!(inputs.get(&s).unwrap());
-                        let vals = inputs
+                        let pp = !inputs
                             .get(&s)
                             .unwrap()
                             .iter()
                             .map(|x| *m.get(x).unwrap_or(&false))
-                            .collect::<Vec<_>>();
-                        // dbg!(&vals);
-                        let pp = !vals.iter().all(|x| *x);
+                            .all(|x| x);
                         for o in out {
                             todo.push_front((o.clone(), pp, s.clone()));
                         }
@@ -81,8 +79,6 @@ fn part1(data: &Parsed) -> i64 {
 }
 
 fn part2(data: &Parsed) -> i64 {
-    let mut low_pulses = 0;
-    let mut high_pulses = 0;
     let data: FxHashMap<String, (char, Vec<String>)> = data
         .iter()
         .map(|(op, out)| {
@@ -102,25 +98,59 @@ fn part2(data: &Parsed) -> i64 {
             inputs.entry(o.clone()).or_default().insert(s.clone());
         }
     }
+    dbg!(&inputs);
     let mut ff_memory: FxHashMap<String, bool> = FxHashMap::default();
     let mut cj_memory: FxHashMap<String, FxHashMap<String, bool>> = FxHashMap::default();
     let mut i = 0;
+    let mut state: FxHashMap<String, (bool, i64)> = FxHashMap::default();
+    let mut found = FxHashMap::default();
     loop {
         i += 1;
-        if i % 10000 == 0 {
+        if i % 10000000 == 0 {
             println!("{}", i);
         }
         let mut todo = VecDeque::from([("broadcaster".to_string(), false, "button".to_string())]);
         while let Some((s, p, from)) = todo.pop_back() {
-            // if high_pulses + low_pulses == 40 {
-            //     return 0;
-            // }
-            if p {
-                high_pulses += 1;
-            } else {
-                low_pulses += 1;
-            }
             // println!("{} -{}-> {}", from, if p { "high" } else { "low" }, s);
+            // dbg!(i);
+            // for s in ["rx", "dg", "xt"] {
+            //     let m = cj_memory.entry(s.to_string()).or_default();
+            //     let inps = inputs
+            //         .get(s)
+            //         .unwrap()
+            //         .iter()
+            //         .map(|x| *m.get(x).unwrap_or(&false))
+            //         .collect::<Vec<_>>();
+            //     println!("{}, {:?}", s, inps);
+            // }
+            for s in ["xt", "zv", "sp", "lk"] {
+                let m = cj_memory.entry(s.to_string()).or_default();
+                let pp = inputs
+                    .get(s)
+                    .unwrap()
+                    .iter()
+                    .map(|x| *m.get(x).unwrap_or(&false))
+                    .all(|x| x);
+                // let inps = inputs
+                //     .get(s)
+                //     .unwrap()
+                //     .iter()
+                //     .map(|x| *m.get(x).unwrap_or(&false))
+                //     .collect::<Vec<_>>();
+                // println!("{}, {}, {:?}", i, s, inps);
+                let (last, cnt) = state.entry(s.to_string()).or_default();
+                if pp != *last {
+                    if *cnt > 0 {
+                        println!("{}, {}", i, s);
+                        found.insert(s.to_string(), i);
+                    }
+                    *cnt += 1;
+                    *last = pp;
+                }
+            }
+            if found.len() == 4 {
+                return aoc::lcm_arr(&found.values().cloned().collect::<Vec<_>>());
+            }
             if let Some((c, out)) = data.get(&s) {
                 match c {
                     '$' => {
@@ -141,14 +171,12 @@ fn part2(data: &Parsed) -> i64 {
                         let m = cj_memory.entry(s.clone()).or_default();
                         m.insert(from.clone(), p);
                         // dbg!(inputs.get(&s).unwrap());
-                        let vals = inputs
+                        let pp = !inputs
                             .get(&s)
                             .unwrap()
                             .iter()
                             .map(|x| *m.get(x).unwrap_or(&false))
-                            .collect::<Vec<_>>();
-                        // dbg!(&vals);
-                        let pp = !vals.iter().all(|x| *x);
+                            .all(|x| x);
                         for o in out {
                             todo.push_front((o.clone(), pp, s.clone()));
                         }
@@ -157,7 +185,18 @@ fn part2(data: &Parsed) -> i64 {
                 }
             } else if !p {
                 dbg!(s);
-                return i;
+                for s in [/*"lk", "sp", "zv",*/ "xt"] {
+                    let m = cj_memory.entry(s.to_string()).or_default();
+                    let inps = inputs
+                        .get(s)
+                        .unwrap()
+                        .iter()
+                        .map(|x| *m.get(x).unwrap_or(&false))
+                        .collect::<Vec<_>>();
+                    dbg!(inps);
+                }
+                dbg!(i);
+                // return i;
             }
         }
     }

@@ -2,28 +2,15 @@ use std::{collections::VecDeque, iter::*};
 
 use aoc::{FxHashMap, FxHashSet};
 
-type Parsed = FxHashMap<String, Vec<String>>;
+type Parsed = FxHashMap<String, (char, Vec<String>)>;
 
 fn solve(data: &Parsed, max: i64) -> i64 {
     let mut low_pulses = 0;
     let mut high_pulses = 0;
     let mut state: FxHashMap<String, (bool, i64)> = FxHashMap::default();
     let mut found = FxHashMap::default();
-    let data: FxHashMap<String, (char, Vec<String>)> = data
-        .iter()
-        .map(|(op, out)| {
-            if op == "broadcaster" {
-                (op.clone(), ('$', out.clone()))
-            } else {
-                (
-                    op[1..].to_string(),
-                    (op.chars().next().unwrap(), out.clone()),
-                )
-            }
-        })
-        .collect();
     let mut inputs: FxHashMap<String, FxHashSet<String>> = FxHashMap::default();
-    for (s, (_, out)) in &data {
+    for (s, (_, out)) in data {
         for o in out {
             inputs.entry(o.clone()).or_default().insert(s.clone());
         }
@@ -116,7 +103,11 @@ fn parse(lines: &[String]) -> Parsed {
                 .iter()
                 .map(|x| x.to_string())
                 .collect();
-            (op, out)
+            if op == "broadcaster" {
+                (op, ('$', out))
+            } else {
+                (op[1..].to_string(), (op.chars().next().unwrap(), out))
+            }
         })
         .collect()
 }

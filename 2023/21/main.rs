@@ -14,42 +14,42 @@ fn do_solve(
     let ([min_x, min_y], [max_x, max_y]) = data.extents();
     let h = max_y - min_y + 1;
     let w = max_x - min_x + 1;
-    let pk = if extend {
-        [p[0].rem_euclid(w), p[1].rem_euclid(h)]
-    } else {
-        p
-    };
-    if let Some(v) = cache.get(&(pk, steps)) {
-        // Translate the positions back
-        let mut vv = aoc::FxHashSet::default();
-        let diff = aoc::point_sub(p, pk);
-        for p in v {
-            vv.insert(aoc::point_add(*p, diff));
-        }
-        vv
-    } else if steps == 0 {
-        let mut r = aoc::FxHashSet::default();
-        r.insert(p);
-        r
-    } else {
-        let mut v = aoc::FxHashSet::default();
-        for pp in aoc::neighbors(p) {
-            let ppp = if extend {
-                [pp[0].rem_euclid(w), pp[1].rem_euclid(h)]
-            } else {
-                pp
-            };
-            let c = data.get_value(ppp);
-            if c == Some('.') || c == Some('S') {
-                v = v
-                    .union(&do_solve(data, steps - 1, pp, extend, cache))
-                    .cloned()
-                    .collect();
+    let mut reachable = aoc::FxHashSet::default();
+    let mut todo = vec![(p, steps, aoc::FxHashSet::default())];
+    while let Some((p, steps, r)) = todo.pop() {
+        let pk = if extend {
+            [p[0].rem_euclid(w), p[1].rem_euclid(h)]
+        } else {
+            p
+        };
+        if let Some(v) = cache.get(&(pk, steps)) {
+            // Translate the positions back
+            let mut vv = aoc::FxHashSet::default();
+            let diff = aoc::point_sub(p, pk);
+            for p in v {
+                vv.insert(aoc::point_add(*p, diff));
             }
-        }
-        cache.insert((pk, steps), v.clone());
-        v
+            reachable = reachable.union(&vv).cloned().collect();
+        } else if steps == 0 {
+            let mut r = r.clone();
+            r.insert(p);
+            reachable = reachable.union(&r).cloned().collect();
+            cache.insert((pk, steps), r);
+        } else {
+            for pp in aoc::neighbors(p) {
+                let ppp = if extend {
+                    [pp[0].rem_euclid(w), pp[1].rem_euclid(h)]
+                } else {
+                    pp
+                };
+                let c = data.get_value(ppp);
+                if c == Some('.') || c == Some('S') {
+                    todo.push((pp, steps - 1, r.clone()));
+                }
+            }
+        };
     }
+    reachable
 }
 
 fn solve(data: &Parsed, steps: i64, extend: bool) -> i64 {

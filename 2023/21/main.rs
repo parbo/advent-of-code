@@ -1,8 +1,64 @@
-use std::iter::*;
+use std::{collections::VecDeque, iter::*};
 
 use aoc::{Grid, GridDrawer};
 
 type Parsed = Vec<Vec<char>>;
+
+fn solve1(data: &Parsed, steps: i64, extend: bool) -> aoc::FxHashSet<aoc::Point> {
+    let p = data
+        .points()
+        .find(|p| data.get_value(*p) == Some('S'))
+        .unwrap();
+    let ([min_x, min_y], [max_x, max_y]) = data.extents();
+    let h = max_y - min_y + 1;
+    let w = max_x - min_x + 1;
+    // dbg!(w, h);
+    let mut reachable = aoc::FxHashSet::default();
+    let mut todo = VecDeque::from([(p, 0)]);
+    let mut seen = aoc::FxHashSet::default();
+    let mut last = 0;
+    let mut last_r = 0;
+    while let Some((p, s)) = todo.pop_back() {
+        if s != last {
+            if s % 100 == 0 {
+                let a = (2 * s) * (2 * s) / 2;
+                dbg!(
+                    s,
+                    reachable.len(),
+                    a,
+                    reachable.len() as f32 / a as f32,
+                    reachable.len() - last_r
+                );
+            }
+            last = s;
+            last_r = reachable.len();
+            reachable.clear();
+            seen.clear();
+        }
+        reachable.insert(p);
+        // let ppp = if extend {
+        //     [p[0].rem_euclid(w), p[1].rem_euclid(h)]
+        // } else {
+        //     p
+        // };
+        if !seen.insert((p, s)) {
+            continue;
+        }
+        for pp in aoc::neighbors(p) {
+            let ppp = if extend {
+                [pp[0].rem_euclid(w), pp[1].rem_euclid(h)]
+            } else {
+                pp
+            };
+            // dbg!(pp, ppp);
+            let c = data.get_value(ppp);
+            if c == Some('.') || c == Some('S') {
+                todo.push_front((pp, s + 1));
+            }
+        }
+    }
+    reachable
+}
 
 fn do_solve(
     data: &Parsed,
@@ -80,18 +136,55 @@ fn do_solve(
     }
 }
 
+fn make_g(data: &Parsed, r: &aoc::FxHashSet<aoc::Point>) -> aoc::FxHashMap<aoc::Point, char> {
+    let mut g: aoc::FxHashMap<_, _> = r.iter().map(|x| (*x, 'O')).collect();
+    let ([min_x, min_y], [max_x, max_y]) = data.extents();
+    let h = max_y - min_y + 1;
+    let w = max_x - min_x + 1;
+    let ([min_xg, min_yg], [max_xg, max_yg]) = g.extents();
+    let min_x = min_x.min(min_xg);
+    let min_y = min_y.min(min_yg);
+    let max_x = max_x.max(max_xg);
+    let max_y = max_y.max(max_yg);
+    for y in min_y..=max_y {
+        for x in min_x..max_x {
+            g.entry([x, y]).or_insert_with(|| {
+                data.get_value([x.rem_euclid(w), y.rem_euclid(h)])
+                    .unwrap_or('.')
+            });
+        }
+    }
+    g
+}
+
 fn solve(data: &Parsed, steps: i64, extend: bool) -> i64 {
     let p = data
         .points()
         .find(|p| data.get_value(*p) == Some('S'))
         .unwrap();
     let mut cache = aoc::FxHashMap::default();
-    let r = do_solve(data, steps, steps, p, p, extend, &mut cache);
-    let mut gd = aoc::PrintGridDrawer::new(|c| c);
-    let g: aoc::FxHashMap<_, _> = r.iter().map(|x| (*x, 'O')).collect();
-    gd.draw(&g);
-    println!();
-    r.len() as i64
+    // let mut gd = aoc::PrintGridDrawer::new(|c| c);
+    let mut gd = aoc::BitmapGridDrawer::new(
+        |c| match c {
+            '#' => [0, 255, 0],
+            'O' => [255, 255, 255],
+            _ => [0, 0, 0],
+        },
+        "vis/21/part2",
+    );
+    gd.set_bg([0, 0, 0]);
+    let mut last = 0;
+    for s in 1..300 {
+        let r = do_solve(data, s, s, p, p, extend, &mut cache);
+        let g = make_g(data, &r);
+        gd.draw(&g);
+        println!();
+        println!("steps: {}, num: {}, inc: {}", s, r.len(), r.len() - last);
+        println!();
+        last = r.len();
+    }
+    //    r.len() as i64
+    0
 }
 
 fn part1(data: &Parsed) -> i64 {
@@ -99,7 +192,27 @@ fn part1(data: &Parsed) -> i64 {
 }
 
 fn part2(data: &Parsed) -> i64 {
-    solve(data, 26501365, true)
+    let r = solve1(data, 26501365, true);
+    return r.len() as i64;
+    // //    solve(data, 26501365, true)
+    // let mut gd = aoc::BitmapGridDrawer::new(
+    //     |c| match c {
+    //         '#' => [0, 255, 0],
+    //         'O' => [255, 255, 255],
+    //         _ => [0, 0, 0],
+    //     },
+    //     "vis/21/part2",
+    // );
+    // gd.set_bg([0, 0, 0]);
+    // let mut last = 0;
+    // for s in 1..300 {
+    //     let r = solve1(data, s, true);
+    //     let g = make_g(data, &r);
+    //     gd.draw(&g);
+    //     println!("steps: {}, num: {}, inc: {}", s, r.len(), r.len() - last);
+    //     last = r.len();
+    // }
+    // 0
 }
 
 fn parse(lines: &[String]) -> Parsed {

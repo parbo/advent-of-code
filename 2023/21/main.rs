@@ -24,34 +24,34 @@ fn solve(data: &Parsed, steps: i64, extend: bool) -> aoc::FxHashSet<aoc::Point> 
     let mut last_diff = 0;
     // let mut diffs = vec![];
     // let mut cache = aoc::FxHashMap::default();
+    let mut hist = vec![];
     while let Some((p, s)) = todo.pop_back() {
         if s != last {
-            if s % 100 == 0 {
-                let a = (2 * s) * (2 * s) / 2;
-                dbg!(
-                    s,
-                    reachable.len(),
-                    a,
-                    a / 2 - reachable.len(),
-                    reachable.len() - last_r
-                );
-            }
-            let mut rr: aoc::FxHashSet<aoc::Point> = aoc::FxHashSet::default();
-            for &p in &reachable {
-                let pp = if extend {
-                    [p[0].rem_euclid(w), p[1].rem_euclid(h)]
-                } else {
-                    p
-                };
-                rr.insert(pp);
-            }
-            if rr != last_rr {
-                if rr.len() > 15000 {
-                    dbg!(&rr);
-                }
-                last_rr = rr;
-            }
-            let diff: aoc::FxHashSet<_> = reachable.difference(&last_r_0).cloned().collect();
+            // if s % w == 0 {
+            //     let a = (2 * s) * (2 * s) / 2;
+            //     dbg!(
+            //         s,
+            //         reachable.len(),
+            //         reachable.len() / w as usize,
+            //         reachable.len() - last_r
+            //     );
+            // }
+            // let mut rr: aoc::FxHashSet<aoc::Point> = aoc::FxHashSet::default();
+            // for &p in &reachable {
+            //     let pp = if extend {
+            //         [p[0].rem_euclid(w), p[1].rem_euclid(h)]
+            //     } else {
+            //         p
+            //     };
+            //     rr.insert(pp);
+            // }
+            // if rr != last_rr {
+            //     if rr.len() > 15000 {
+            //         dbg!(&rr);
+            //     }
+            //     last_rr = rr;
+            // }
+            // let diff: aoc::FxHashSet<_> = reachable.difference(&last_r_0).cloned().collect();
             // let diff1: aoc::FxHashSet<_> = reachable.difference(&last_r_1).cloned().collect();
             // let diff2: aoc::FxHashSet<_> = last_r_0.difference(&last_r_1).cloned().collect();
             // dbg!(diff.len(), diff.len() as i64 - last_diff);
@@ -67,11 +67,39 @@ fn solve(data: &Parsed, steps: i64, extend: bool) -> aoc::FxHashSet<aoc::Point> 
             //         }
             //     }
             // }
-            last_diff = diff.len() as i64;
+            // last_diff = diff.len() as i64;
+            let mut inside = 0;
+            for y in -s..s {
+                let xx: i64 = s - (y as i64).abs();
+                for x in -xx..xx {
+                    let ppp = if extend {
+                        [x.rem_euclid(w), y.rem_euclid(h)]
+                    } else {
+                        [x, y]
+                    };
+                    if data.get_value(ppp) == Some('#') {
+                        inside += 1;
+                    }
+                }
+            }
             last = s;
+            hist.push((s, reachable.len(), reachable.len() - last_r));
+            if hist.len() > w as usize + 10 {
+                println!(
+                    "{} {} {} {} {} {} {}",
+                    s,
+                    reachable.len(),
+                    reachable.len() - last_r,
+                    reachable.len() - last_r - hist[hist.len() - 1 - w as usize].2,
+                    inside,
+                    (2 * s * s - inside) / 2,
+                    reachable.len() as i64 - (2 * s * s - inside) / 2
+                );
+            }
+
             last_r = reachable.len();
 
-            if s == steps as usize {
+            if s == steps {
                 break;
             }
 

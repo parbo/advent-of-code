@@ -15,7 +15,8 @@ fn do_solve(
     let h = max_y - min_y + 1;
     let w = max_x - min_x + 1;
     let mut reachable = aoc::FxHashSet::default();
-    let mut todo = vec![(p, steps, aoc::FxHashSet::default())];
+    let mut todo: Vec<(aoc::Point, i64, aoc::FxHashSet<aoc::Point>)> =
+        vec![(p, steps, aoc::FxHashSet::default())];
     while let Some((p, steps, r)) = todo.pop() {
         let pk = if extend {
             [p[0].rem_euclid(w), p[1].rem_euclid(h)]
@@ -31,10 +32,14 @@ fn do_solve(
             }
             reachable = reachable.union(&vv).cloned().collect();
         } else if steps == 0 {
-            let mut r = r.clone();
-            r.insert(p);
-            reachable = reachable.union(&r).cloned().collect();
-            cache.insert((pk, steps), r);
+            let mut vv = aoc::FxHashSet::default();
+            let diff = aoc::point_sub(p, pk);
+            for p in r {
+                vv.insert(aoc::point_add(p, diff));
+            }
+            vv.insert(aoc::point_add(p, diff));
+            reachable = reachable.union(&vv).cloned().collect();
+            cache.insert((pk, steps), vv);
         } else {
             for pp in aoc::neighbors(p) {
                 let ppp = if extend {

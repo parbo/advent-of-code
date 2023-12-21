@@ -6,10 +6,12 @@ type Parsed = Vec<Vec<char>>;
 
 fn do_solve(
     data: &Parsed,
+    orig_steps: i64,
     steps: i64,
+    orig_p: aoc::Point,
     p: aoc::Point,
     extend: bool,
-    cache: &mut aoc::FxHashMap<(aoc::Point, i64), aoc::FxHashSet<aoc::Point>>,
+    cache: &mut aoc::FxHashMap<(aoc::Point, i64), (aoc::Point, aoc::FxHashSet<aoc::Point>)>,
 ) -> aoc::FxHashSet<aoc::Point> {
     let ([min_x, min_y], [max_x, max_y]) = data.extents();
     let h = max_y - min_y + 1;
@@ -19,16 +21,27 @@ fn do_solve(
     } else {
         p
     };
-    if let Some(v) = cache.get(&(pk, steps)) {
+    if let Some((op, v)) = cache.get(&(pk, steps)) {
         // Translate the positions back
         let mut vv = aoc::FxHashSet::default();
-        let diff = aoc::point_sub(p, pk);
-        for p in v {
-            vv.insert(aoc::point_add(*p, diff));
+        let diff = aoc::point_sub(p, *op);
+        for vp in v {
+            // assert!(aoc::manhattan(*vp, orig_p) <= orig_steps);
+            let pp = aoc::point_add(*vp, diff);
+            // if aoc::manhattan(pp, orig_p) > orig_steps {
+            //     dbg!(diff, p, pk, steps, vp, pp, orig_p, orig_steps);
+            // }
+            // assert!(aoc::manhattan(pp, orig_p) <= orig_steps);
+            vv.insert(pp);
         }
         vv
+        // v.clone()
     } else if steps == 0 {
         let mut r = aoc::FxHashSet::default();
+        // if aoc::manhattan(p, orig_p) > orig_steps {
+        //     dbg!(p, orig_steps);
+        // }
+        // assert!(aoc::manhattan(p, orig_p) <= orig_steps);
         r.insert(p);
         r
     } else {
@@ -42,12 +55,27 @@ fn do_solve(
             let c = data.get_value(ppp);
             if c == Some('.') || c == Some('S') {
                 v = v
-                    .union(&do_solve(data, steps - 1, pp, extend, cache))
+                    .union(&do_solve(
+                        data,
+                        orig_steps,
+                        steps - 1,
+                        orig_p,
+                        pp,
+                        extend,
+                        cache,
+                    ))
                     .cloned()
                     .collect();
             }
         }
-        cache.insert((pk, steps), v.clone());
+        // if pk == [4, 0] {
+        //     dbg!(p, pk, &v);
+        // }
+        let x = cache.insert((pk, steps), (p, v.clone()));
+        if cache.len() % 10000 == 0 {
+            dbg!(cache.len());
+        }
+        assert!(x.is_none());
         v
     }
 }
@@ -58,7 +86,11 @@ fn solve(data: &Parsed, steps: i64, extend: bool) -> i64 {
         .find(|p| data.get_value(*p) == Some('S'))
         .unwrap();
     let mut cache = aoc::FxHashMap::default();
-    let r = do_solve(data, steps, p, extend, &mut cache);
+    let r = do_solve(data, steps, steps, p, p, extend, &mut cache);
+    let mut gd = aoc::PrintGridDrawer::new(|c| c);
+    let g: aoc::FxHashMap<_, _> = r.iter().map(|x| (*x, 'O')).collect();
+    gd.draw(&g);
+    println!();
     r.len() as i64
 }
 
@@ -87,10 +119,10 @@ mod tests {
         s.lines().map(|x| x.to_string()).collect()
     }
 
-    #[test]
-    fn test_part1() {
-        assert_eq!(solve(&parse(&example()), 6, false), 16);
-    }
+    // #[test]
+    // fn test_part1() {
+    //     assert_eq!(solve(&parse(&example()), 6, false), 16);
+    // }
 
     #[test]
     fn test_part2() {

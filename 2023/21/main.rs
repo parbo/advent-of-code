@@ -4,45 +4,62 @@ use aoc::{Grid, GridDrawer};
 
 type Parsed = Vec<Vec<char>>;
 
-fn solve(data: &Parsed, steps: i64, extend: bool) -> i64 {
-    let p = data
-        .points()
-        .find(|p| data.get_value(*p) == Some('S'))
-        .unwrap();
+fn do_solve(
+    data: &Parsed,
+    steps: i64,
+    p: aoc::Point,
+    extend: bool,
+    cache: &mut aoc::FxHashMap<(aoc::Point, i64), aoc::FxHashSet<aoc::Point>>,
+) -> aoc::FxHashSet<aoc::Point> {
     let ([min_x, min_y], [max_x, max_y]) = data.extents();
     let h = max_y - min_y + 1;
     let w = max_x - min_x + 1;
-    dbg!(w, h);
-    let mut reachable = aoc::FxHashSet::default();
-    let mut todo = vec![(p, 0)];
-    let mut seen = aoc::FxHashSet::default();
-    while let Some((p, s)) = todo.pop() {
-        if s == steps {
-            reachable.insert(p);
-            continue;
+    let pk = if extend {
+        [p[0].rem_euclid(w), p[1].rem_euclid(h)]
+    } else {
+        p
+    };
+    if let Some(v) = cache.get(&(pk, steps)) {
+        // Translate the positions back
+        let mut vv = aoc::FxHashSet::default();
+        let diff = aoc::point_sub(p, pk);
+        for p in v {
+            vv.insert(aoc::point_add(*p, diff));
         }
-        // let ppp = if extend {
-        //     [p[0].rem_euclid(w), p[1].rem_euclid(h)]
-        // } else {
-        //     p
-        // };
-        if !seen.insert((p, s)) {
-            continue;
-        }
+        vv
+    } else if steps == 0 {
+        let mut r = aoc::FxHashSet::default();
+        r.insert(p);
+        r
+    } else {
+        let mut v = aoc::FxHashSet::default();
         for pp in aoc::neighbors(p) {
             let ppp = if extend {
                 [pp[0].rem_euclid(w), pp[1].rem_euclid(h)]
             } else {
                 pp
             };
-            dbg!(pp, ppp);
             let c = data.get_value(ppp);
             if c == Some('.') || c == Some('S') {
-                todo.push((pp, s + 1));
+                v = v
+                    .union(&do_solve(data, steps - 1, pp, extend, cache))
+                    .cloned()
+                    .collect();
             }
         }
+        cache.insert((pk, steps), v.clone());
+        v
     }
-    reachable.len() as i64
+}
+
+fn solve(data: &Parsed, steps: i64, extend: bool) -> i64 {
+    let p = data
+        .points()
+        .find(|p| data.get_value(*p) == Some('S'))
+        .unwrap();
+    let mut cache = aoc::FxHashMap::default();
+    let r = do_solve(data, steps, p, extend, &mut cache);
+    r.len() as i64
 }
 
 fn part1(data: &Parsed) -> i64 {

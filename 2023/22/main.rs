@@ -1,10 +1,14 @@
-use std::{iter::*, path::PathBuf};
+use std::iter::*;
+
+#[cfg(feature = "vis")]
+use std::path::PathBuf;
 
 use aoc::Vec3;
 
 type ParsedItem = (Vec3, Vec3);
 type Parsed = Vec<ParsedItem>;
 
+#[cfg(feature = "vis")]
 struct Drawer {
     window: kiss3d::window::Window,
     camera: kiss3d::camera::ArcBall,
@@ -12,6 +16,7 @@ struct Drawer {
     data: Vec<Parsed>,
 }
 
+#[cfg(feature = "vis")]
 impl Drawer {
     fn new(data: Vec<Parsed>) -> Self {
         let mut window = kiss3d::window::Window::new_with_size("Day 22", 100, 1200);
@@ -129,8 +134,12 @@ fn collapse(data: &Parsed, mut drawer: impl FnMut(&Parsed)) -> (Vec<(Vec3, Vec3)
 }
 
 fn part1(data: &Parsed) -> i64 {
+    #[cfg(feature = "vis")]
     let mut vis = vec![];
+    #[cfg(feature = "vis")]
     let (data, _) = collapse(data, |x| vis.push(x.clone()));
+    #[cfg(not(feature = "vis"))]
+    let (data, _) = collapse(data, |_| {});
 
     let mut actually_safe = vec![];
     for s in 0..data.len() {
@@ -141,13 +150,18 @@ fn part1(data: &Parsed) -> i64 {
             .collect();
 
         let nd = collapse(&dd, |_| {});
-        if nd.0 == dd {
+        let dd: aoc::FxHashSet<(Vec3, Vec3)> = dd.iter().cloned().collect();
+        let nd: aoc::FxHashSet<(Vec3, Vec3)> = nd.0.iter().cloned().collect();
+        if nd == dd {
             actually_safe.push(s);
         }
     }
 
-    let mut d = Drawer::new(vis);
-    d.render();
+    #[cfg(feature = "vis")]
+    {
+        let mut d = Drawer::new(vis);
+        d.render();
+    }
 
     actually_safe.len() as i64
 }
@@ -185,25 +199,4 @@ fn parse(lines: &[String]) -> Parsed {
 
 fn main() {
     aoc::run_main(parse, part1, part2);
-}
-
-#[cfg(test)]
-mod tests {
-    // use super::*;
-
-    // fn example() -> Vec<String> {
-    //     let s = include_str!("example.txt");
-    //     s.lines().map(|x| x.to_string()).collect()
-    // }
-
-    // fn example() -> Vec<String> {
-    // 	   vec![
-    //         "0".into()
-    //     ]
-    // }
-
-    // #[test]
-    // fn test_part1() {
-    //     assert_eq!(part1(&parse(&example())), 0);
-    // }
 }

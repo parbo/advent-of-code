@@ -11,7 +11,9 @@ fn part1(data: &Parsed) -> i64 {
     data.sort_by(|a, b| b.0[2].cmp(&a.0[2]));
     // fall down
     let mut supports = FxHashMap::default();
+    dbg!(data.len());
     for i in (0..data.len()).rev() {
+        dbg!(i);
         let mut d = data[i];
         let istart = [d.0[0], d.0[1]];
         let iend = [d.1[0], d.1[1]];
@@ -23,9 +25,12 @@ fn part1(data: &Parsed) -> i64 {
             let min_xx = istart[0].max(jstart[0]);
             let min_yy = istart[1].max(jstart[1]);
             let max_xx = iend[0].min(jend[0]);
-            let max_yy = iend[0].min(jend[1]);
+            let max_yy = iend[1].min(jend[1]);
             if min_xx != max_xx || min_yy != max_yy {
-                // println!("overlap {} {}, {:?} {:?}", i, j, d, dj);
+                println!(
+                    "overlap {} {}, {:?} {:?}, {} {} {} {}",
+                    i, j, d, dj, min_xx, min_yy, max_xx, max_yy
+                );
                 max_z = dj.1[2];
                 supports.insert(j, i);
                 break;
@@ -34,8 +39,9 @@ fn part1(data: &Parsed) -> i64 {
         let diff = d.0[2] - max_z;
         d.0[2] -= diff;
         d.1[2] -= diff;
+        dbg!(d);
     }
-    dbg!(&data);
+    // dbg!(&data);
     (data.len() - supports.len()) as i64
 }
 

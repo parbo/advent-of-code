@@ -7,6 +7,8 @@ edition = '2021'
 aoc = {path = "../../aoc"}
 parse-display = "0.8.2"
 regex = "1.10.2"
+#kiss3d = { version = "0.35.0", optional = true }
+kiss3d = "0.35.0"
 
 [[bin]]
 name = 'day22'

@@ -26,7 +26,7 @@ fn part1(data: &Parsed) -> i64 {
             let min_yy = istart[1].max(jstart[1]);
             let max_xx = iend[0].min(jend[0]);
             let max_yy = iend[1].min(jend[1]);
-            if min_xx != max_xx || min_yy != max_yy {
+            if min_xx <= max_xx && min_yy <= max_yy {
                 println!(
                     "overlap {} {}, {:?} {:?}, {} {} {} {}",
                     i, j, d, dj, min_xx, min_yy, max_xx, max_yy

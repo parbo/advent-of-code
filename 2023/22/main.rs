@@ -49,28 +49,23 @@ fn draw(data: &Parsed) {
     // dbg!(&data);
 }
 
-type SupportMap = FxHashMap<usize, Vec<usize>>;
-
-fn collapse(data: &Parsed) -> (Vec<(Vec3, Vec3)>, SupportMap, SupportMap, usize) {
+#[allow(clippy::needless_range_loop)]
+fn collapse(data: &Parsed) -> (Vec<(Vec3, Vec3)>, usize) {
     let mut data: Vec<_> = data.iter().cloned().enumerate().collect();
-    // draw(&data);
     // sort on descending z
     data.sort_by(|a, b| b.1 .0[2].cmp(&a.1 .0[2]));
-    // draw(&data);
     // fall down
-    let mut supports: SupportMap = FxHashMap::default();
-    let mut supported_by: SupportMap = FxHashMap::default();
-    // dbg!(data.len());
     let n = data.len();
     let mut num = 0;
     for i in (0..n).rev() {
         // dbg!(i);
-        let (dix, d) = data[i];
+        let (_dix, d) = data[i];
         let istart = [d.0[0], d.0[1]];
         let iend = [d.1[0], d.1[1]];
         let mut max_z = 0;
+        // let mut candidates = vec![];
         for j in (i + 1)..n {
-            let (djix, dj) = data[j];
+            let (_djix, dj) = data[j];
             let jstart = [dj.0[0], dj.0[1]];
             let jend = [dj.1[0], dj.1[1]];
             let min_xx = istart[0].max(jstart[0]);
@@ -78,18 +73,13 @@ fn collapse(data: &Parsed) -> (Vec<(Vec3, Vec3)>, SupportMap, SupportMap, usize)
             let max_xx = iend[0].min(jend[0]);
             let max_yy = iend[1].min(jend[1]);
             if min_xx <= max_xx && min_yy <= max_yy {
-                // println!(
-                //     "overlap {} {}, {:?} {:?}, {} {} {} {}",
-                //     i, j, d, dj, min_xx, min_yy, max_xx, max_yy
-                // );
                 let z = dj.1[2] + 1;
                 if z >= max_z {
-                    supports.entry(djix).or_default().push(dix);
-                    supported_by.entry(dix).or_default().push(djix);
                     max_z = z;
                 }
             }
         }
+
         let diff = d.0[2] - max_z;
         if diff > 0 {
             let (_, d) = &mut data[i];
@@ -97,57 +87,14 @@ fn collapse(data: &Parsed) -> (Vec<(Vec3, Vec3)>, SupportMap, SupportMap, usize)
             d.1[2] -= diff;
             num += 1;
         }
-        // dbg!(d);
     }
     // sort back to original order
     data.sort_by(|a, b| a.0.cmp(&b.0));
-    (
-        data.into_iter().map(|(_, d)| d).collect(),
-        supports,
-        supported_by,
-        num,
-    )
+    (data.into_iter().map(|(_, d)| d).collect(), num)
 }
 
 fn part1(data: &Parsed) -> i64 {
-    let (data, supports, supported_by, _) = collapse(data);
-
-    dbg!(&supports);
-    dbg!(&supported_by);
-
-    let mut safe = vec![];
-    for i in 0..data.len() {
-        if let Some(ss) = supports.get(&i) {
-            dbg!(i);
-            let mut num = 0;
-            for si in ss {
-                if let Some(sb) = supported_by.get(si) {
-                    if sb.len() > 1 {
-                        num += 1;
-                    }
-                }
-            }
-            if num == ss.len() {
-                safe.push(i);
-            }
-        } else {
-            safe.push(i);
-        }
-    }
-    dbg!(&safe);
-
-    for s in &safe {
-        let dd = data
-            .iter()
-            .enumerate()
-            .filter_map(|(i, d)| if i == *s { None } else { Some(*d) })
-            .collect();
-
-        let nd = collapse(&dd);
-        if nd.0 != dd {
-            println!("OH NOES, {} was not actually safe", s);
-        }
-    }
+    let (data, _) = collapse(data);
 
     let mut actually_safe = vec![];
     for s in 0..data.len() {
@@ -167,7 +114,7 @@ fn part1(data: &Parsed) -> i64 {
 }
 
 fn part2(data: &Parsed) -> i64 {
-    let (data, supports, supported_by, _) = collapse(data);
+    let (data, _) = collapse(data);
 
     let mut collapsed = 0;
     for s in 0..data.len() {
@@ -179,7 +126,7 @@ fn part2(data: &Parsed) -> i64 {
 
         let nd = collapse(&dd);
         if nd.0 != dd {
-            collapsed += nd.3
+            collapsed += nd.1
         }
     }
     collapsed as i64

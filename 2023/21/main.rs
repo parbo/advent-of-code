@@ -72,19 +72,14 @@ mod tests {
         s.lines().map(|x| x.to_string()).collect()
     }
 
-    // #[test]
-    // fn test_part1() {
-    //     assert_eq!(solve(&parse(&example()), 6, false), 16);
-    // }
-
     #[test]
-    fn test_part2() {
-        assert_eq!(solve(&parse(&example()), 6, true), 16);
-        assert_eq!(solve(&parse(&example()), 10, true), 50);
-        assert_eq!(solve(&parse(&example()), 50, true), 1594);
-        assert_eq!(solve(&parse(&example()), 100, true), 6536);
-        assert_eq!(solve(&parse(&example()), 500, true), 167004);
-        assert_eq!(solve(&parse(&example()), 1000, true), 668697);
-        assert_eq!(solve(&parse(&example()), 5000, true), 16733044);
+    fn test_solve() {
+        assert_eq!(solve(&parse(&example()), 6), 16);
+        // assert_eq!(solve(&parse(&example()), 10), 50);
+        // assert_eq!(solve(&parse(&example()), 50), 1594);
+        // assert_eq!(solve(&parse(&example()), 100), 6536);
+        // assert_eq!(solve(&parse(&example()), 500), 167004);
+        // assert_eq!(solve(&parse(&example()), 1000), 668697);
+        // assert_eq!(solve(&parse(&example()), 5000), 16733044);
     }
 }

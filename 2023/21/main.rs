@@ -1,6 +1,8 @@
 use std::iter::*;
 
-use aoc::{Grid, GridDrawer};
+use aoc::Grid;
+
+use bacon_sci::interp::lagrange;
 
 type Parsed = Vec<Vec<char>>;
 
@@ -13,38 +15,36 @@ fn solve(data: &Parsed, steps: i64) -> i64 {
     let h = max_y - min_y + 1;
     let w = max_x - min_x + 1;
     // dbg!(w, h);
-    let mut reachable: aoc::FxHashMap<aoc::Point, i64> = aoc::FxHashMap::default();
-    reachable.insert(p, 1);
-    // let mut gd = aoc::PrintGridDrawer::new(|x: i64| {
-    //     if let Some(c) = char::from_digit(x as u32, 16) {
-    //         c
-    //     } else {
-    //         '!'
-    //     }
-    // });
-    for s in 0..steps {
+    let mut reachable = vec![p];
+    let mut y = vec![];
+    let x = [w / 2, w / 2 + w, w / 2 + 2 * w];
+    for s in 0..=x[2] {
+        if s == steps {
+            return reachable.len() as i64;
+        }
+        if x.contains(&s) {
+            y.push(reachable.len() as i64);
+        }
         let mut seen = aoc::FxHashSet::default();
-        let mut new_reachable = aoc::FxHashMap::default();
-        for (p, num) in &reachable {
+        let mut new_reachable = vec![];
+        for p in &reachable {
             for pp in aoc::neighbors(*p) {
                 let ppp = [pp[0].rem_euclid(w), pp[1].rem_euclid(h)];
-                // let same = ppp == pp;
-                if seen.insert(pp) {
-                    let c = data.get_value(ppp);
-                    if c == Some('.') || c == Some('S') {
-                        // let e = new_reachable.entry(ppp).or_default();
-                        let e = new_reachable.entry(pp).or_default();
-                        *e += num;
-                    }
+                let c = data.get_value(ppp);
+                if (c == Some('.') || c == Some('S')) && seen.insert(pp) {
+                    new_reachable.push(pp);
                 }
             }
         }
         reachable = new_reachable;
-        println!("{}, {}", s, reachable.values().sum::<i64>());
-        // println!("{}, {:?}", reachable.values().sum::<i64>(), reachable);
-        // gd.draw(&reachable);
     }
-    reachable.values().sum::<i64>()
+    let poly = lagrange(
+        &[x[0] as f64, x[1] as f64, x[2] as f64],
+        &[y[0] as f64, y[1] as f64, y[2] as f64],
+        1e-8,
+    )
+    .unwrap();
+    poly.evaluate(steps as f64) as i64
 }
 
 fn part1(data: &Parsed) -> i64 {
@@ -61,25 +61,4 @@ fn parse(lines: &[String]) -> Parsed {
 
 fn main() {
     aoc::run_main(parse, part1, part2);
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn example() -> Vec<String> {
-        let s = include_str!("example.txt");
-        s.lines().map(|x| x.to_string()).collect()
-    }
-
-    #[test]
-    fn test_solve() {
-        assert_eq!(solve(&parse(&example()), 6), 16);
-        // assert_eq!(solve(&parse(&example()), 10), 50);
-        // assert_eq!(solve(&parse(&example()), 50), 1594);
-        // assert_eq!(solve(&parse(&example()), 100), 6536);
-        // assert_eq!(solve(&parse(&example()), 500), 167004);
-        // assert_eq!(solve(&parse(&example()), 1000), 668697);
-        // assert_eq!(solve(&parse(&example()), 5000), 16733044);
-    }
 }

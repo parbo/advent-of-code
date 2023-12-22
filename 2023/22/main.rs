@@ -1,6 +1,6 @@
 use std::iter::*;
 
-use aoc::Vec3;
+use aoc::{FxHashMap, Vec3};
 
 type ParsedItem = (Vec3, Vec3);
 type Parsed = Vec<ParsedItem>;
@@ -9,13 +9,13 @@ fn part1(data: &Parsed) -> i64 {
     let mut data = data.to_vec();
     // sort on descending z
     data.sort_by(|a, b| b.0[2].cmp(&a.0[2]));
-    dbg!(&data);
-    let mut num = 1;
-    for i in 1..data.len() {
-        let d = data[i];
+    // fall down
+    let mut supports = FxHashMap::default();
+    for i in (0..data.len()).rev() {
+        let mut d = data[i];
         let istart = [d.0[0], d.0[1]];
         let iend = [d.1[0], d.1[1]];
-        let mut any_overlap = false;
+        let mut max_z = 0;
         for j in (i + 1)..data.len() {
             let dj = data[j];
             let jstart = [dj.0[0], dj.0[1]];
@@ -25,17 +25,18 @@ fn part1(data: &Parsed) -> i64 {
             let max_xx = iend[0].min(jend[0]);
             let max_yy = iend[0].min(jend[1]);
             if min_xx != max_xx || min_yy != max_yy {
-                println!("overlap {} {}, {:?} {:?}", i, j, d, dj);
-                any_overlap = true;
+                // println!("overlap {} {}, {:?} {:?}", i, j, d, dj);
+                max_z = dj.1[2];
+                supports.insert(j, i);
                 break;
             }
         }
-        if !any_overlap {
-            println!("{} does not overlap any other", i);
-            num += 1;
-        }
+        let diff = d.0[2] - max_z;
+        d.0[2] -= diff;
+        d.1[2] -= diff;
     }
-    num
+    dbg!(&data);
+    (data.len() - supports.len()) as i64
 }
 
 fn part2(_: &Parsed) -> i64 {

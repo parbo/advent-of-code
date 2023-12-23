@@ -2545,6 +2545,50 @@ where
         .collect()
 }
 
+#[derive(Clone)]
+pub struct BitSet {
+    bits: Vec<u64>,
+    nbits: usize,
+}
+
+impl BitSet {
+    fn blocks(&self) -> usize {
+        if self.nbits % 64 == 0 {
+            self.nbits / 64
+        } else {
+            self.nbits / 64 + 1
+        }
+    }
+
+    pub fn with_capacity(nbits: usize) -> Self {
+        let mut bitset = BitSet {
+            bits: Vec::new(),
+            nbits,
+        };
+        for _ in 0..bitset.blocks() {
+            bitset.bits.push(0);
+        }
+        bitset
+    }
+
+    pub fn test(&self, bit_idx: usize) -> bool {
+        let (block_idx, mod_bit_idx) = (bit_idx / 64, bit_idx % 64);
+        let n: u64 = self.bits[block_idx];
+        (n >> mod_bit_idx) & 0x1 == 0x1
+    }
+
+    pub fn set(&mut self, bit_idx: usize, v: bool) {
+        let (block_idx, mod_bit_idx) = (bit_idx / 64, bit_idx % 64);
+        if let Some(n) = self.bits.get_mut(block_idx) {
+            if v {
+                *n |= 0x1 << mod_bit_idx;
+            } else {
+                *n &= !(0x1 << mod_bit_idx);
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

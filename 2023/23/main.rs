@@ -35,16 +35,12 @@ where
     paths
 }
 
-pub fn find_all_g(
-    edges: &FxHashMap<(Point, Point), i64>,
-    start: Point,
-    goal: Point,
-) -> Vec<(Vec<Point>, i64)> {
+pub fn find_all_g(edges: &FxHashMap<(Point, Point), i64>, start: Point, goal: Point) -> Vec<i64> {
     let mut paths = vec![];
     let mut frontier = vec![(start, vec![], 0)];
     while let Some((current, path, lp)) = frontier.pop() {
         if current == goal {
-            paths.push((path, lp));
+            paths.push(lp);
             continue;
         }
         for ((a, b), c) in edges {
@@ -68,9 +64,9 @@ where
     T: PartialEq + Copy,
 {
     let mut junctions = FxHashMap::default();
-    let mut frontier = vec![(start, vec![start], vec![start])];
+    let mut frontier = vec![(start, vec![start], 0)];
     let mut seen = FxHashSet::default();
-    while let Some((current, jp, path)) = frontier.pop() {
+    while let Some((current, jp, d)) = frontier.pop() {
         let mut poss = vec![];
         for nb in aoc::neighbors(current) {
             if let Some(value) = grid.get_value(nb) {
@@ -82,24 +78,19 @@ where
         let is_junction = poss.len() > 2;
         if is_junction || current == goal {
             if let Some(p) = jp.last() {
-                for (i, pp) in path.iter().rev().enumerate() {
-                    if pp == p && current != *p {
-                        junctions.insert((current, *p), i as i64);
-                        junctions.insert((*p, current), i as i64);
-                        break;
-                    }
-                }
+                junctions.insert((current, *p), d);
+                junctions.insert((*p, current), d);
             }
         }
         for nb in &poss {
+            let mut new_d = d + 1;
             let mut p = jp.clone();
             if is_junction || current == goal {
                 p.push(current);
+                new_d = 1;
             }
-            let mut pp = path.clone();
-            pp.push(*nb);
             if seen.insert((current, *nb)) {
-                frontier.push((*nb, p, pp));
+                frontier.push((*nb, p, new_d));
             }
         }
     }
@@ -147,8 +138,7 @@ fn part2(data: &Parsed) -> i64 {
     );
 
     let r = find_all_g(&j, [1, 0], [g as i64, data.len() as i64 - 1]);
-    let s = r.iter().map(|x| x.1).max().unwrap() as i64;
-    s
+    r.into_iter().max().unwrap() as i64
 }
 
 fn parse(lines: &[String]) -> Parsed {

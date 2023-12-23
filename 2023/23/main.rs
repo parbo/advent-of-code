@@ -35,6 +35,32 @@ where
     paths
 }
 
+fn part1(data: &Parsed) -> i64 {
+    let g = data[data.len() - 1]
+        .iter()
+        .enumerate()
+        .find(|(_i, x)| **x == '.')
+        .unwrap()
+        .0;
+    let r = find_all(
+        data,
+        |old, p, c| {
+            let dir = aoc::point_sub(*p, *old);
+            match dir {
+                NORTH => ['.', '^'].contains(c),
+                EAST => ['.', '>'].contains(c),
+                SOUTH => ['.', 'v'].contains(c),
+                WEST => ['.', '<'].contains(c),
+                _ => panic!(),
+            }
+        },
+        [1, 0],
+        [g as i64, data.len() as i64 - 1],
+    );
+    let s = r.iter().map(|x| x.len()).max().unwrap() as i64;
+    s
+}
+
 pub fn find_all_g(edges: &[(usize, usize, i64)], start: usize, goal: usize) -> Vec<i64> {
     let mut paths = vec![];
     let mut frontier = vec![(start, aoc::BitSet::new(), 0)];
@@ -99,32 +125,6 @@ where
     junctions
 }
 
-fn part1(data: &Parsed) -> i64 {
-    let g = data[data.len() - 1]
-        .iter()
-        .enumerate()
-        .find(|(_i, x)| **x == '.')
-        .unwrap()
-        .0;
-    let r = find_all(
-        data,
-        |old, p, c| {
-            let dir = aoc::point_sub(*p, *old);
-            match dir {
-                NORTH => ['.', '^'].contains(c),
-                EAST => ['.', '>'].contains(c),
-                SOUTH => ['.', 'v'].contains(c),
-                WEST => ['.', '<'].contains(c),
-                _ => panic!(),
-            }
-        },
-        [1, 0],
-        [g as i64, data.len() as i64 - 1],
-    );
-    let s = r.iter().map(|x| x.len()).max().unwrap() as i64;
-    s
-}
-
 fn part2(data: &Parsed) -> i64 {
     let g = data[data.len() - 1]
         .iter()
@@ -132,49 +132,24 @@ fn part2(data: &Parsed) -> i64 {
         .find(|(_i, x)| **x == '.')
         .unwrap()
         .0;
-    let j = find_junctions(
-        data,
-        |c| c != '#',
-        [1, 0],
-        [g as i64, data.len() as i64 - 1],
-    );
+    let start = [1, 0];
+    let goal = [g as i64, data.len() as i64 - 1];
+    let j = find_junctions(data, |c| c != '#', start, goal);
     let nodes: FxHashSet<Point> = j.iter().map(|x| x.0).collect();
     let nodes: Vec<Point> = nodes.into_iter().collect();
+    let get_ix = |p: Point| {
+        nodes
+            .iter()
+            .enumerate()
+            .find_map(|(j, x)| if *x == p { Some(j) } else { None })
+            .unwrap()
+    };
     let edges = j
         .iter()
-        .map(|(a, b, c)| {
-            (
-                nodes
-                    .iter()
-                    .enumerate()
-                    .find_map(|(j, x)| if *x == *a { Some(j) } else { None })
-                    .unwrap(),
-                nodes
-                    .iter()
-                    .enumerate()
-                    .find_map(|(j, x)| if *x == *b { Some(j) } else { None })
-                    .unwrap(),
-                *c,
-            )
-        })
+        .map(|(a, b, c)| (get_ix(*a), get_ix(*b), *c))
         .collect::<Vec<_>>();
-    let start = nodes
-        .iter()
-        .enumerate()
-        .find_map(|(i, x)| if *x == [1, 0] { Some(i) } else { None })
-        .unwrap();
-    let goal = nodes
-        .iter()
-        .enumerate()
-        .find_map(|(i, x)| {
-            if *x == [g as i64, data.len() as i64 - 1] {
-                Some(i)
-            } else {
-                None
-            }
-        })
-        .unwrap();
-
+    let start = get_ix(start);
+    let goal = get_ix(goal);
     let r = find_all_g(&edges, start, goal);
     r.into_iter().max().unwrap() as i64
 }

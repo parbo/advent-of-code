@@ -1,4 +1,4 @@
-use aoc::{FxHashMap, FxHashSet, Grid, Point, EAST, NORTH, SOUTH, WEST};
+use aoc::{FxHashSet, Grid, Point, EAST, NORTH, SOUTH, WEST};
 use std::iter::*;
 
 type Parsed = Vec<Vec<char>>;
@@ -35,7 +35,7 @@ where
     paths
 }
 
-pub fn find_all_g(edges: &FxHashMap<(Point, Point), i64>, start: Point, goal: Point) -> Vec<i64> {
+pub fn find_all_g(edges: &[(Point, Point, i64)], start: Point, goal: Point) -> Vec<i64> {
     let mut paths = vec![];
     let mut frontier = vec![(start, vec![], 0)];
     while let Some((current, path, lp)) = frontier.pop() {
@@ -43,7 +43,7 @@ pub fn find_all_g(edges: &FxHashMap<(Point, Point), i64>, start: Point, goal: Po
             paths.push(lp);
             continue;
         }
-        for ((a, b), c) in edges {
+        for (a, b, c) in edges {
             if *a == current && !path.contains(b) {
                 let mut pp = path.clone();
                 pp.push(*b);
@@ -59,11 +59,11 @@ pub fn find_junctions<T>(
     is_node: fn(&Point, &Point, &T) -> bool,
     start: Point,
     goal: Point,
-) -> FxHashMap<(Point, Point), i64>
+) -> Vec<(Point, Point, i64)>
 where
     T: PartialEq + Copy,
 {
-    let mut junctions = FxHashMap::default();
+    let mut junctions = vec![];
     let mut frontier = vec![(start, vec![start], 0)];
     let mut seen = FxHashSet::default();
     while let Some((current, jp, d)) = frontier.pop() {
@@ -78,8 +78,8 @@ where
         let is_junction = poss.len() > 2;
         if is_junction || current == goal {
             if let Some(p) = jp.last() {
-                junctions.insert((current, *p), d);
-                junctions.insert((*p, current), d);
+                junctions.push((current, *p, d));
+                junctions.push((*p, current, d));
             }
         }
         for nb in &poss {

@@ -48,7 +48,6 @@ pub fn find_all_g(
             continue;
         }
         for ((a, b), c) in edges {
-            // dbg!(a);
             if *a == current && !path.contains(b) {
                 let mut pp = path.clone();
                 pp.push(*b);
@@ -82,11 +81,9 @@ where
         }
         let is_junction = poss.len() > 2;
         if is_junction || current == goal {
-            // dbg!(current, &jp);
             if let Some(p) = jp.last() {
                 for (i, pp) in path.iter().rev().enumerate() {
                     if pp == p && current != *p {
-                        // dbg!(*p);
                         junctions.insert((current, *p), i as i64);
                         junctions.insert((*p, current), i as i64);
                         break;

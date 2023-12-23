@@ -2547,28 +2547,12 @@ where
 
 #[derive(Clone)]
 pub struct BitSet {
-    bits: Vec<u64>,
-    nbits: usize,
+    bits: [u64; 4],
 }
 
 impl BitSet {
-    fn blocks(&self) -> usize {
-        if self.nbits % 64 == 0 {
-            self.nbits / 64
-        } else {
-            self.nbits / 64 + 1
-        }
-    }
-
-    pub fn with_capacity(nbits: usize) -> Self {
-        let mut bitset = BitSet {
-            bits: Vec::new(),
-            nbits,
-        };
-        for _ in 0..bitset.blocks() {
-            bitset.bits.push(0);
-        }
-        bitset
+    pub fn new() -> Self {
+        BitSet { bits: [0; 4] }
     }
 
     pub fn test(&self, bit_idx: usize) -> bool {
@@ -2579,13 +2563,18 @@ impl BitSet {
 
     pub fn set(&mut self, bit_idx: usize, v: bool) {
         let (block_idx, mod_bit_idx) = (bit_idx / 64, bit_idx % 64);
-        if let Some(n) = self.bits.get_mut(block_idx) {
-            if v {
-                *n |= 0x1 << mod_bit_idx;
-            } else {
-                *n &= !(0x1 << mod_bit_idx);
-            }
+        let n = &mut self.bits[block_idx];
+        if v {
+            *n |= 0x1 << mod_bit_idx;
+        } else {
+            *n &= !(0x1 << mod_bit_idx);
         }
+    }
+}
+
+impl Default for BitSet {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

@@ -37,7 +37,7 @@ where
 
 pub fn find_all_g(edges: &[(usize, usize, i64)], start: usize, goal: usize) -> Vec<i64> {
     let mut paths = vec![];
-    let mut frontier = vec![(start, aoc::BitSet::with_capacity(edges.len()), 0)];
+    let mut frontier = vec![(start, aoc::BitSet::new(), 0)];
     while let Some((current, path, lp)) = frontier.pop() {
         if current == goal {
             paths.push(lp);

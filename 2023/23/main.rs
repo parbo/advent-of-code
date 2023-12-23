@@ -35,18 +35,18 @@ where
     paths
 }
 
-pub fn find_all_g(edges: &[(Point, Point, i64)], start: Point, goal: Point) -> Vec<i64> {
+pub fn find_all_g(edges: &[(usize, usize, i64)], start: usize, goal: usize) -> Vec<i64> {
     let mut paths = vec![];
-    let mut frontier = vec![(start, vec![], 0)];
+    let mut frontier = vec![(start, aoc::BitSet::with_capacity(edges.len()), 0)];
     while let Some((current, path, lp)) = frontier.pop() {
         if current == goal {
             paths.push(lp);
             continue;
         }
         for (a, b, c) in edges {
-            if *a == current && !path.contains(b) {
+            if *a == current && !path.test(*b) {
                 let mut pp = path.clone();
-                pp.push(*b);
+                pp.set(*b, true);
                 frontier.push((*b, pp, lp + c));
             }
         }
@@ -78,8 +78,10 @@ where
         let is_junction = poss.len() > 2;
         if is_junction || current == goal {
             if let Some(p) = jp.last() {
-                junctions.push((current, *p, d));
-                junctions.push((*p, current, d));
+                if current != *p {
+                    junctions.push((current, *p, d));
+                    junctions.push((*p, current, d));
+                }
             }
         }
         for nb in &poss {
@@ -136,8 +138,44 @@ fn part2(data: &Parsed) -> i64 {
         [1, 0],
         [g as i64, data.len() as i64 - 1],
     );
+    let nodes: FxHashSet<Point> = j.iter().map(|x| x.0).collect();
+    let nodes: Vec<Point> = nodes.into_iter().collect();
+    let edges = j
+        .iter()
+        .map(|(a, b, c)| {
+            (
+                nodes
+                    .iter()
+                    .enumerate()
+                    .find_map(|(j, x)| if *x == *a { Some(j) } else { None })
+                    .unwrap(),
+                nodes
+                    .iter()
+                    .enumerate()
+                    .find_map(|(j, x)| if *x == *b { Some(j) } else { None })
+                    .unwrap(),
+                *c,
+            )
+        })
+        .collect::<Vec<_>>();
+    let start = nodes
+        .iter()
+        .enumerate()
+        .find_map(|(i, x)| if *x == [1, 0] { Some(i) } else { None })
+        .unwrap();
+    let goal = nodes
+        .iter()
+        .enumerate()
+        .find_map(|(i, x)| {
+            if *x == [g as i64, data.len() as i64 - 1] {
+                Some(i)
+            } else {
+                None
+            }
+        })
+        .unwrap();
 
-    let r = find_all_g(&j, [1, 0], [g as i64, data.len() as i64 - 1]);
+    let r = find_all_g(&edges, start, goal);
     r.into_iter().max().unwrap() as i64
 }
 

@@ -56,7 +56,7 @@ pub fn find_all_g(edges: &[(Point, Point, i64)], start: Point, goal: Point) -> V
 
 pub fn find_junctions<T>(
     grid: &dyn Grid<T>,
-    is_node: fn(&Point, &Point, &T) -> bool,
+    is_node: fn(T) -> bool,
     start: Point,
     goal: Point,
 ) -> Vec<(Point, Point, i64)>
@@ -70,7 +70,7 @@ where
         let mut poss = vec![];
         for nb in aoc::neighbors(current) {
             if let Some(value) = grid.get_value(nb) {
-                if is_node(&current, &nb, &value) {
+                if is_node(value) {
                     poss.push(nb);
                 }
             }
@@ -132,7 +132,7 @@ fn part2(data: &Parsed) -> i64 {
         .0;
     let j = find_junctions(
         data,
-        |_old, _p, c| *c != '#',
+        |c| c != '#',
         [1, 0],
         [g as i64, data.len() as i64 - 1],
     );

@@ -1,6 +1,10 @@
 use std::iter::*;
+use z3::ast::Ast;
 
-use aoc::{point_dot, point_sub, vec_add, vec_mul, FPoint, Itertools, Vec3};
+use aoc::{
+    point_add, point_dot, point_mul, point_sub, vec_add, vec_dot, vec_mul, vec_sub, FPoint, FVec3,
+    Itertools, Vec3,
+};
 
 type ParsedItem = (Vec3, Vec3);
 type Parsed = Vec<ParsedItem>;
@@ -50,8 +54,46 @@ fn part1(data: &Parsed) -> i64 {
     solve(data, 200000000000000.0, 400000000000000.0)
 }
 
-fn part2(_: &Parsed) -> i64 {
-    0
+fn part2(data: &Parsed) -> i64 {
+    let cfg = z3::Config::new();
+    let ctx = z3::Context::new(&cfg);
+    let solver = z3::Solver::new(&ctx);
+    let px = z3::ast::Int::new_const(&ctx, "px");
+    let py = z3::ast::Int::new_const(&ctx, "py");
+    let pz = z3::ast::Int::new_const(&ctx, "pz");
+    let pvx = z3::ast::Int::new_const(&ctx, "pvx");
+    let pvy = z3::ast::Int::new_const(&ctx, "pvy");
+    let pvz = z3::ast::Int::new_const(&ctx, "pvz");
+    let mut ts = vec![];
+    for (i, (p, v)) in data.iter().take(3).enumerate() {
+        let x = z3::ast::Int::from_i64(&ctx, p[0]);
+        let y = z3::ast::Int::from_i64(&ctx, p[1]);
+        let z = z3::ast::Int::from_i64(&ctx, p[2]);
+        let vx = z3::ast::Int::from_i64(&ctx, v[0]);
+        let vy = z3::ast::Int::from_i64(&ctx, v[1]);
+        let vz = z3::ast::Int::from_i64(&ctx, v[2]);
+        let t = z3::ast::Int::new_const(&ctx, format!("t{}", i));
+        let a = z3::ast::Int::add(&ctx, &[&x, &z3::ast::Int::mul(&ctx, &[&t, &vx])]);
+        let b = z3::ast::Int::add(&ctx, &[&y, &z3::ast::Int::mul(&ctx, &[&t, &vy])]);
+        let c = z3::ast::Int::add(&ctx, &[&z, &z3::ast::Int::mul(&ctx, &[&t, &vz])]);
+        let d = z3::ast::Int::add(&ctx, &[&px, &z3::ast::Int::mul(&ctx, &[&t, &pvx])]);
+        let e = z3::ast::Int::add(&ctx, &[&py, &z3::ast::Int::mul(&ctx, &[&t, &pvy])]);
+        let f = z3::ast::Int::add(&ctx, &[&pz, &z3::ast::Int::mul(&ctx, &[&t, &pvz])]);
+        solver.assert(&a._eq(&d));
+        solver.assert(&b._eq(&e));
+        solver.assert(&c._eq(&f));
+        ts.push(t);
+    }
+    let f = z3::ast::Bool::from_bool(&ctx, false);
+    for t in ts.iter().combinations(2) {
+        solver.assert(&t[0]._eq(&t[1])._eq(&f));
+    }
+    solver.check();
+    let m = solver.get_model().unwrap();
+    let px = m.get_const_interp(&px).unwrap().as_i64().unwrap();
+    let py = m.get_const_interp(&py).unwrap().as_i64().unwrap();
+    let pz = m.get_const_interp(&pz).unwrap().as_i64().unwrap();
+    px + py + pz
 }
 
 fn parse(lines: &[String]) -> Parsed {

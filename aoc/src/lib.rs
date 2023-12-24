@@ -39,6 +39,7 @@ pub use rustc_hash::FxHashSet;
 pub use serde_scan::from_str;
 pub use serde_scan::scan;
 
+pub type PointBig = self::vecmath::Vector2<i128>;
 pub type Point = self::vecmath::Vector2<i64>;
 pub type FPoint = self::vecmath::Vector2<f64>;
 pub type Vec3 = self::vecmath::Vector3<i64>;

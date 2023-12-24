@@ -83,4 +83,9 @@ mod tests {
     fn test_part1() {
         assert_eq!(solve(&parse(&example()), 7.0, 27.0), 2);
     }
+
+    #[test]
+    fn test_part2() {
+        assert_eq!(part2(&parse(&example())), 47);
+    }
 }

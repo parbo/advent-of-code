@@ -1,10 +1,7 @@
 use std::iter::*;
 use z3::ast::Ast;
 
-use aoc::{
-    point_add, point_dot, point_mul, point_sub, vec_add, vec_dot, vec_mul, vec_sub, FPoint, FVec3,
-    Itertools, Vec3,
-};
+use aoc::{point_dot, point_sub, vec_add, vec_mul, FPoint, Itertools, Vec3};
 
 type ParsedItem = (Vec3, Vec3);
 type Parsed = Vec<ParsedItem>;
@@ -86,7 +83,7 @@ fn part2(data: &Parsed) -> i64 {
     }
     let f = z3::ast::Bool::from_bool(&ctx, false);
     for t in ts.iter().combinations(2) {
-        solver.assert(&t[0]._eq(&t[1])._eq(&f));
+        solver.assert(&t[0]._eq(t[1])._eq(&f));
     }
     solver.check();
     let m = solver.get_model().unwrap();

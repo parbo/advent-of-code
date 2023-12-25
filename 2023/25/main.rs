@@ -45,10 +45,28 @@ fn reachable<'a>(
     r
 }
 
+fn nodes(g: &Parsed) -> BTreeSet<&str> {
+    let mut c = BTreeSet::new();
+    for (k, v) in g {
+        c.insert(k.as_str());
+        for vv in v {
+            c.insert(vv.as_str());
+        }
+    }
+    c
+}
+
 fn solve(data: &Parsed, rr: &[(&str, &str)]) -> Option<i64> {
+    let mut n = nodes(data);
+    let num = n.len();
     let mut groups = BTreeSet::new();
-    for k in data.keys() {
-        groups.insert(reachable(data, k.as_str(), rr));
+    while let Some(k) = n.pop_last() {
+        let r = reachable(data, k, rr);
+        if r.len() == num {
+            return None;
+        }
+        n = n.difference(&r).cloned().collect::<BTreeSet<&str>>();
+        groups.insert(r);
         if groups.len() > 2 {
             break;
         }
@@ -89,17 +107,6 @@ fn main() {
 mod tests {
     use super::*;
     use aoc::Itertools;
-
-    fn nodes(g: &Parsed) -> BTreeSet<&str> {
-        let mut c = BTreeSet::new();
-        for (k, v) in g {
-            c.insert(k.as_str());
-            for vv in v {
-                c.insert(vv.as_str());
-            }
-        }
-        c
-    }
 
     fn to_remove(data: &Parsed) -> Vec<Vec<(&str, &str)>> {
         let n = nodes(data);

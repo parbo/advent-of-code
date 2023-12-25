@@ -61,6 +61,7 @@ fn solve(data: &Parsed, rr: &[(&str, &str)]) -> Option<i64> {
 }
 
 fn part1(data: &Parsed) -> i64 {
+    // Identified by running graphviz neato engine on input
     let rr = vec![("fvm", "ccp"), ("lhg", "llm"), ("thx", "frl")];
     solve(data, &rr).unwrap()
 }

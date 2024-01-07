@@ -13,8 +13,8 @@ Cargo.lock
 
 history.txt
 
-ppm/**
-vis/**
+**/ppm/**
+**/vis/**
 **/input.txt
 
 *.png

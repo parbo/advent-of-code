@@ -38,7 +38,7 @@ impl Debugger<'_> {
                     match x.op {
                         // Find function
                         Op::SP => {
-                            if let Some(Arg::Immediate { value }) = &x.read().get(0) {
+                            if let Some(Arg::Immediate { value }) = &x.read().first() {
                                 if value.is_positive() {
                                     sp = *value;
                                     sp_addr = a;
@@ -48,7 +48,7 @@ impl Debugger<'_> {
                             }
                         }
                         Op::JIT => {
-                            if let Some(Arg::Immediate { value: 1 }) = &x.read().get(0) {
+                            if let Some(Arg::Immediate { value: 1 }) = &x.read().first() {
                                 if let Some(Arg::Relative { base: _, offset: 0 }) = &x.read().get(1)
                                 {
                                     println!("found function {} -> {}", sp_addr, a);

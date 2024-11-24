@@ -7,7 +7,7 @@ pub type Pixel = [f64; 3];
 
 pub fn write_ppm_file(pixels: &[Pixel], w: i64, h: i64, filename: &str) {
     let path = Path::new(filename);
-    let mut file = File::create(&path).unwrap();
+    let mut file = File::create(path).unwrap();
     let header = format!("P6 {} {} 255\n", w, h);
     let mut data = vec![];
     data.reserve(header.len() + pixels.len() * 3);

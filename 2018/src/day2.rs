@@ -68,7 +68,7 @@ impl Error for AdventError {
 }
 
 #[aoc(day2, part2)]
-fn solve_pt2(lines: &[String]) -> Result<String, Box<Error>> {
+fn solve_pt2(lines: &[String]) -> Result<String, Box<dyn Error>> {
     for a in 0..lines.len() {
         let line_a = &lines[a];
         for b in 1..lines.len() {

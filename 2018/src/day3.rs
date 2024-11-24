@@ -26,11 +26,11 @@ impl Claim {
         let right = left + w;
         let bottom = top + h;
         Claim {
-            id: id,
-            left: left,
-            top: top,
-            right: right,
-            bottom: bottom,
+            id,
+            left,
+            top,
+            right,
+            bottom,
         }
     }
     fn overlap(&self, other: &Claim) -> bool {
@@ -66,11 +66,11 @@ fn draw(claims: &[Claim], id: i64) {
 
 #[aoc_generator(day3)]
 fn parse(input: &str) -> Vec<Claim> {
-    input.lines().map(|s| Claim::new(&s)).collect()
+    input.lines().map(Claim::new).collect()
 }
 
 #[aoc(day3, part1)]
-fn solve_pt1(claims: &[Claim]) -> Result<i64, Box<Error>> {
+fn solve_pt1(claims: &[Claim]) -> Result<i64, Box<dyn Error>> {
     let max_x = claims.iter().map(|c| c.right).max().unwrap();
     let max_y = claims.iter().map(|c| c.bottom).max().unwrap();
     let mut pixels = vec![];
@@ -94,16 +94,16 @@ fn solve_pt2(claims: &[Claim]) -> i64 {
         for b in 0..claims.len() {
             if a != b {
                 let claim_b = &claims[b];
-                if claim_a.overlap(&claim_b) {
+                if claim_a.overlap(claim_b) {
                     overlap = true;
                     break;
                 }
             }
         }
         if !overlap {
-            draw(&claims, claim_a.id);
+            draw(claims, claim_a.id);
             return claim_a.id;
         }
     }
-    return -1;
+    -1
 }

@@ -33,22 +33,18 @@ fn get_edge(grid: &Vec<Vec<char>>, dir: aoc::Point) -> Vec<char> {
 fn get_matches(input: &Parsed) -> HashMap<i64, Vec<(i64, i64, i64, bool)>> {
     let mut matches: HashMap<i64, Vec<(i64, i64, i64, bool)>> = HashMap::new();
     for i in 0..input.len() {
-        let edges = vec![
-            get_edge(&input[i].1, aoc::NORTH),
+        let edges = [get_edge(&input[i].1, aoc::NORTH),
             get_edge(&input[i].1, aoc::EAST),
             get_edge(&input[i].1, aoc::SOUTH),
-            get_edge(&input[i].1, aoc::WEST),
-        ];
+            get_edge(&input[i].1, aoc::WEST)];
         for j in 0..input.len() {
             if i == j {
                 continue;
             }
-            let other_edges = vec![
-                get_edge(&input[j].1, aoc::NORTH),
+            let other_edges = [get_edge(&input[j].1, aoc::NORTH),
                 get_edge(&input[j].1, aoc::EAST),
                 get_edge(&input[j].1, aoc::SOUTH),
-                get_edge(&input[j].1, aoc::WEST),
-            ];
+                get_edge(&input[j].1, aoc::WEST)];
             for (di, edge) in edges.iter().enumerate() {
                 for (dj, other_edge) in other_edges.iter().enumerate() {
                     let mut other_edge_reversed = other_edge.to_owned();

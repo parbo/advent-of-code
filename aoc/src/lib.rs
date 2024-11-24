@@ -313,7 +313,7 @@ pub fn split_w(s: &str) -> Vec<&str> {
 }
 
 pub fn split_ch(s: &str, c: char) -> Vec<&str> {
-    s.split(|x| x == c)
+    s.split(c)
         .map(|w| w.trim())
         .filter(|x| !x.is_empty())
         .collect()
@@ -631,7 +631,7 @@ pub fn parse_char(s: &str, ix: usize) -> Result<char, ParseError> {
 }
 
 pub fn parse_point(s: &str) -> Result<Point, ParseError> {
-    let parts: Vec<&str> = s.split(|x| x == ',').map(|w| w.trim()).collect();
+    let parts: Vec<&str> = s.split(',').map(|w| w.trim()).collect();
     if parts.len() == 2 {
         Ok([parts[0].parse()?, parts[1].parse()?])
     } else {

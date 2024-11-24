@@ -40,11 +40,7 @@ fn solve(map: &Parsed, iterations: usize, draw: bool) -> Answer {
                 let mut ix = 0;
                 for pp in kernel(p) {
                     let c = if aoc::inside_extent(pp, ext) {
-                        if let Some(x) = g.get_value(pp) {
-                            x
-                        } else {
-                            '.'
-                        }
+                        g.get_value(pp).unwrap_or('.')
                     } else {
                         inf_c
                     };

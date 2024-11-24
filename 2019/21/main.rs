@@ -74,6 +74,7 @@ enum Instruction {
 }
 
 #[allow(clippy::same_item_push)]
+#[allow(clippy::ptr_arg)]
 fn poss(curr: &Vec<bool>, res: &mut Vec<Vec<bool>>, len: usize) {
     match curr.len().cmp(&len) {
         Ordering::Less => {

@@ -154,7 +154,7 @@ fn solve(segments: &Vec<Vec<Segment>>, part: i32) -> i64 {
     //     }
     //     println!();
     // }
-    let mut result = std::i64::MAX;
+    let mut result = i64::MAX;
     for x in (f.0).0..=(f.0).1 {
         for y in (f.1).0..=(f.1).1 {
             let xx = x - xoffs;

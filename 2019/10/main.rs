@@ -16,7 +16,7 @@ fn seen(things: &Parsed, x: i64, y: i64) -> HashSet<(i64, i64)> {
             if dy == 0 && dx == 0 {
                 continue;
             }
-            for i in 1..std::i64::MAX {
+            for i in 1..i64::MAX {
                 let yy = y + i * dy;
                 let xx = x + i * dx;
                 if xx < 0 || xx >= w || yy < 0 || yy >= h {

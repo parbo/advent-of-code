@@ -165,7 +165,7 @@ fn shortest_path(
             let d = if let Some(x) = state.dist.get(&next.position) {
                 *x
             } else {
-                std::usize::MAX
+                usize::MAX
             };
 
             // If so, add it to the frontier and continue
@@ -196,6 +196,7 @@ fn to_label(ch_a: char, ch_b: char, a: (usize, usize), b: (usize, usize)) -> (ch
 }
 
 #[allow(clippy::type_complexity)]
+#[allow(clippy::ptr_arg)]
 fn find_portals(
     map: &Vec<Vec<char>>,
 ) -> (

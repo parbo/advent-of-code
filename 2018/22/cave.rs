@@ -1,31 +1,31 @@
 extern crate fnv;
 
-use std::path::Path;
-use std::fs::File;
-use std::io::Write;
+use fnv::FnvHashMap;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 use std::collections::HashMap;
-use fnv::FnvHashMap;
+use std::fs::File;
+use std::io::Write;
+use std::path::Path;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 enum Equipment {
     ClimbingGear,
     Torch,
-    Neither
+    Neither,
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 struct CavePos {
     pos: (i64, i64),
-    equipment: Equipment
+    equipment: Equipment,
 }
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 struct State {
     h_cost: i64,
     cost: i64,
-    position: CavePos
+    position: CavePos,
 }
 
 // The priority queue depends on `Ord`.
@@ -36,7 +36,9 @@ impl Ord for State {
         // Notice that the we flip the ordering on costs.
         // In case of a tie we compare positions - this step is necessary
         // to make implementations of `PartialEq` and `Ord` consistent.
-        other.h_cost.cmp(&self.h_cost)
+        other
+            .h_cost
+            .cmp(&self.h_cost)
             .then_with(|| self.position.cmp(&other.position))
     }
 }
@@ -62,18 +64,18 @@ fn allowed(t: i64, e: Equipment) -> bool {
             if e == Equipment::Neither {
                 return false;
             }
-        },
+        }
         1 => {
             if e == Equipment::Torch {
                 return false;
             }
-        },
+        }
         2 => {
             if e == Equipment::ClimbingGear {
                 return false;
             }
-        },
-        _ => panic!()
+        }
+        _ => panic!(),
     }
     return true;
 }
@@ -86,7 +88,7 @@ struct Cave {
     memo: Vec<i64>,
     memo_stride: i64,
     depth: i64,
-    target: (i64, i64)
+    target: (i64, i64),
 }
 
 impl Cave {
@@ -98,7 +100,7 @@ impl Cave {
             memo: memo,
             memo_stride: stride,
             depth: depth,
-            target: target
+            target: target,
         }
     }
 
@@ -134,7 +136,11 @@ impl Cave {
             if nx < 0 || ny < 0 {
                 continue;
             }
-            for e in &[Equipment::ClimbingGear, Equipment::Torch, Equipment::Neither] {
+            for e in &[
+                Equipment::ClimbingGear,
+                Equipment::Torch,
+                Equipment::Neither,
+            ] {
                 let t_old = rt(ero(self.geo((cp.pos.0, cp.pos.1)), self.depth));
                 if !allowed(t_old, *e) {
                     continue;
@@ -144,7 +150,13 @@ impl Cave {
                     continue;
                 }
                 let cost = if *e == cp.equipment { 1 } else { 8 };
-                res.push((CavePos { pos: (nx, ny), equipment: *e }, cost));
+                res.push((
+                    CavePos {
+                        pos: (nx, ny),
+                        equipment: *e,
+                    },
+                    cost,
+                ));
             }
         }
     }
@@ -158,7 +170,11 @@ impl Cave {
 
         // We're at `start`, with a zero cost
         dist.insert(start, 0);
-        heap.push(State { h_cost: manhattan(goal.pos, (0, 0)), cost: 0, position: start });
+        heap.push(State {
+            h_cost: manhattan(goal.pos, (0, 0)),
+            cost: 0,
+            position: start,
+        });
 
         let mut nb = vec![];
 
@@ -175,7 +191,7 @@ impl Cave {
             }
 
             // Important as we may have already found a better way
-            if s.cost > *dist.entry(s.position).or_insert(std::i64::MAX) {
+            if s.cost > *dist.entry(s.position).or_insert(i64::MAX) {
                 continue;
             }
 
@@ -184,10 +200,20 @@ impl Cave {
             self.neighbours(s.position, &mut nb);
             for (nb_position, nb_cost) in &nb {
                 let new_cost = s.cost + *nb_cost;
-                let h = new_cost + manhattan(goal.pos, nb_position.pos) + if nb_position.equipment != goal.equipment { 7 } else { 0 };
-                let next = State { h_cost: h, cost: new_cost, position: *nb_position };
+                let h = new_cost
+                    + manhattan(goal.pos, nb_position.pos)
+                    + if nb_position.equipment != goal.equipment {
+                        7
+                    } else {
+                        0
+                    };
+                let next = State {
+                    h_cost: h,
+                    cost: new_cost,
+                    position: *nb_position,
+                };
 
-                let d = *dist.entry(next.position).or_insert(std::i64::MAX);
+                let d = *dist.entry(next.position).or_insert(i64::MAX);
 
                 // If so, add it to the frontier and continue
                 if next.cost < d {
@@ -206,9 +232,23 @@ impl Cave {
 }
 
 fn draw(cave: &mut Cave, path: &Vec<CavePos>, target: (i64, i64)) {
-    let max_x = cave.memo.iter().enumerate().filter(|(_, &c)| c != -1).map(|(n, _)| (n as i64) % cave.memo_stride).max().unwrap();
-    let max_y = cave.memo.iter().enumerate().filter(|(_, &c)| c != -1).map(|(n, _)| (n as i64) / cave.memo_stride).max().unwrap();
-    let mut cps : HashMap<(i64, i64), CavePos> = HashMap::new();
+    let max_x = cave
+        .memo
+        .iter()
+        .enumerate()
+        .filter(|(_, &c)| c != -1)
+        .map(|(n, _)| (n as i64) % cave.memo_stride)
+        .max()
+        .unwrap();
+    let max_y = cave
+        .memo
+        .iter()
+        .enumerate()
+        .filter(|(_, &c)| c != -1)
+        .map(|(n, _)| (n as i64) / cave.memo_stride)
+        .max()
+        .unwrap();
+    let mut cps: HashMap<(i64, i64), CavePos> = HashMap::new();
     for p in path {
         cps.insert(p.pos, *p);
     }
@@ -243,13 +283,13 @@ fn draw(cave: &mut Cave, path: &Vec<CavePos>, target: (i64, i64)) {
                         data.push(0);
                         data.push(0xff);
                         data.push(0xff);
-                    },
+                    }
                     Equipment::Torch => {
                         print!("+");
                         data.push(0xff);
                         data.push(0xff);
                         data.push(0);
-                    },
+                    }
                     Equipment::Neither => {
                         print!("o");
                         data.push(0xff);
@@ -258,27 +298,30 @@ fn draw(cave: &mut Cave, path: &Vec<CavePos>, target: (i64, i64)) {
                     }
                 }
             } else if cave.memo[(y * cave.memo_stride + x) as usize] != -1 {
-                let t = rt(ero(cave.memo[(y * cave.memo_stride + x) as usize], cave.depth));
+                let t = rt(ero(
+                    cave.memo[(y * cave.memo_stride + x) as usize],
+                    cave.depth,
+                ));
                 match t {
                     0 => {
                         print!(".");
                         data.push(0);
                         data.push(0x80);
                         data.push(0);
-                    },
+                    }
                     1 => {
                         print!("=");
                         data.push(0);
                         data.push(0);
                         data.push(0x80);
-                    },
+                    }
                     2 => {
                         print!("|");
                         data.push(0x80);
                         data.push(0);
                         data.push(0);
-                    },
-                    _ => panic!()
+                    }
+                    _ => panic!(),
                 }
             } else {
                 data.push(0);
@@ -296,9 +339,9 @@ fn solve(depth: i64, target: (i64, i64)) {
     let mut grid = vec![];
     // find the risk
     let mut risk = 0;
-    for y in 0..(target.1+1) {
+    for y in 0..(target.1 + 1) {
         grid.push(vec![]);
-        for x in 0..(target.0+1) {
+        for x in 0..(target.0 + 1) {
             let t = rt(ero(cave.geo((x, y)), depth));
             risk += t;
             grid[y as usize].push(t);
@@ -307,8 +350,14 @@ fn solve(depth: i64, target: (i64, i64)) {
     println!("risk: {}", risk);
     // find the target
     let p = cave.shortest_path(
-        CavePos { pos: (0, 0), equipment: Equipment::Torch },
-        CavePos { pos: target, equipment: Equipment::Torch }
+        CavePos {
+            pos: (0, 0),
+            equipment: Equipment::Torch,
+        },
+        CavePos {
+            pos: target,
+            equipment: Equipment::Torch,
+        },
     );
     let (path, cost) = p.unwrap();
     println!("path: {}", path.len());

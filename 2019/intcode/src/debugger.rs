@@ -176,7 +176,7 @@ impl Debugger<'_> {
     }
 
     fn clear_watch(&mut self, name: &str) {
-        if let Some(v) = self.watches.remove(&name.to_string()) {
+        if let Some(v) = self.watches.remove(name) {
             println!("Watch {} - {} removed", name, v);
         } else {
             println!("No watch with name {}", name);

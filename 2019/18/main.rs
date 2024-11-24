@@ -59,6 +59,7 @@ impl PartialOrd for State {
     }
 }
 
+#[allow(clippy::ptr_arg)]
 struct Map<'a> {
     map: &'a Vec<Vec<char>>,
     key_state: KeyState,
@@ -67,6 +68,7 @@ struct Map<'a> {
     came_from: HashMap<(usize, usize), (usize, usize)>,
 }
 
+#[allow(clippy::ptr_arg)]
 impl<'a> Map<'a> {
     fn new(map: &'a Vec<Vec<char>>, key_state: KeyState) -> Map<'a> {
         let mut map = Map {
@@ -178,7 +180,7 @@ fn shortest_path(
             let d = if let Some(x) = state.dist.get(&next.position) {
                 *x
             } else {
-                std::usize::MAX
+                usize::MAX
             };
 
             // If so, add it to the frontier and continue
@@ -203,6 +205,7 @@ fn shortest_path(
 }
 
 #[allow(clippy::needless_range_loop)]
+#[allow(clippy::ptr_arg)]
 fn find_keys(map: &Vec<Vec<char>>) -> HashMap<(usize, usize), char> {
     let mut things = HashMap::new();
     let h = map.len();
@@ -219,6 +222,7 @@ fn find_keys(map: &Vec<Vec<char>>) -> HashMap<(usize, usize), char> {
 }
 
 #[allow(clippy::needless_range_loop)]
+#[allow(clippy::ptr_arg)]
 fn find_self(map: &Vec<Vec<char>>) -> Option<(usize, usize)> {
     let h = map.len();
     let w = map[0].len();
@@ -376,7 +380,7 @@ fn solve(map: &Vec<Vec<char>>, curr: &Vec<(usize, usize)>) -> usize {
                     let d = if let Some(x) = dist.get(&next.map_state) {
                         *x
                     } else {
-                        std::usize::MAX
+                        usize::MAX
                     };
 
                     // println!("next: {}, d: {}", next.cost, d);

@@ -41,37 +41,6 @@ jobs:
           flags: --all
           options: --manifest-path=aoc/Cargo.toml
 
-  year2024:
-
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v3
-    - run: rustup toolchain install stable --profile minimal
-    - uses: Swatinem/rust-cache@v2
-    - name: Build
-      run: cargo build --verbose --manifest-path=2024/Cargo.toml
-    - name: Run tests
-      run: cargo test --verbose --manifest-path=2024/Cargo.toml
-    - name: Run clippy
-      run: cargo clippy --manifest-path=2024/Cargo.toml -- -Dwarnings
-
-  formatYear2024:
-
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          components: rustfmt
-          override: true
-      - uses: LoliGothick/rustfmt-check@v0.2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          flags: --all
-          options: --manifest-path=2024/Cargo.toml
-
   year2023:
 
     runs-on: ubuntu-latest

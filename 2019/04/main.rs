@@ -74,17 +74,17 @@ mod tests {
 
     #[test]
     fn test_part1() {
-        assert_eq!(check(111111), true);
-        assert_eq!(check(567789), true);
-        assert_eq!(check(223450), false);
-        assert_eq!(check(123789), false);
+        assert!(check(111111));
+        assert!(check(567789));
+        assert!(!check(223450));
+        assert!(!check(123789));
     }
 
     #[test]
     fn test_part2() {
-        assert_eq!(check2(112233), true);
-        assert_eq!(check2(123444), false);
-        assert_eq!(check2(111122), true);
-        assert_eq!(check2(111223), true);
+        assert!(check2(112233));
+        assert!(!check2(123444));
+        assert!(check2(111122));
+        assert!(check2(111223));
     }
 }

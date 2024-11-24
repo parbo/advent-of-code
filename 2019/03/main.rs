@@ -184,7 +184,7 @@ fn part2(segments: &Vec<Vec<Segment>>) -> i64 {
 }
 
 fn segments(line: &str) -> Vec<Segment> {
-    line.split(|c| c == ',')
+    line.split(',')
         .map(|s| s.trim())
         .map(|v| v.parse::<Segment>().unwrap())
         .collect()

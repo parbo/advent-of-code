@@ -9,7 +9,7 @@ pub use machine::State;
 
 pub fn parse_intcode(lines: &[String]) -> Vec<i128> {
     let result: Vec<i128> = lines[0]
-        .split(|c| c == ',')
+        .split(',')
         .map(|s| s.trim())
         .map(|v| v.parse::<i128>().unwrap())
         .collect();

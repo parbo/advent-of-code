@@ -1,4 +1,3 @@
-use intcode;
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
@@ -23,7 +22,7 @@ fn main() {
             ),
             if args.len() > 2 {
                 args[2]
-                    .split(|c| c == ',')
+                    .split(',')
                     .map(|s| s.trim())
                     .map(|v| v.parse::<i128>().unwrap())
                     .collect()

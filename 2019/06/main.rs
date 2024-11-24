@@ -93,9 +93,7 @@ mod tests {
 
     #[test]
     fn test_part1() {
-        let lines: Vec<String> = vec![
-            "COM)B", "B)C", "C)D", "D)E", "E)F", "B)G", "G)H", "D)I", "E)J", "J)K", "K)L",
-        ]
+        let lines: Vec<String> = ["COM)B", "B)C", "C)D", "D)E", "E)F", "B)G", "G)H", "D)I", "E)J", "J)K", "K)L"]
         .iter()
         .map(|&x| x.into())
         .collect();

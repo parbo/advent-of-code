@@ -1,5 +1,5 @@
 use core::fmt::Write;
-use image::{GenericImageView, Rgb, RgbImage};
+use image::{Rgb, RgbImage};
 use std::cmp::Reverse;
 use std::collections::{BTreeMap, BinaryHeap, HashMap};
 use std::env;
@@ -1167,7 +1167,8 @@ impl Grid<[u8; 3]> for image::RgbImage {
         let x = pos[0] as u32;
         let y = pos[1] as u32;
         // This is [min, max[
-        let (min_x, min_y, max_x, max_y) = self.bounds();
+        let (min_x, min_y) = (0, 0);
+        let (max_x, max_y) = self.dimensions();
         if x >= min_x && x < max_x && y >= min_y && y < max_y {
             let Rgb(rgb) = self.get_pixel(x, y);
             Some(*rgb)
@@ -1179,14 +1180,16 @@ impl Grid<[u8; 3]> for image::RgbImage {
         let x = pos[0] as u32;
         let y = pos[1] as u32;
         // This is [min, max[
-        let (min_x, min_y, max_x, max_y) = self.bounds();
+        let (min_x, min_y) = (0, 0);
+        let (max_x, max_y) = self.dimensions();
         if x >= min_x && x < max_x && y >= min_y && y < max_y {
             self.put_pixel(x, y, Rgb(value));
         }
     }
     fn extents(&self) -> (Point, Point) {
         // This is [min, max[
-        let (min_x, min_y, max_x, max_y) = self.bounds();
+        let (min_x, min_y) = (0, 0);
+        let (max_x, max_y) = self.dimensions();
         (
             [min_x as i64, min_y as i64],
             [max_x as i64 - 1, max_y as i64 - 1],

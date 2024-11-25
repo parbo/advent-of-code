@@ -5,7 +5,7 @@ type Parsed = Vec<i128>;
 fn part1(numbers: &Parsed) -> i128 {
     let phases = vec![0, 1, 2, 3, 4];
     let mut max_power = 0;
-    for permutation in permute::lexicographically(&phases) {
+    for permutation in permute::permutations_of(&phases) {
         let mut val = 0;
         for perm in permutation {
             let mut m = intcode::Machine::with_input(numbers, &[*perm, val]);
@@ -19,9 +19,9 @@ fn part1(numbers: &Parsed) -> i128 {
 fn part2(numbers: &Parsed) -> i128 {
     let phases = vec![5, 6, 7, 8, 9];
     let mut max_power = 0;
-    for permutation in permute::lexicographically(&phases) {
-        let mut machines: Vec<intcode::Machine> = (0..5)
-            .map(|x| intcode::Machine::with_input(numbers, &[*permutation[x]]))
+    for permutation in permute::permutations_of(&phases) {
+        let mut machines: Vec<intcode::Machine> = permutation
+            .map(|x| intcode::Machine::with_input(numbers, &[*x]))
             .collect();
         machines[0].add_input(0);
         let mut last_output = None;

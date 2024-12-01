@@ -1,24 +1,22 @@
-use std::collections::HashMap;
 use std::iter::*;
 
 type ParsedItem = (i64, i64);
 type Parsed = Vec<ParsedItem>;
 
 fn part1(data: &Parsed) -> i64 {
-    let mut list1: Vec<i64> = data.iter().map(|x| x.0).collect();
-    let mut list2: Vec<i64> = data.iter().map(|x| x.1).collect();
+    let (mut list1, mut list2): (Vec<_>, Vec<_>) = data.iter().copied().unzip();
     list1.sort();
     list2.sort();
     zip(list1, list2).map(|(a, b)| (a - b).abs()).sum()
 }
 
 fn part2(data: &Parsed) -> i64 {
-    let mut list = HashMap::<i64, i64>::new();
+    let mut list = aoc::FxHashMap::<i64, i64>::default();
     for v in data.iter().map(|x| x.1) {
         *list.entry(v).or_default() += 1;
     }
     data.iter()
-        .map(|x| x.0 * *list.entry(x.0).or_default())
+        .map(|x| x.0 * *list.get(&x.0).unwrap_or(&0))
         .sum()
 }
 

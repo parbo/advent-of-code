@@ -333,7 +333,7 @@ where
 {
     lines
         .into_iter()
-        .group_by(|line| !AsRef::as_ref(line).is_empty())
+        .chunk_by(|line| !AsRef::as_ref(line).is_empty())
         .into_iter()
         .map(|(_, group)| {
             group

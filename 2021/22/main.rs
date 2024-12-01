@@ -207,10 +207,10 @@ fn split(cbi: &Cuboid, cbj: &Cuboid) -> Vec<Cuboid> {
     merge(&fromi)
 }
 
-#[cfg(test)]
+#[cfg(any(test, not(feature = "vis")))]
 fn draw(_: &[Cuboid], _: &[Cuboid]) {}
 
-#[cfg(not(test))]
+#[cfg(not(any(test, not(feature = "vis"))))]
 fn draw(cuboids_a: &[Cuboid], cuboids_b: &[Cuboid]) {
     let mut window = kiss3d::window::Window::new_with_size("Day 22", 800, 1000);
     window.set_light(kiss3d::light::Light::StickToCamera);

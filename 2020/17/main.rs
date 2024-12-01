@@ -59,6 +59,7 @@ fn dirs4() -> Vec<Vec4> {
     d
 }
 
+#[allow(dead_code)]
 fn print_slices(g: &Parsed) {
     let ([min_x, min_y, min_z], [max_x, max_y, max_z]) = extents(g);
     for z in min_z..=max_z {
@@ -99,6 +100,7 @@ fn step(g: &Parsed, d: &[Vec3]) -> Parsed {
     newg
 }
 
+#[allow(dead_code)]
 fn part1(input: &Parsed) -> Answer {
     let d = dirs();
     let mut i = 0;
@@ -145,6 +147,7 @@ fn step4(g: &HashMap<Vec4, char>, d: &[Vec4]) -> HashMap<Vec4, char> {
     newg
 }
 
+#[allow(dead_code)]
 fn part2(input: &Parsed) -> Answer {
     let d = dirs4();
     let mut i = 0;

@@ -267,7 +267,7 @@ pub struct AsciiIter<'a> {
     s: &'a Set,
 }
 
-impl<'a> Iterator for AsciiIter<'a> {
+impl Iterator for AsciiIter<'_> {
     type Item = char;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -386,7 +386,7 @@ impl Iterator for TwoBytes {
     }
 }
 
-impl<'a> Iterator for Iter<'a> {
+impl Iterator for Iter<'_> {
     type Item = char;
 
     #[inline]

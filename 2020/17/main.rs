@@ -173,6 +173,7 @@ fn parse(lines: &[String]) -> Parsed {
     g
 }
 
+#[cfg(feature = "vis")]
 fn draw1(parsed: &Parsed) -> Answer {
     let mut window = kiss3d::window::Window::new_with_size("Day 17", 1280, 720);
 
@@ -214,6 +215,7 @@ fn draw1(parsed: &Parsed) -> Answer {
     0
 }
 
+#[cfg(feature = "vis")]
 fn draw2(parsed: &Parsed) -> Answer {
     let mut window = kiss3d::window::Window::new_with_size("Day 17", 1280, 720);
 
@@ -259,12 +261,14 @@ fn draw2(parsed: &Parsed) -> Answer {
     0
 }
 
+#[cfg(feature = "vis")]
 fn main() {
-    if cfg!(feature = "vis") {
-        aoc::run_main(parse, draw1, draw2);
-    } else {
-        aoc::run_main(parse, part1, part2);
-    }
+    aoc::run_main(parse, draw1, draw2);
+}
+
+#[cfg(not(feature = "vis"))]
+fn main() {
+    aoc::run_main(parse, part1, part2);
 }
 
 #[cfg(test)]

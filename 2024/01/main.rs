@@ -17,9 +17,8 @@ fn part2(data: &Parsed) -> i64 {
     for v in data.iter().map(|x| x.1) {
         *list.entry(v).or_default() += 1;
     }
-    dbg!(&list);
     data.iter()
-        .map(|x| dbg!(x.0) * dbg!(*list.entry(x.0).or_default()))
+        .map(|x| x.0 * *list.entry(x.0).or_default())
         .sum()
 }
 

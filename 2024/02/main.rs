@@ -1,40 +1,18 @@
 use std::iter::*;
 
-// #[derive(parse_display::Display, parse_display::FromStr, Debug, Clone, PartialEq, Eq, Hash)]
-// #[display("{thing}: {al}-{ah} or {bl}-{bh}")]
-// struct Rule {
-//     thing: String,
-//     al: i64,
-//     ah: i64,
-//     bl: i64,
-//     bh: i64,
-// }
-
 type ParsedItem = Vec<i64>;
 type Parsed = Vec<ParsedItem>;
 
 fn is_safe(row: &[i64]) -> bool {
-    let mut last = None;
-    let mut inc = None;
-    for r in row {
-        let mut d: i64 = 0;
-        if let Some(v) = last {
-            d = r - v;
-            if d.abs() < 1 || d.abs() > 3 {
-                return false;
-            }
+    let mut inc = 0;
+    row.windows(2).all(|a| {
+        let d = a[1] - a[0];
+        if d.abs() < 1 || d.abs() > 3 || (inc != 0 && inc != d.signum()) {
+            return false;
         }
-        if let Some(i) = inc {
-            if (i && d < 0) || (!i && d > 0) {
-                return false;
-            }
-        }
-        last = Some(r);
-        if d != 0 {
-            inc = Some(d > 0);
-        }
-    }
-    true
+        inc = d.signum();
+        true
+    })
 }
 
 fn part1(data: &Parsed) -> i64 {
@@ -44,18 +22,14 @@ fn part1(data: &Parsed) -> i64 {
 fn part2(data: &Parsed) -> i64 {
     data.iter()
         .filter(|x| {
-            for i in 0..x.len() {
-                let mut v = vec![];
-                for (ix, xx) in x.iter().enumerate() {
-                    if ix != i {
-                        v.push(*xx);
-                    }
-                }
-                if is_safe(&v) {
-                    return true;
-                }
-            }
-            false
+            (0..x.len()).any(|i| {
+                let v: Vec<_> = x
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(ix, xx)| if ix != i { Some(*xx) } else { None })
+                    .collect();
+                is_safe(&v)
+            })
         })
         .count() as i64
 }
@@ -89,11 +63,16 @@ mod tests {
     #[test]
     fn test_is_safe1() {
         let row = vec![55, 56, 57, 60, 63, 64, 65, 66];
-        assert_eq!(is_safe(&row), true);
+        assert!(is_safe(&row));
     }
 
     #[test]
     fn test_part1() {
         assert_eq!(part1(&parse(&example())), 2);
+    }
+
+    #[test]
+    fn test_part2() {
+        assert_eq!(part2(&parse(&example())), 4);
     }
 }

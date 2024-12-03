@@ -2,33 +2,34 @@ use std::iter::*;
 
 type Parsed = String;
 
+fn get_mul(data: &str) -> (usize, Option<(i64, i64)>) {
+    if !data.starts_with("mul(") {
+        return (1, None);
+    }
+    let Some(p) = data[4..].find(',') else {
+        return (1, None);
+    };
+    let Ok(v) = data[4..(4 + p)].parse::<i64>() else {
+        return (1, None);
+    };
+    let Some(p2) = data[(4 + p + 1)..].find(')') else {
+        return (1, None);
+    };
+    let Ok(v2) = data[(4 + p + 1)..(4 + p + 1 + p2)].parse::<i64>() else {
+        return (1, None);
+    };
+    (4 + p + 1 + p2 + 1, Some((v, v2)))
+}
+
 fn part1(data: &Parsed) -> i64 {
     let mut muls = vec![];
-    for i in 0..(data.len() - 8) {
-        let res = if data[i..].starts_with("mul(") {
-            if let Some(p) = data[(i + 4)..].find(',') {
-                if let Ok(v) = data[(i + 4)..(i + 4 + p)].parse::<i64>() {
-                    if let Some(p2) = data[(i + 4 + p + 1)..].find(')') {
-                        if let Ok(v2) = data[(i + 4 + p + 1)..(i + 4 + p + 1 + p2)].parse::<i64>() {
-                            Some((v, v2))
-                        } else {
-                            None
-                        }
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        } else {
-            None
-        };
+    let mut i = 0;
+    while i < data.len() - 8 {
+        let (p, res) = get_mul(&data[i..]);
         if let Some((a, b)) = res {
             muls.push((a, b));
         }
+        i += p;
     }
     muls.iter().map(|(a, b)| a * b).sum()
 }
@@ -36,38 +37,22 @@ fn part1(data: &Parsed) -> i64 {
 fn part2(data: &Parsed) -> i64 {
     let mut muls = vec![];
     let mut enabled = true;
-    for i in 0..(data.len() - 8) {
-        let res = if data[i..].starts_with("mul(") {
-            if let Some(p) = data[(i + 4)..].find(',') {
-                if let Ok(v) = data[(i + 4)..(i + 4 + p)].parse::<i64>() {
-                    if let Some(p2) = data[(i + 4 + p + 1)..].find(')') {
-                        if let Ok(v2) = data[(i + 4 + p + 1)..(i + 4 + p + 1 + p2)].parse::<i64>() {
-                            Some((v, v2))
-                        } else {
-                            None
-                        }
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        } else if data[i..].starts_with("do()") {
+    let mut i = 0;
+    while i < data.len() - 8 {
+        if data[i..].starts_with("do()") {
             enabled = true;
-            None
+            i += 4;
         } else if data[i..].starts_with("don't()") {
             enabled = false;
-            None
-        } else {
-            None
-        };
-        if enabled {
+            i += 7;
+        } else if enabled {
+            let (p, res) = get_mul(&data[i..]);
             if let Some((a, b)) = res {
                 muls.push((a, b));
             }
+            i += p;
+        } else {
+            i += 1;
         }
     }
     muls.iter().map(|(a, b)| a * b).sum()

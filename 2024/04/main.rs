@@ -5,16 +5,17 @@ type ParsedItem = Vec<char>;
 type Parsed = Vec<ParsedItem>;
 
 fn part1(data: &Parsed) -> i64 {
-    let mut g = data.clone();
     let w = ['X', 'M', 'A', 'S'];
     let mut num = 0;
-    for p in g.points() {
+    for p in data.points() {
+        if data.get_value(p) != Some('X') {
+            continue;
+        }
         // check in all dirs from here
-        let last_num = num;
         'outer: for d in aoc::DIRECTIONS_INCL_DIAGONALS {
             let mut pp = p;
             for x in w {
-                if let Some(a) = g.get_value(pp) {
+                if let Some(a) = data.get_value(pp) {
                     if a != x {
                         continue 'outer;
                     }
@@ -24,10 +25,6 @@ fn part1(data: &Parsed) -> i64 {
                 pp = aoc::point_add(pp, d);
             }
             num += 1;
-        }
-        if last_num != num {
-            // Don't include this point in any other XMAS instances
-            g.set_value(p, '.');
         }
     }
     num

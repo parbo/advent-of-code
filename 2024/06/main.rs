@@ -25,8 +25,22 @@ fn part1(data: &Parsed) -> i64 {
 }
 
 fn part2(data: &Parsed) -> i64 {
-    let points: Vec<_> = data.points().collect();
-    points
+    let mut pos = data
+        .points()
+        .find(|x| data.get_value(*x) == Some('^'))
+        .unwrap();
+    let mut dir = aoc::NORTH;
+    let mut visited = aoc::FxHashSet::default();
+    visited.insert(pos);
+    while let Some(v) = data.get_value(aoc::point_add(pos, dir)) {
+        if v == '#' {
+            dir = *aoc::DIRECTION_ROTATE_RIGHT.get(&dir).unwrap();
+        } else {
+            pos = aoc::point_add(pos, dir);
+            visited.insert(pos);
+        }
+    }
+    visited
         .par_iter()
         .map(|pp| {
             let mut g = data.clone();

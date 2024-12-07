@@ -1,71 +1,47 @@
+use rayon::prelude::*;
 use std::iter::*;
 
 type Parsed = Vec<(i64, Vec<i64>)>;
 
-fn possible(operands: &[i64]) -> Vec<i64> {
-    if operands.len() == 1 {
-        vec![operands[0]]
+fn possible(wanted: i64, val: i64, operands: &[i64], res: &mut Vec<i64>, ops: u32) {
+    if operands.is_empty() {
+        res.push(val);
     } else {
-        let mut res = vec![];
-        for i in 0..2 {
-            let mut new_operands = vec![];
-            if i == 0 {
-                new_operands.push(operands[0] + operands[1]);
+        for i in 0..ops {
+            let val = if i == 0 {
+                val + operands[0]
+            } else if i == 1 {
+                val * operands[0]
             } else {
-                new_operands.push(operands[0] * operands[1]);
+                format!("{}{}", val, operands[0]).parse().unwrap()
+            };
+            if val <= wanted {
+                possible(wanted, val, &operands[1..], res, ops);
             }
-            new_operands.extend(&operands[2..]);
-            res.extend(possible(&new_operands));
         }
-        res
     }
 }
 
-fn possible2(operands: &[i64]) -> Vec<i64> {
-    if operands.len() == 1 {
-        vec![operands[0]]
-    } else {
-        let mut res = vec![];
-        for i in 0..3 {
-            let mut new_operands = vec![];
-            if i == 0 {
-                new_operands.push(operands[0] + operands[1]);
-            } else if i == 1 {
-                new_operands.push(operands[0] * operands[1]);
+fn solve(data: &Parsed, ops: u32) -> i64 {
+    data.par_iter()
+        .filter_map(|(res, operands)| {
+            let mut p = Vec::with_capacity(operands.len().pow(ops));
+            possible(*res, operands[0], &operands[1..], &mut p, ops);
+            if p.contains(res) {
+                Some(res)
             } else {
-                new_operands.push(
-                    (operands[0].to_string() + &operands[1].to_string())
-                        .parse()
-                        .unwrap(),
-                );
+                None
             }
-            new_operands.extend(&operands[2..]);
-            res.extend(possible2(&new_operands));
-        }
-        res
-    }
+        })
+        .sum()
 }
 
 fn part1(data: &Parsed) -> i64 {
-    let mut sum = 0;
-    for (res, operands) in data {
-        let p = possible(operands);
-        if p.contains(res) {
-            sum += res;
-        }
-    }
-    sum
+    solve(data, 2)
 }
 
 fn part2(data: &Parsed) -> i64 {
-    let mut sum = 0;
-    for (res, operands) in data {
-        let p = possible2(operands);
-        if p.contains(res) {
-            sum += res;
-        }
-    }
-    sum
+    solve(data, 3)
 }
 
 fn parse(lines: &[String]) -> Parsed {

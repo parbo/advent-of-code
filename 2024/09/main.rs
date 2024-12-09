@@ -14,7 +14,7 @@ type ParsedItem = i64;
 type Parsed = Vec<ParsedItem>;
 
 fn part1(data: &Parsed) -> i64 {
-    let mut exp = vec![];
+    let mut exp = Vec::with_capacity(data.len() * 9);
     // fill up
     for (ix, num) in data.iter().enumerate() {
         let v = if ix % 2 == 0 {
@@ -63,19 +63,19 @@ fn part2(data: &Parsed) -> i64 {
                     if al != bl {
                         exp[i].1 = al;
                         exp.insert(ix + 1, (None, bl - al));
+                        // Compact the swapped nones
+                        let mut ix = ix + 1;
+                        while ix + 1 < exp.len() {
+                            if exp[ix].0.is_none() && exp[ix + 1].0.is_none() {
+                                exp[ix].1 += exp[ix + 1].1;
+                                exp.remove(ix + 1);
+                            } else {
+                                ix += 1;
+                            }
+                        }
                         inserted += 1;
                     }
                 }
-            }
-        }
-        // Compact
-        let mut ix = 0;
-        while ix + 1 < exp.len() {
-            if exp[ix].0.is_none() && exp[ix + 1].0.is_none() {
-                exp[ix].1 += exp[ix + 1].1;
-                exp.remove(ix + 1);
-            } else {
-                ix += 1;
             }
         }
         if i == 0 {

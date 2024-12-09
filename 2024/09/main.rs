@@ -16,9 +16,14 @@ fn part1(data: &Parsed) -> i64 {
             repeat(v).take(*num as usize)
         })
         .collect();
-    for i in (0..exp.len()).rev() {
-        let ix = exp.iter().position(|x| x.is_none()).unwrap();
+    let mut ix = 0;
+    let mut i = exp.len() - 1;
+    while ix < i {
+        while exp[ix].is_some() {
+            ix += 1;
+        }
         exp.swap(i, ix);
+        i -= 1;
     }
     exp.iter()
         .filter_map(|x| *x)

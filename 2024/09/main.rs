@@ -63,16 +63,6 @@ fn part2(data: &Parsed) -> i64 {
                     if al != bl {
                         exp[i].1 = al;
                         exp.insert(ix + 1, (None, bl - al));
-                        // Compact the swapped nones
-                        let mut ix = ix + 1;
-                        while ix + 1 < exp.len() {
-                            if exp[ix].0.is_none() && exp[ix + 1].0.is_none() {
-                                exp[ix].1 += exp[ix + 1].1;
-                                exp.remove(ix + 1);
-                            } else {
-                                ix += 1;
-                            }
-                        }
                         inserted += 1;
                     }
                 }

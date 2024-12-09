@@ -1,29 +1,21 @@
 use std::iter::*;
 
-// #[derive(parse_display::Display, parse_display::FromStr, Debug, Clone, PartialEq, Eq, Hash)]
-// #[display("{thing}: {al}-{ah} or {bl}-{bh}")]
-// struct Rule {
-//     thing: String,
-//     al: i64,
-//     ah: i64,
-//     bl: i64,
-//     bh: i64,
-// }
-
 type ParsedItem = i64;
 type Parsed = Vec<ParsedItem>;
 
 fn part1(data: &Parsed) -> i64 {
-    let mut exp = Vec::with_capacity(data.len() * 9);
-    // fill up
-    for (ix, num) in data.iter().enumerate() {
-        let v = if ix % 2 == 0 {
-            Some((ix / 2) as i64)
-        } else {
-            None
-        };
-        exp.extend(repeat(v).take(*num as usize));
-    }
+    let mut exp: Vec<_> = data
+        .iter()
+        .enumerate()
+        .flat_map(|(ix, num)| {
+            let v = if ix % 2 == 0 {
+                Some((ix / 2) as i64)
+            } else {
+                None
+            };
+            repeat(v).take(*num as usize)
+        })
+        .collect();
     for i in (0..exp.len()).rev() {
         let ix = exp.iter().position(|x| x.is_none()).unwrap();
         exp.swap(i, ix);
@@ -36,35 +28,35 @@ fn part1(data: &Parsed) -> i64 {
 }
 
 fn part2(data: &Parsed) -> i64 {
-    let mut exp = vec![];
-    // fill up
-    for (ix, num) in data.iter().enumerate() {
-        let v = if ix % 2 == 0 {
-            Some((ix / 2) as i64)
-        } else {
-            None
-        };
-        exp.push((v, *num));
-    }
+    let mut exp: Vec<_> = data
+        .iter()
+        .enumerate()
+        .map(|(ix, num)| {
+            let v = if ix % 2 == 0 {
+                Some((ix / 2) as i64)
+            } else {
+                None
+            };
+            (v, *num)
+        })
+        .collect();
     let mut i = exp.len() - 1;
     loop {
         let mut inserted = 0;
         if exp[i].0.is_some() {
-            // dbg!(exp[i], &exp);
             if let Some(ix) = exp
                 .iter()
+                .take(i)
                 .position(|(v, num)| v.is_none() && *num >= exp[i].1)
             {
-                if ix < i {
-                    let al = exp[i].1;
-                    let bl = exp[ix].1;
-                    assert!(bl >= al);
-                    exp.swap(i, ix);
-                    if al != bl {
-                        exp[i].1 = al;
-                        exp.insert(ix + 1, (None, bl - al));
-                        inserted += 1;
-                    }
+                let al = exp[i].1;
+                let bl = exp[ix].1;
+                assert!(bl >= al);
+                exp.swap(i, ix);
+                if al != bl {
+                    exp[i].1 = al;
+                    exp.insert(ix + 1, (None, bl - al));
+                    inserted += 1;
                 }
             }
         }

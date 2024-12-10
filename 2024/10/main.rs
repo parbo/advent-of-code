@@ -91,7 +91,7 @@ fn part2(data: &Parsed) -> i64 {
                     vec![v, v, v, v]
                 }
             },
-            "vis/day20",
+            "vis/day10",
         );
         Some(gd)
     } else {

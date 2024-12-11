@@ -23,6 +23,7 @@ extern crate vecmath;
 pub use fnv::FnvHashMap;
 pub use fnv::FnvHashSet;
 pub use itertools::Itertools;
+pub use memoize::memoize;
 pub use mod_exp::mod_exp;
 pub use petgraph::algo;
 pub use petgraph::graph::DiGraph;

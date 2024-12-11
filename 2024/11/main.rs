@@ -2,12 +2,12 @@ type ParsedItem = i64;
 type Parsed = Vec<ParsedItem>;
 
 fn solve(data: &[i64], num: usize) -> i64 {
-    let mut counts = aoc::FxHashMap::default();
+    let mut counts = aoc::AHashMap::default();
     for s in data {
         counts.insert(*s, 1);
     }
     for _ in 0..num {
-        let mut newcounts = aoc::FxHashMap::default();
+        let mut newcounts = aoc::AHashMap::default();
         for (s, c) in &counts {
             let numdigs = (s.checked_ilog10().unwrap_or(0) + 1) as usize;
             if *s == 0 {

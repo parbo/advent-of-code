@@ -1,7 +1,7 @@
 type ParsedItem = i64;
 type Parsed = Vec<ParsedItem>;
 
-fn solve(data: &Parsed, num: usize) -> i64 {
+fn solve(data: &[i64], num: usize) -> i64 {
     let mut counts = aoc::FxHashMap::default();
     for s in data {
         counts.insert(*s, 1);

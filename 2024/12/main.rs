@@ -107,6 +107,9 @@ fn part2(data: &Parsed) -> i64 {
                 }
             }
             g.fill(p, ' ');
+            for (p, _dir) in &perimeter {
+                g.set_value(*p, '*');
+            }
             #[cfg(feature = "vis")]
             gd.draw(&g);
             cost += area * sides;

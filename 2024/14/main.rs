@@ -4,26 +4,20 @@ use std::{cmp::Ordering, iter::*};
 type ParsedItem = (aoc::Point, aoc::Point);
 type Parsed = Vec<ParsedItem>;
 
-fn quadrant(x: i64, y: i64, w: i64, h: i64) -> Option<i64> {
-    match (x.cmp(&(w / 2)), y.cmp(&(h / 2))) {
-        (Ordering::Less, Ordering::Less) => Some(0),
-        (Ordering::Less, Ordering::Greater) => Some(1),
-        (Ordering::Greater, Ordering::Less) => Some(2),
-        (Ordering::Greater, Ordering::Greater) => Some(3),
-        _ => None,
-    }
-}
-
 fn solve(data: &Parsed, w: i64, h: i64, n: i64) -> i64 {
     let quadrants = data
         .iter()
         .filter_map(|(p, v)| {
-            quadrant(
-                (p[0] + n * v[0]).rem_euclid(w),
-                (p[1] + n * v[1]).rem_euclid(h),
-                w,
-                h,
-            )
+            match (
+                (p[0] + n * v[0]).rem_euclid(w).cmp(&(w / 2)),
+                (p[1] + n * v[1]).rem_euclid(h).cmp(&(h / 2)),
+            ) {
+                (Ordering::Less, Ordering::Less) => Some(0),
+                (Ordering::Less, Ordering::Greater) => Some(1),
+                (Ordering::Greater, Ordering::Less) => Some(2),
+                (Ordering::Greater, Ordering::Greater) => Some(3),
+                _ => None,
+            }
         })
         .collect::<aoc::Counter<_>>();
     quadrants.values().product::<usize>() as i64

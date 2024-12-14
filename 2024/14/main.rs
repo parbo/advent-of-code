@@ -4,8 +4,8 @@ use std::{cmp::Ordering, iter::*};
 type ParsedItem = (aoc::Point, aoc::Point);
 type Parsed = Vec<ParsedItem>;
 
-fn quadrant(p: aoc::Point, w: i64, h: i64) -> Option<i64> {
-    match (p[0].cmp(&(w / 2)), p[1].cmp(&(h / 2))) {
+fn quadrant(x: i64, y: i64, w: i64, h: i64) -> Option<i64> {
+    match (x.cmp(&(w / 2)), y.cmp(&(h / 2))) {
         (Ordering::Less, Ordering::Less) => Some(0),
         (Ordering::Less, Ordering::Greater) => Some(1),
         (Ordering::Greater, Ordering::Less) => Some(2),
@@ -19,10 +19,8 @@ fn solve(data: &Parsed, w: i64, h: i64, n: i64) -> i64 {
         .iter()
         .filter_map(|(p, v)| {
             quadrant(
-                [
-                    (p[0] + n * v[0]).rem_euclid(w),
-                    (p[1] + n * v[1]).rem_euclid(h),
-                ],
+                (p[0] + n * v[0]).rem_euclid(w),
+                (p[1] + n * v[1]).rem_euclid(h),
                 w,
                 h,
             )

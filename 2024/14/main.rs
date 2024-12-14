@@ -14,10 +14,7 @@ fn quadrant(p: aoc::Point, w: i64, h: i64) -> Option<i64> {
     }
 }
 
-fn part1(data: &Parsed) -> i64 {
-    let w = 101;
-    let h = 103;
-    let n = 100;
+fn solve(data: &Parsed, w: i64, h: i64, n: i64) -> i64 {
     let quadrants = data
         .iter()
         .filter_map(|(p, v)| {
@@ -32,6 +29,10 @@ fn part1(data: &Parsed) -> i64 {
         })
         .collect::<aoc::Counter<_>>();
     quadrants.values().product::<usize>() as i64
+}
+
+fn part1(data: &Parsed) -> i64 {
+    solve(data, 101, 103, 100)
 }
 
 fn part2(data: &Parsed) -> i64 {

@@ -1,5 +1,5 @@
 use aoc::GridDrawer;
-use std::{cmp::Ordering, iter::*};
+use std::{cmp::Ordering::Greater, cmp::Ordering::Less, iter::*};
 
 type ParsedItem = (aoc::Point, aoc::Point);
 type Parsed = Vec<ParsedItem>;
@@ -12,10 +12,10 @@ fn solve(data: &Parsed, w: i64, h: i64, n: i64) -> i64 {
                 (p[0] + n * v[0]).rem_euclid(w).cmp(&(w / 2)),
                 (p[1] + n * v[1]).rem_euclid(h).cmp(&(h / 2)),
             ) {
-                (Ordering::Less, Ordering::Less) => Some(0),
-                (Ordering::Less, Ordering::Greater) => Some(1),
-                (Ordering::Greater, Ordering::Less) => Some(2),
-                (Ordering::Greater, Ordering::Greater) => Some(3),
+                (Less, Less) => Some(0),
+                (Less, Greater) => Some(1),
+                (Greater, Less) => Some(2),
+                (Greater, Greater) => Some(3),
                 _ => None,
             }
         })

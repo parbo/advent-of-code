@@ -1,37 +1,37 @@
 use aoc::GridDrawer;
-use std::iter::*;
+use std::{cmp::Ordering, iter::*};
 
 type ParsedItem = (aoc::Point, aoc::Point);
 type Parsed = Vec<ParsedItem>;
 
-#[allow(clippy::comparison_chain)]
-fn solve(data: &Parsed, w: i64, h: i64, n: i64) -> i64 {
-    let mut robots = data.clone();
-    for (p, v) in &mut robots {
-        p[0] = (p[0] + n * v[0]).rem_euclid(w);
-        p[1] = (p[1] + n * v[1]).rem_euclid(h);
+fn quadrant(p: aoc::Point, w: i64, h: i64) -> Option<i64> {
+    match (p[0].cmp(&(w / 2)), p[1].cmp(&(h / 2))) {
+        (Ordering::Less, Ordering::Less) => Some(0),
+        (Ordering::Less, Ordering::Greater) => Some(1),
+        (Ordering::Greater, Ordering::Less) => Some(2),
+        (Ordering::Greater, Ordering::Greater) => Some(3),
+        _ => None,
     }
-    let mut q = [0, 0, 0, 0];
-    for (p, _v) in &robots {
-        if p[0] < w / 2 {
-            if p[1] < h / 2 {
-                q[0] += 1;
-            } else if p[1] > h / 2 {
-                q[1] += 1;
-            }
-        } else if p[0] > w / 2 {
-            if p[1] < h / 2 {
-                q[2] += 1;
-            } else if p[1] > h / 2 {
-                q[3] += 1;
-            }
-        }
-    }
-    q[0] * q[1] * q[2] * q[3]
 }
 
 fn part1(data: &Parsed) -> i64 {
-    solve(data, 101, 103, 100)
+    let w = 101;
+    let h = 103;
+    let n = 100;
+    let quadrants = data
+        .iter()
+        .filter_map(|(p, v)| {
+            quadrant(
+                [
+                    (p[0] + n * v[0]).rem_euclid(w),
+                    (p[1] + n * v[1]).rem_euclid(h),
+                ],
+                w,
+                h,
+            )
+        })
+        .collect::<aoc::Counter<_>>();
+    quadrants.values().product::<usize>() as i64
 }
 
 fn part2(data: &Parsed) -> i64 {
@@ -60,25 +60,12 @@ fn part2(data: &Parsed) -> i64 {
         for (p, _v) in &robots {
             g[p[1] as usize][p[0] as usize] = 1;
         }
-        let mut numc = 0;
-        for r in &g {
-            let mut n = 0;
-            let mut maxn = 0;
-            let mut last = 0;
-            for c in r {
-                if *c > 0 && *c == last {
-                    n += 1;
-                    maxn = maxn.max(n)
-                } else {
-                    n = 0;
-                }
-                last = *c;
-            }
-            if maxn > 7 {
-                numc += 1;
-            }
-        }
-        if numc > 7 {
+        // Detect a number of lines that have some streaks of robots
+        if g.iter()
+            .filter(|w| w.windows(7).any(|w| w.iter().all(|x| *x == 1)))
+            .count()
+            > 7
+        {
             gd.draw(&g);
             gdc.draw(&g);
             return i + 1;

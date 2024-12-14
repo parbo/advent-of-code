@@ -22,6 +22,7 @@ extern crate vecmath;
 
 pub use ahash::AHashMap;
 pub use ahash::AHashSet;
+pub use counter::Counter;
 pub use fnv::FnvHashMap;
 pub use fnv::FnvHashSet;
 pub use itertools::Itertools;

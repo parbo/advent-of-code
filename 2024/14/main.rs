@@ -103,10 +103,6 @@ mod tests {
         s.lines().map(|x| x.to_string()).collect()
     }
 
-    fn example2() -> Vec<String> {
-        vec!["p=2,4 v=2,-3".into()]
-    }
-
     #[test]
     fn test_part1() {
         assert_eq!(solve(&parse(&example()), 11, 7, 100), 12);

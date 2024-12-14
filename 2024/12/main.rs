@@ -1,6 +1,8 @@
 use std::{collections::BTreeSet, iter::*};
 
 use aoc::Grid;
+
+#[cfg(feature = "vis")]
 use aoc::GridDrawer;
 
 type Parsed = Vec<Vec<char>>;

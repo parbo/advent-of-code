@@ -44,29 +44,7 @@ fn part2(data: &Parsed) -> i64 {
     let mut cost = 0;
     let mut g = data.clone();
     #[cfg(feature = "vis")]
-    let mut gd = aoc::BitmapSpriteGridDrawer::new(
-        (
-            aoc::SMALLFONT.glyph_size().0 as i64,
-            aoc::SMALLFONT.glyph_size().1 as i64,
-        ),
-        |x| {
-            let mut v = vec![];
-            let g = aoc::SMALLFONT.glyph(x as u32).unwrap();
-            for y in 0..aoc::SMALLFONT.glyph_size().1 {
-                for x in 0..aoc::SMALLFONT.glyph_size().0 {
-                    let byte = y + (x / 8);
-                    let bit = 7 - (x % 8);
-                    if (g[byte as usize] & (1 << bit)) == 0 {
-                        v.push([0xff, 0xff, 0xff]);
-                    } else {
-                        v.push([0x0, 0x0, 0x0]);
-                    }
-                }
-            }
-            v
-        },
-        "vis/day12",
-    );
+    let mut gd = aoc::make_bitmap_text_grid_drawer(|x| (x, [0xff, 0xff, 0xff]), "vis/day12");
     for c in crops {
         let ext = data.extents();
         while let Some(p) = g.points().find(|p| g.get_value(*p) == Some(c)) {

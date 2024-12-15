@@ -1511,6 +1511,45 @@ where
     }
 }
 
+fn glyph_to_sprite<F: Fn(T) -> (char, [u8; 3]), T: PartialEq + Copy>(
+    to_glyph: &F,
+    x: T,
+) -> Vec<[u8; 3]> {
+    let (c, col) = to_glyph(x);
+    let mut v = vec![];
+    let g = SMALLFONT.glyph(c as u32).unwrap();
+    for y in 0..SMALLFONT.glyph_size().1 {
+        for x in 0..SMALLFONT.glyph_size().0 {
+            let byte = y + (x / 8);
+            let bit = 7 - (x % 8);
+            if (g[byte as usize] & (1 << bit)) == 0 {
+                v.push([0x0, 0x0, 0x0]);
+            } else {
+                v.push(col);
+            }
+        }
+    }
+    v
+}
+
+pub fn make_bitmap_text_grid_drawer<
+    K: Fn(T) -> (char, [u8; 3]),
+    G: Grid<T>,
+    T: PartialEq + Copy,
+>(
+    to_glyph: K,
+    basename: &str,
+) -> BitmapSpriteGridDrawer<impl Fn(T) -> Vec<[u8; 3]>, G, T> {
+    BitmapSpriteGridDrawer::new(
+        (
+            SMALLFONT.glyph_size().0 as i64,
+            SMALLFONT.glyph_size().1 as i64,
+        ),
+        move |x| glyph_to_sprite(&to_glyph, x),
+        basename,
+    )
+}
+
 pub struct BitmapGridDrawer<F, G, T>
 where
     F: Fn(T) -> [u8; 3],

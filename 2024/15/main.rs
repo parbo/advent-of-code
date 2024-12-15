@@ -2,10 +2,31 @@ use std::iter::*;
 
 use aoc::Grid;
 
+#[cfg(feature = "vis")]
+use aoc::GridDrawer;
+
 type Parsed = (Vec<Vec<char>>, Vec<char>);
 
 fn part1(data: &Parsed) -> i64 {
     let mut g = data.0.clone();
+    #[cfg(feature = "vis")]
+    let mut gd = aoc::make_bitmap_text_grid_drawer(
+        |x| {
+            let c = if x == '@' {
+                [0xff, 0xff, 0xff]
+            } else if x == '#' {
+                [0xff, 0, 0]
+            } else if x == 'O' || x == '[' || x == ']' {
+                [0, 0xff, 0]
+            } else {
+                [0, 0, 0]
+            };
+            (x, c)
+        },
+        "vis/15/day15a",
+    );
+    #[cfg(feature = "vis")]
+    gd.draw(&g);
     let mut pos = g.points().find(|p| g.get_value(*p) == Some('@')).unwrap();
     for m in &data.1 {
         let dir = match m {
@@ -50,6 +71,8 @@ fn part1(data: &Parsed) -> i64 {
             }
             _ => panic!(),
         }
+        #[cfg(feature = "vis")]
+        gd.draw(&g);
     }
     g.points()
         .filter_map(|p| {
@@ -65,6 +88,24 @@ fn part1(data: &Parsed) -> i64 {
 
 fn part2(data: &Parsed) -> i64 {
     let mut g = vec![vec!['X'; 2 * data.0[0].len()]; data.0.len()];
+    #[cfg(feature = "vis")]
+    let mut gd = aoc::make_bitmap_text_grid_drawer(
+        |x| {
+            let c = if x == '@' {
+                [0xff, 0xff, 0xff]
+            } else if x == '#' {
+                [0xff, 0, 0]
+            } else if x == 'O' || x == '[' || x == ']' {
+                [0, 0xff, 0]
+            } else {
+                [0, 0, 0]
+            };
+            (x, c)
+        },
+        "vis/15/day15a",
+    );
+    #[cfg(feature = "vis")]
+    gd.draw(&g);
     for p in data.0.points() {
         let p1 = [2 * p[0], p[1]];
         let p2 = [2 * p[0] + 1, p[1]];
@@ -186,6 +227,8 @@ fn part2(data: &Parsed) -> i64 {
             }
             _ => panic!(),
         }
+        #[cfg(feature = "vis")]
+        gd.draw(&g);
     }
     g.points()
         .filter_map(|p| {

@@ -26,22 +26,15 @@ fn dijkstra_grid(
 ) -> (i64, aoc::FxHashSet<aoc::Point>) {
     let mut frontier = BinaryHeap::new();
     let mut visited: aoc::FxHashSet<(aoc::Point, aoc::Point)> = aoc::FxHashSet::default();
+    let mut came_from: aoc::FxHashMap<
+        (aoc::Point, aoc::Point),
+        aoc::FxHashMap<(aoc::Point, aoc::Point), i64>,
+    > = aoc::FxHashMap::default();
     let mut paths = aoc::FxHashSet::default();
     paths.insert(start);
-    frontier.push(Reverse((0, start, aoc::EAST, vec![])));
+    frontier.push(Reverse((0, start, aoc::EAST)));
     let mut best = None;
-    #[cfg(feature = "vis")]
-    let mut gd = aoc::make_bitmap_text_grid_drawer(
-        |c| match c {
-            '#' => (c, [0xff, 0, 0]),
-            'S' | 'E' => (c, [0xff, 0xff, 0]),
-            '>' | '<' | '^' | 'v' => (c, [0, 0xff, 0]),
-            'O' => (c, [0xff, 0xff, 0xff]),
-            _ => (c, [0, 0, 0]),
-        },
-        "vis/16/day16",
-    );
-    while let Some(Reverse((score, current, dir, path))) = frontier.pop() {
+    while let Some(Reverse((score, current, dir))) = frontier.pop() {
         if let Some(b) = best {
             if score > b {
                 break;
@@ -51,20 +44,20 @@ fn dijkstra_grid(
             continue;
         }
         if current == goal {
-            #[cfg(feature = "vis")]
-            let mut g = grid.clone();
-            #[cfg(feature = "vis")]
-            for p in &paths {
-                g.set_value(*p, 'O');
-            }
-            #[cfg(feature = "vis")]
-            for (p, d) in &path {
-                g.set_value(*p, dir_to_char(*d));
-                gd.draw(&g);
-            }
             best = Some(score);
-            for (p, _d) in path {
-                paths.insert(p);
+            let curr = (goal, dir);
+            let mut todo = vec![curr];
+            paths.insert(goal);
+            while let Some(curr) = todo.pop() {
+                if let Some(cf) = came_from.get(&curr) {
+                    let b = cf.values().min().unwrap();
+                    for ((p, d), c) in cf {
+                        if c == b {
+                            todo.push((*p, *d));
+                            paths.insert(*p);
+                        }
+                    }
+                }
             }
             if all {
                 continue;
@@ -91,22 +84,17 @@ fn dijkstra_grid(
             if let Some(value) = grid.get_value(nb) {
                 if value != '#' {
                     let new_score = score + cost;
-                    let mut p = path.clone();
-                    p.push((nb, dir));
-                    frontier.push(Reverse((new_score, nb, ndir, p)));
+                    let e = came_from.entry((nb, ndir)).or_default();
+                    let ee = e.entry((current, dir)).or_default();
+                    if cost <= *ee {
+                        *ee = cost;
+                    }
+                    frontier.push(Reverse((new_score, nb, ndir)));
                 }
             }
         }
         visited.insert((current, dir));
     }
-    #[cfg(feature = "vis")]
-    let mut g = grid.clone();
-    #[cfg(feature = "vis")]
-    for p in &paths {
-        g.set_value(*p, 'O');
-    }
-    #[cfg(feature = "vis")]
-    gd.draw(&g);
     (best.unwrap(), paths)
 }
 

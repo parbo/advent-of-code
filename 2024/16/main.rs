@@ -2,21 +2,7 @@ use std::{cmp::Reverse, collections::BinaryHeap, iter::*};
 
 use aoc::Grid;
 
-#[cfg(feature = "vis")]
-use aoc::GridDrawer;
-
 type Parsed = Vec<Vec<char>>;
-
-#[cfg(feature = "vis")]
-fn dir_to_char(d: aoc::Point) -> char {
-    match d {
-        aoc::EAST => '>',
-        aoc::WEST => '<',
-        aoc::NORTH => '^',
-        aoc::SOUTH => 'v',
-        _ => '.',
-    }
-}
 
 fn dijkstra_grid(
     grid: &Parsed,

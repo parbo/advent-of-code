@@ -47,6 +47,9 @@ fn dijkstra_grid(
                 break;
             }
         }
+        if !all && visited.contains(&(current, dir)) {
+            continue;
+        }
         if current == goal {
             #[cfg(feature = "vis")]
             let mut g = grid.clone();

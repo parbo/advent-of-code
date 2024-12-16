@@ -11,3 +11,6 @@ regex = "1.11.1"
 [[bin]]
 name = 'day16'
 path = 'main.rs'
+
+[features]
+vis = []

@@ -1,10 +1,24 @@
 use std::{cmp::Reverse, collections::BinaryHeap, iter::*};
 
-use aoc::{Grid, GridDrawer};
+use aoc::Grid;
+
+#[cfg(feature = "vis")]
+use aoc::GridDrawer;
 
 type Parsed = Vec<Vec<char>>;
 
-pub fn dijkstra_grid(
+#[cfg(feature = "vis")]
+fn dir_to_char(d: aoc::Point) -> char {
+    match d {
+        aoc::EAST => '>',
+        aoc::WEST => '<',
+        aoc::NORTH => '^',
+        aoc::SOUTH => 'v',
+        _ => '.',
+    }
+}
+
+fn dijkstra_grid(
     grid: &Parsed,
     start: aoc::Point,
     goal: aoc::Point,
@@ -16,7 +30,17 @@ pub fn dijkstra_grid(
     paths.insert(start);
     frontier.push(Reverse((0, start, aoc::EAST, vec![])));
     let mut best = None;
-    let mut gd = aoc::PrintGridDrawer::new(|c| c);
+    #[cfg(feature = "vis")]
+    let mut gd = aoc::make_bitmap_text_grid_drawer(
+        |c| match c {
+            '#' => (c, [0xff, 0, 0]),
+            'S' | 'E' => (c, [0xff, 0xff, 0]),
+            '>' | '<' | '^' | 'v' => (c, [0, 0xff, 0]),
+            'O' => (c, [0xff, 0xff, 0xff]),
+            _ => (c, [0, 0, 0]),
+        },
+        "vis/16/day16",
+    );
     while let Some(Reverse((score, current, dir, path))) = frontier.pop() {
         if let Some(b) = best {
             if score > b {
@@ -24,14 +48,21 @@ pub fn dijkstra_grid(
             }
         }
         if current == goal {
-            dbg!(best, score);
-            best = Some(score);
+            #[cfg(feature = "vis")]
             let mut g = grid.clone();
-            for p in path {
-                g.set_value(p, 'O');
+            #[cfg(feature = "vis")]
+            for p in &paths {
+                g.set_value(*p, 'O');
+            }
+            #[cfg(feature = "vis")]
+            for (p, d) in &path {
+                g.set_value(*p, dir_to_char(*d));
+                gd.draw(&g);
+            }
+            best = Some(score);
+            for (p, _d) in path {
                 paths.insert(p);
             }
-            gd.draw(&g);
             if all {
                 continue;
             } else {
@@ -58,13 +89,21 @@ pub fn dijkstra_grid(
                 if value != '#' {
                     let new_score = score + cost;
                     let mut p = path.clone();
-                    p.push(nb);
+                    p.push((nb, dir));
                     frontier.push(Reverse((new_score, nb, ndir, p)));
                 }
             }
         }
         visited.insert((current, dir));
     }
+    #[cfg(feature = "vis")]
+    let mut g = grid.clone();
+    #[cfg(feature = "vis")]
+    for p in &paths {
+        g.set_value(*p, 'O');
+    }
+    #[cfg(feature = "vis")]
+    gd.draw(&g);
     (best.unwrap(), paths)
 }
 

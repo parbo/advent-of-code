@@ -75,13 +75,16 @@ fn part2(data: &Parsed) -> i64 {
         let aa = a >> (ix * 3);
         let x = ((((aa & 7) ^ 1) ^ (aa >> 5)) ^ 4) & 7;
         if x == data.3[ix] {
-            println!("{:#064b}, {:08b}, {}, {}, {}", a, aa, x, ix, data.3[ix]);
+            // println!("{:#064b}, {:08b}, {}, {}, {}", a, aa, x, ix, data.3[ix]);
             if ix + 1 == data.3.len() {
                 res = Some(a);
                 break;
             }
-            for i in 0..=7 {
-                let a = a | i << (8 + 3 * ix);
+            for i in 0..=32 {
+                let aaa = (aa & 0x7) | (i << 3);
+                let m = 2i64.pow(3 * (ix + 1) as u32) - 1;
+                println!("{:#064b}, {:#064b}, {:#08b}", a, m, aaa);
+                let a = (a & m) | (aaa << (3 * ix));
                 println!("{:#064b}", a);
                 if seen.insert((a, ix + 1)) {
                     todo.push_back((a, ix + 1));

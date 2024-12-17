@@ -1,4 +1,4 @@
-use std::iter::*;
+use std::{collections::VecDeque, iter::*};
 
 type Parsed = (i64, i64, i64, Vec<i64>);
 
@@ -67,22 +67,30 @@ fn part1(data: &Parsed) -> i64 {
 }
 
 fn part2(data: &Parsed) -> i64 {
-    'outer: for i in 281474976710656..i64::MAX {
-        if i % 100000000 == 0 {
-            dbg!(i);
-        }
-        let mut a = i;
-        for v in &data.3 {
-            let x = ((((a & 7) ^ 1) ^ (a >> 5)) ^ 4) & 7;
-            a /= 8;
-            if x != *v || a == 0 {
-                continue 'outer;
+    let mut todo: VecDeque<(i64, usize)> = (0..=255).map(|x| (x, 0)).collect();
+    let mut seen = aoc::FxHashSet::default();
+    let mut res = None;
+    let rev: Vec<_> = data.3.iter().copied().rev().collect();
+    while let Some((a, ix)) = todo.pop_front() {
+        let aa = a >> (ix * 3);
+        let x = ((((aa & 7) ^ 1) ^ (aa >> 5)) ^ 4) & 7;
+        if x == data.3[ix] {
+            println!("{:#064b}, {:08b}, {}, {}, {}", a, aa, x, ix, data.3[ix]);
+            if ix + 1 == data.3.len() {
+                res = Some(a);
+                break;
+            }
+            for i in 0..=7 {
+                let a = a | i << (8 + 3 * ix);
+                println!("{:#064b}", a);
+                if seen.insert((a, ix + 1)) {
+                    todo.push_back((a, ix + 1));
+                }
             }
         }
-        assert!(a == 0);
-        return i;
     }
-    0
+    println!("{:?}, {:?}", data.3, run(data, res));
+    res.unwrap()
 }
 
 fn parse(lines: &[String]) -> Parsed {

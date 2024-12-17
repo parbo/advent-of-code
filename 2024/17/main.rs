@@ -94,7 +94,7 @@ fn part2(data: &Parsed) -> i64 {
                 res.push(a);
             }
             let m = 2i64.pow((3 * ix + 8) as u32) - 1;
-            for i in 0..=255 {
+            for i in 0..=32 {
                 let aaa = i << (8 + (3 * ix));
                 let a = (a & m) | aaa;
                 if seen.insert((a, ix + 1)) {

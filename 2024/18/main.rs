@@ -26,27 +26,33 @@ fn part1(data: &Parsed) -> i64 {
 fn part2(data: &Parsed) -> i64 {
     #[cfg(feature = "vis")]
     let mut gd = aoc::make_bitmap_text_grid_drawer(
-        |x| {
-            if x == '#' {
-                (x, [0xff, 0xff, 0xff])
-            } else {
-                (x, [0, 0xff, 0])
-            }
+        |x| match x {
+            '#' => (x, [0xff, 0xff, 0xff]),
+            '*' => (x, [0xff, 0x0, 0]),
+            _ => (x, [0, 0x5f, 0]),
         },
         "vis/18/day18",
     );
-    for i in 0..data.len() {
+    let mut lastp = vec![];
+    for i in 1..=data.len() {
+        if !lastp.is_empty() && !lastp.contains(&data[i - 1]) {
+            // safe
+            continue;
+        }
         let s = solve(data, i, 70, 70);
-        #[cfg(feature = "vis")]
         if let Some((_, path)) = &s {
-            let mut g = vec![vec!['.'; 71]; 71];
-            for p in data.iter().take(i) {
-                g.set_value(*p, '#');
+            lastp = path.clone();
+            #[cfg(feature = "vis")]
+            {
+                let mut g = vec![vec!['.'; 71]; 71];
+                for p in data.iter().take(i) {
+                    g.set_value(*p, '#');
+                }
+                for p in path {
+                    g.set_value(*p, '*');
+                }
+                gd.draw(&g);
             }
-            for p in path {
-                g.set_value(*p, '*');
-            }
-            gd.draw(&g);
         }
         if s.is_none() {
             println!("{},{}", data[i - 1][0], data[i - 1][1]);

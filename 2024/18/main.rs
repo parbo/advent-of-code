@@ -35,7 +35,7 @@ fn part2(data: &Parsed) -> i64 {
     );
     let mut lastp = vec![];
     for i in 1..=data.len() {
-        if !lastp.is_empty() && !lastp.contains(&data[i - 1]) {
+        if !cfg!(feature = "vis") && !lastp.is_empty() && !lastp.contains(&data[i - 1]) {
             // safe
             continue;
         }

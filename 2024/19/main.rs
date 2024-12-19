@@ -2,8 +2,8 @@ use std::iter::*;
 
 type Parsed = (Vec<String>, Vec<String>);
 
-fn solve(design: String, towels: &[String], seen: &mut aoc::FxHashMap<String, i64>) -> i64 {
-    if let Some(x) = seen.get(&design) {
+fn solve<'a>(design: &'a str, towels: &[String], seen: &mut aoc::FxHashMap<&'a str, i64>) -> i64 {
+    if let Some(x) = seen.get(design) {
         return *x;
     }
     let mut num = 0;
@@ -11,7 +11,7 @@ fn solve(design: String, towels: &[String], seen: &mut aoc::FxHashMap<String, i6
         if design == *ss {
             num += 1;
         } else if design.starts_with(ss) {
-            num += solve(design[ss.len()..].to_string(), towels, seen);
+            num += solve(&design[ss.len()..], towels, seen);
         }
     }
     seen.insert(design, num);
@@ -22,7 +22,7 @@ fn part1(data: &Parsed) -> i64 {
     let mut seen = aoc::FxHashMap::default();
     data.1
         .iter()
-        .filter(|x| solve((*x).clone(), &data.0, &mut seen) > 0)
+        .filter(|x| solve(x, &data.0, &mut seen) > 0)
         .count() as i64
 }
 
@@ -30,7 +30,7 @@ fn part2(data: &Parsed) -> i64 {
     let mut seen = aoc::FxHashMap::default();
     data.1
         .iter()
-        .map(|x| solve(x.clone(), &data.0, &mut seen))
+        .map(|x| solve(x, &data.0, &mut seen))
         .sum::<i64>()
 }
 

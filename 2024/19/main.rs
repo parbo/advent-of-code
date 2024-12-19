@@ -19,23 +19,19 @@ fn solve(design: String, towels: &[String], seen: &mut aoc::FxHashMap<String, i6
 }
 
 fn part1(data: &Parsed) -> i64 {
-    let mut possible = 0;
     let mut seen = aoc::FxHashMap::default();
-    for design in &data.1 {
-        if solve(design.clone(), &data.0, &mut seen) > 0 {
-            possible += 1;
-        }
-    }
-    possible
+    data.1
+        .iter()
+        .filter(|x| solve((*x).clone(), &data.0, &mut seen) > 0)
+        .count() as i64
 }
 
 fn part2(data: &Parsed) -> i64 {
-    let mut possible = 0;
     let mut seen = aoc::FxHashMap::default();
-    for design in &data.1 {
-        possible += solve(design.clone(), &data.0, &mut seen);
-    }
-    possible
+    data.1
+        .iter()
+        .map(|x| solve(x.clone(), &data.0, &mut seen))
+        .sum::<i64>()
 }
 
 fn parse(lines: &[String]) -> Parsed {

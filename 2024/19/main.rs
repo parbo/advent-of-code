@@ -1,4 +1,3 @@
-use rayon::prelude::*;
 use std::iter::*;
 
 type Parsed = (Vec<String>, Vec<String>);
@@ -21,18 +20,10 @@ fn solve(design: String, towels: &[String], seen: &mut aoc::FxHashMap<String, i6
 
 fn part1(data: &Parsed) -> i64 {
     let mut possible = 0;
-    'outer: for design in &data.1 {
-        let mut todo: Vec<_> = data.0.iter().map(|x| (x.clone(), 0)).collect();
-        while let Some((s, pos)) = todo.pop() {
-            if pos == design.len() {
-                possible += 1;
-                continue 'outer;
-            }
-            if design[pos..].starts_with(&s) {
-                for ss in &data.0 {
-                    todo.push((ss.clone(), pos + s.len()));
-                }
-            }
+    let mut seen = aoc::FxHashMap::default();
+    for design in &data.1 {
+        if solve(design.clone(), &data.0, &mut seen) > 0 {
+            possible += 1;
         }
     }
     possible

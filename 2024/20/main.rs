@@ -42,11 +42,30 @@ fn solve(data: &Parsed, threshold: i64, cheats: i64) -> i64 {
         aoc::dijkstra_grid(data, |_p, c| *c != '#', |_p1, _c1, _p2, _c2| Some(1), s, e)
             .unwrap()
             .0;
+    let mut paths: aoc::FxHashMap<(aoc::Point, i64), Option<i64>> = data
+        .points()
+        .filter(|p| data.get_value(*p) == Some('.'))
+        .map(|p| {
+            (
+                (p, 0),
+                aoc::dijkstra_grid(data, |_p, c| *c != '#', |_p1, _c1, _p2, _c2| Some(1), p, e)
+                    .map(|r| r.0),
+            )
+        })
+        .collect();
+    dbg!(&paths);
     let mut frontier = BinaryHeap::new();
     let mut visited = aoc::FxHashSet::default();
     // let mut came_from = aoc::FxHashMap::default();
     frontier.push(Reverse((0, s, cheats, vec![])));
     let mut num = 0;
+    // let mut gd = aoc::make_bitmap_text_grid_drawer(
+    //     |c| match c {
+    //         '*' => (c, [0x20, 0xff, 0x20]),
+    //         _ => (c, [0xff, 0xff, 0xff]),
+    //     },
+    //     "vis/20/day20",
+    // );
     while let Some(Reverse((score, current, rem, path))) = frontier.pop() {
         if visited.contains(&(current, rem, path.clone())) {
             continue;
@@ -54,23 +73,21 @@ fn solve(data: &Parsed, threshold: i64, cheats: i64) -> i64 {
         if uncheated_res - score < threshold {
             continue;
         }
-        if num >= 31 {
-            println!(
-                "{:?}, {} ,{}, {}, {:?}",
-                current,
-                rem,
-                path.len(),
-                frontier.len(),
-                path,
-            );
-            let mut gd = PrintGridDrawer::new(|c| c);
-            let mut g = data.clone();
-            for p in &path {
-                g.set_value(*p, '*');
-            }
-            gd.draw(&g);
-            println!();
-        }
+        // if num >= 31 {
+        //     println!(
+        //         "{:?}, {} ,{}, {}, {:?}",
+        //         current,
+        //         rem,
+        //         path.len(),
+        //         frontier.len(),
+        //         path,
+        //     );
+        //     let mut g = data.clone();
+        //     for p in &path {
+        //         g.set_value(*p, '*');
+        //     }
+        //     gd.draw(&g);
+        // }
         if current == e {
             // let mut path = vec![e];
             // let mut curr = (e, rem);
@@ -78,13 +95,18 @@ fn solve(data: &Parsed, threshold: i64, cheats: i64) -> i64 {
             //     curr = came_from[&curr];
             //     path.push(curr.0)
             // }
-            let mut gd = PrintGridDrawer::new(|c| c);
             let mut g = data.clone();
             for p in &path {
                 g.set_value(*p, '*');
             }
-            gd.draw(&g);
+            //            gd.draw(&g);
             num += 1;
+            continue;
+        }
+        if let Some(Some(x)) = paths.get(&(current, rem)) {
+            if uncheated_res - (score + *x) >= threshold {
+                num += 1;
+            }
             continue;
         }
         for (nb, r) in get_neighbors(data, current, rem) {

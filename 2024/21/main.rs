@@ -65,11 +65,8 @@ fn find_kp_moves(wanted_code: &[char]) -> Vec<Vec<char>> {
             continue;
         }
         if code == wanted_code {
-            // if result.contains(&presses) {
-            //     continue;
-            // }
             if let Some(b) = best {
-                if score > b + 0 {
+                if score > b {
                     break;
                 }
             } else {
@@ -81,13 +78,6 @@ fn find_kp_moves(wanted_code: &[char]) -> Vec<Vec<char>> {
             // break;
         }
         for c in ['A', '>', '^', '<', 'v'] {
-            match (c, presses.last()) {
-                ('>', Some('<')) => continue,
-                ('<', Some('>')) => continue,
-                ('^', Some('v')) => continue,
-                ('v', Some('^')) => continue,
-                _ => {}
-            }
             let mut new_pos = pos;
             let kpc = match c {
                 'A' => Some(keypad(pos).unwrap()),
@@ -114,11 +104,10 @@ fn find_kp_moves(wanted_code: &[char]) -> Vec<Vec<char>> {
             }
         }
     }
-    dbg!(result.len());
     result
 }
 
-fn find_dir_moves(pos: aoc::Point, wanted_code: &[char], order: &[char]) -> Vec<char> {
+fn find_dir_moves(pos: aoc::Point, wanted_code: &[char]) -> Vec<char> {
     let mut todo = BinaryHeap::new();
     todo.push(Reverse((
         (0, 0),
@@ -127,50 +116,20 @@ fn find_dir_moves(pos: aoc::Point, wanted_code: &[char], order: &[char]) -> Vec<
         Vec::<char>::new(),
     )));
     let mut seen = aoc::FxHashSet::default();
-    // let mut result: Vec<Vec<char>> = vec![];
-    // let mut best = None;
-    while let Some(Reverse((score, pos, presses, code))) = todo.pop() {
+    while let Some(Reverse((_score, pos, presses, code))) = todo.pop() {
         if !code.is_empty() && !wanted_code.starts_with(&code) {
             continue;
         }
-        // println!(
-        //     "{}, {:?}, {:?}, {:?}",
-        //     score,
-        //     wanted_code.to_vec().iter().join(""),
-        //     code.to_vec().iter().join(""),
-        //     presses.to_vec().iter().join(""),
-        // );
         if code == wanted_code {
-            // if result.contains(&presses) {
-            //     continue;
-            // }
-            // println!("{:?}", presses.to_vec().iter().join(""));
-            // if let Some(b) = best {
-            //     if score > b {
-            //         break;
-            //     }
-            // }
-            // result.push(presses);
-            // best = Some(score);
-            // continue;
-            // break;
             return presses;
         }
-        for c in order {
-            // match (c, presses.last()) {
-            //     ('>', Some('<')) => continue,
-            //     ('<', Some('>')) => continue,
-            //     ('^', Some('v')) => continue,
-            //     ('v', Some('^')) => continue,
-            //     _ => {}
-            // }
+        for c in &['A', '>', '^', 'v', '<'] {
             let mut new_pos = pos;
             let kpc = match c {
                 'A' => Some(dirpad(pos).unwrap()),
                 _ => {
                     new_pos = aoc::point_add(pos, to_dir(*c));
                     if dirpad(new_pos).is_none() {
-                        // println!("{} not possible at {:?}", c, pos);
                         continue;
                     }
                     None
@@ -186,7 +145,6 @@ fn find_dir_moves(pos: aoc::Point, wanted_code: &[char], order: &[char]) -> Vec<
                 .windows(2)
                 .filter(|x| x[0] != 'A' && x[1] != 'A' && x[0] != x[1])
                 .count();
-            // println!("{:?}, {}", new_presses.to_vec().iter().join(""), turns);
             if seen.insert((new_pos, new_presses.clone(), new_code.clone())) {
                 todo.push(Reverse((
                     (turns, new_presses.len()),
@@ -197,8 +155,6 @@ fn find_dir_moves(pos: aoc::Point, wanted_code: &[char], order: &[char]) -> Vec<
             }
         }
     }
-    // dbg!(result.len());
-    // result
     panic!()
 }
 
@@ -215,20 +171,14 @@ fn get_sequences(pp: &[char]) -> Vec<Vec<char>> {
 }
 
 fn find_dir_move_and_back(s: &[char]) -> Vec<char> {
-    let mut m1 = find_dir_moves([2, 0], s, &['A', '>', '^', 'v', '<']);
-    let m2 = find_dir_moves(
-        dirpad_pos(*s.last().unwrap()).unwrap(),
-        &['A'],
-        &['A', '>', '^', 'v', '<'],
-    );
+    let mut m1 = find_dir_moves([2, 0], s);
+    let m2 = find_dir_moves(dirpad_pos(*s.last().unwrap()).unwrap(), &['A']);
     m1.extend(m2);
-    // println!("s: {:?} m1: {:?}", s.iter().join(""), m1.iter().join(""));
     m1
 }
 
 #[memoize]
 fn solve_sequence(seq: Vec<char>, depth: i64) -> Vec<char> {
-    // println!("{:?}, {}", seq.iter().join(""), depth);
     let mut ss = vec![];
     if seq.is_empty() {
         ss.push('A');
@@ -246,17 +196,12 @@ fn solve_sequence(seq: Vec<char>, depth: i64) -> Vec<char> {
 }
 
 fn find_presses(wanted_code: &[char], num: i64) -> Vec<char> {
-    // println!("code: {:?}", wanted_code.to_vec().iter().join(""));
     let p = find_kp_moves(wanted_code);
     let mut ss = vec![];
-    // for pp in &p {
-    //     println!("kp: {:?}", pp.iter().join(""));
-    // }
     for pp in p {
         let seqs = get_sequences(&pp);
         let mut ssss = vec![];
         for s in &seqs {
-            // println!("seq: {:?}", s.iter().join(""));
             ssss.extend(solve_sequence(s.clone(), num));
         }
         println!("ssss: {:?}", ssss.iter().join(""));

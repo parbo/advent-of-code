@@ -158,7 +158,8 @@ fn find_dir_moves(pos: aoc::Point, wanted_code: &[char]) -> Vec<char> {
     panic!()
 }
 
-fn get_sequences(pp: &[char]) -> Vec<Vec<char>> {
+#[memoize]
+fn get_sequences(pp: Vec<char>) -> Vec<Vec<char>> {
     let mut pos = 0;
     let mut seqs = vec![];
     while pos < pp.len() {
@@ -170,8 +171,9 @@ fn get_sequences(pp: &[char]) -> Vec<Vec<char>> {
     seqs
 }
 
-fn find_dir_move_and_back(s: &[char]) -> Vec<char> {
-    let mut m1 = find_dir_moves([2, 0], s);
+#[memoize]
+fn find_dir_move_and_back(s: Vec<char>) -> Vec<char> {
+    let mut m1 = find_dir_moves([2, 0], &s);
     let m2 = find_dir_moves(dirpad_pos(*s.last().unwrap()).unwrap(), &['A']);
     m1.extend(m2);
     m1
@@ -179,12 +181,12 @@ fn find_dir_move_and_back(s: &[char]) -> Vec<char> {
 
 #[memoize]
 fn solve_sequence(seq: Vec<char>, depth: i64) -> Vec<char> {
-    let mut ss = vec![];
+    let mut ss = Vec::with_capacity(10000000);
     if seq.is_empty() {
         ss.push('A');
     } else if depth > 0 {
-        let d = find_dir_move_and_back(&seq);
-        let seqs = get_sequences(&d);
+        let d = find_dir_move_and_back(seq.clone());
+        let seqs = get_sequences(d);
         for s in &seqs {
             ss.extend(solve_sequence(s.clone(), depth - 1));
         }
@@ -192,6 +194,7 @@ fn solve_sequence(seq: Vec<char>, depth: i64) -> Vec<char> {
         ss = seq.to_vec();
         ss.push('A');
     }
+    dbg!(depth, seq.len(), ss.len());
     ss
 }
 
@@ -199,7 +202,7 @@ fn find_presses(wanted_code: &[char], num: i64) -> Vec<char> {
     let p = find_kp_moves(wanted_code);
     let mut ss = vec![];
     for pp in p {
-        let seqs = get_sequences(&pp);
+        let seqs = get_sequences(pp);
         let mut ssss = vec![];
         for s in &seqs {
             ssss.extend(solve_sequence(s.clone(), num));

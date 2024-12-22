@@ -72,7 +72,7 @@ fn find_kp_moves(wanted_code: &[char]) -> Vec<Vec<char>> {
             } else {
                 best = Some(score);
             }
-            println!("{:?}", presses.to_vec().iter().join(""));
+            // println!("{:?}", presses.to_vec().iter().join(""));
             result.push(presses);
             continue;
             // break;
@@ -180,37 +180,49 @@ fn find_dir_move_and_back(s: Vec<char>) -> Vec<char> {
 }
 
 #[memoize]
-fn solve_sequence(seq: Vec<char>, depth: i64) -> Vec<char> {
-    let mut ss = Vec::with_capacity(10000000);
+fn solve_sequence(seq: Vec<char>, depth: i64) -> aoc::FxHashMap<Vec<char>, i64> {
+    let mut ss = aoc::FxHashMap::default();
     if seq.is_empty() {
-        ss.push('A');
+        *ss.entry(vec!['A']).or_default() += 1;
     } else if depth > 0 {
         let d = find_dir_move_and_back(seq.clone());
         let seqs = get_sequences(d);
         for s in &seqs {
-            ss.extend(solve_sequence(s.clone(), depth - 1));
+            let sss = solve_sequence(s.clone(), depth - 1);
+            for (k, v) in sss {
+                *ss.entry(k).or_default() += v;
+            }
         }
     } else {
-        ss = seq.to_vec();
-        ss.push('A');
+        let mut sss = seq.to_vec();
+        sss.push('A');
+        *ss.entry(sss).or_default() += 1;
     }
-    dbg!(depth, seq.len(), ss.len());
+    // dbg!(depth, seq.len(), ss.len());
     ss
 }
 
-fn find_presses(wanted_code: &[char], num: i64) -> Vec<char> {
+fn find_presses(wanted_code: &[char], num: i64) -> i64 {
     let p = find_kp_moves(wanted_code);
-    let mut ss = vec![];
+    let mut ss: Vec<i64> = vec![];
     for pp in p {
+        // println!("kp: {:?}", pp.iter().join(""));
         let seqs = get_sequences(pp);
-        let mut ssss = vec![];
+        let mut ssss: aoc::FxHashMap<Vec<char>, i64> = aoc::FxHashMap::default();
         for s in &seqs {
-            ssss.extend(solve_sequence(s.clone(), num));
+            let sss = solve_sequence(s.clone(), num);
+            for (k, v) in sss {
+                *ssss.entry(k).or_default() += v;
+            }
         }
-        println!("ssss: {:?}", ssss.iter().join(""));
-        ss.push(ssss);
+        // for (x, v) in &ssss {
+        //     println!("x: {:?} {}", x.iter().join(""), v);
+        // }
+        let tot = ssss.iter().map(|(k, v)| k.len() as i64 * v).sum();
+        // println!("tot: {}", tot);
+        ss.push(tot);
     }
-    ss.iter().min_by_key(|x| x.len()).unwrap().clone()
+    *ss.iter().min().unwrap()
 }
 
 fn part1(data: &Parsed) -> i64 {
@@ -225,8 +237,8 @@ fn part1(data: &Parsed) -> i64 {
             .parse::<i64>()
             .unwrap();
         let p = find_presses(wanted_code, 2);
-        dbg!(p.len(), num);
-        complexity += p.len() as i64 * num;
+        dbg!(p, num);
+        complexity += p * num;
     }
     complexity
 }
@@ -243,8 +255,8 @@ fn part2(data: &Parsed) -> i64 {
             .parse::<i64>()
             .unwrap();
         let p = find_presses(wanted_code, 25);
-        dbg!(p.len(), num);
-        complexity += p.len() as i64 * num;
+        dbg!(p, num);
+        complexity += p * num;
     }
     complexity
 }

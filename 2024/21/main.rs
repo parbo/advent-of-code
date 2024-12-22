@@ -1,4 +1,3 @@
-use std::collections::BTreeSet;
 use std::{cmp::Reverse, collections::BinaryHeap};
 
 use aoc::memoize;
@@ -72,105 +71,39 @@ fn to_dir(c: char) -> aoc::Point {
     }
 }
 
-fn find_kp_moves(wanted_code: &[char], pos: aoc::Point, depth: i64) -> Vec<(Vec<char>, i64)> {
+#[memoize]
+fn find_kp_moves(start: aoc::Point, goal: aoc::Point, depth: i64) -> Vec<(Vec<char>, i64)> {
     let mut todo = BinaryHeap::new();
-    todo.push(Reverse((
-        0,
-        wanted_code.len() as i64,
-        0,
-        BTreeSet::new(),
-        pos,
-        Vec::<char>::new(),
-        Vec::<char>::new(),
-    )));
+    todo.push(Reverse((0, start, Vec::<char>::new())));
     let mut seen = aoc::FxHashSet::default();
     let mut result: Vec<(Vec<char>, i64)> = vec![];
     let mut best = None;
-    while let Some(Reverse((_, score, 0, vis, pos, presses, code))) = todo.pop() {
-        if !code.is_empty() && !wanted_code.starts_with(&code) {
-            continue;
-        }
-        println!(
-            "{:?} {:?} -> {}",
-            presses.iter().join(""),
-            code.iter().join(""),
-            score
-        );
-        if code == wanted_code {
-            println!("{:?} -> {}", presses.iter().join(""), score);
+    while let Some(Reverse((score, pos, presses))) = todo.pop() {
+        // println!("{:?} -> {}", presses.iter().join(""), score);
+        if pos == goal {
+            // println!("{:?} -> {}", presses.iter().join(""), score);
             if let Some(b) = best {
                 if score > b {
-                    // + depth.pow(3) {
-                    // continue;
                     break;
                 }
             } else {
                 best = Some(score);
             }
-            println!("{}, {:?}", result.len(), presses.to_vec().iter().join(""));
+            // println!("{}, {:?}", result.len(), presses.to_vec().iter().join(""));
             result.push((presses, score));
             continue;
-            // break;
         }
-        for c in ['A', '>', '^', '<', 'v'] {
-            match (c, presses.last()) {
-                ('>', Some('<')) => continue,
-                ('<', Some('>')) => continue,
-                ('^', Some('v')) => continue,
-                ('v', Some('^')) => continue,
-                _ => {}
-            }
-            let mut new_pos = pos;
-            let kpc = match c {
-                'A' => Some(keypad(pos).unwrap()),
-                _ => {
-                    new_pos = aoc::point_add(pos, to_dir(c));
-                    if keypad(new_pos).is_none() {
-                        continue;
-                    }
-                    None
-                }
-            };
-            let mut new_code = code.clone();
-            if let Some(c) = kpc {
-                new_code.push(c);
+        for c in ['>', '^', '<', 'v'] {
+            let new_pos = aoc::point_add(pos, to_dir(c));
+            if keypad(new_pos).is_none() {
+                continue;
             }
             let mut new_presses = presses.clone();
             new_presses.push(c);
-            let turns = new_presses
-                .windows(2)
-                .filter(|x| x[0] != 'A' && x[1] != 'A' && x[0] != x[1])
-                .count() as i64;
-            let mut x = presses.clone();
-            if !x.ends_with(&['A']) {
-                x.push('A');
-            }
-            let seqs = get_sequences(x);
-            let mut ssss: aoc::FxHashMap<Vec<char>, i64> = aoc::FxHashMap::default();
-            for s in &seqs {
-                let sss = solve_sequence(s.clone(), depth);
-                for (k, v) in sss {
-                    *ssss.entry(k).or_default() += v;
-                }
-            }
-            let tot: i64 = ssss.iter().map(|(k, v)| k.len() as i64 * v).sum();
-            let mut visited = vis.clone();
-            visited.insert(new_pos);
-            if seen.insert((
-                new_pos,
-                // visited.clone(),
-                new_presses.clone(),
-                new_code.clone(),
-            )) {
-                todo.push(Reverse((
-                    0, //new_presses.len() as i64,
-                    tot,
-                    (wanted_code.len() - new_code.len()) as i64,
-                    visited,
-                    new_pos,
-                    new_presses,
-                    new_code,
-                )));
+            let sss = solve_sequence(new_presses.clone(), depth);
+            let tot: i64 = sss.iter().map(|(k, v)| k.len() as i64 * v).sum();
+            if seen.insert((new_pos, new_presses.clone())) {
+                todo.push(Reverse((tot, new_pos, new_presses)));
             }
         }
     }
@@ -274,16 +207,25 @@ fn solve_sequence(seq: Vec<char>, depth: i64) -> aoc::FxHashMap<Vec<char>, i64> 
 
 fn find_presses(wanted_code: &[char], num: i64) -> i64 {
     let mut tot = 0;
-    dbg!(wanted_code);
-    dbg!(&wanted_code[0..=1]);
-    let p = find_kp_moves(&wanted_code[0..1], [2, 3], num);
-    dbg!(&p);
+    let p = find_kp_moves([2, 3], keypad_pos(wanted_code[0]).unwrap(), num);
     tot += p.iter().min_by_key(|x| x.1).unwrap().1;
-    let p = find_kp_moves(&wanted_code[1..2], keypad_pos(wanted_code[0]).unwrap(), num);
+    let p = find_kp_moves(
+        keypad_pos(wanted_code[0]).unwrap(),
+        keypad_pos(wanted_code[1]).unwrap(),
+        num,
+    );
     tot += p.iter().min_by_key(|x| x.1).unwrap().1;
-    let p = find_kp_moves(&wanted_code[2..3], keypad_pos(wanted_code[1]).unwrap(), num);
+    let p = find_kp_moves(
+        keypad_pos(wanted_code[1]).unwrap(),
+        keypad_pos(wanted_code[2]).unwrap(),
+        num,
+    );
     tot += p.iter().min_by_key(|x| x.1).unwrap().1;
-    let p = find_kp_moves(&wanted_code[3..], keypad_pos(wanted_code[2]).unwrap(), num);
+    let p = find_kp_moves(
+        keypad_pos(wanted_code[2]).unwrap(),
+        keypad_pos(wanted_code[3]).unwrap(),
+        num,
+    );
     tot += p.iter().min_by_key(|x| x.1).unwrap().1;
     tot
 }
@@ -303,7 +245,7 @@ fn part1(data: &Parsed) -> i64 {
         dbg!(p, num);
         complexity += p * num;
     }
-    complexity
+    dbg!(complexity)
 }
 
 fn part2(data: &Parsed) -> i64 {
@@ -321,7 +263,7 @@ fn part2(data: &Parsed) -> i64 {
         dbg!(p, num);
         complexity += p * num;
     }
-    complexity
+    dbg!(complexity)
 }
 
 fn parse(lines: &[String]) -> Parsed {
@@ -349,6 +291,6 @@ mod tests {
     #[test]
     fn test_part2() {
         // TODO: verify this
-        assert_eq!(part2(&parse(&example())), 175406229326698);
+        assert_eq!(part2(&parse(&example())), 175396398527088);
     }
 }

@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::{cmp::Reverse, collections::BinaryHeap};
 
 use aoc::memoize;
@@ -18,6 +19,23 @@ fn keypad(p: aoc::Point) -> Option<char> {
         [2, 2] => Some('3'),
         [1, 3] => Some('0'),
         [2, 3] => Some('A'),
+        _ => None,
+    }
+}
+
+fn keypad_pos(c: char) -> Option<aoc::Point> {
+    match c {
+        '7' => Some([0, 0]),
+        '8' => Some([1, 0]),
+        '9' => Some([2, 0]),
+        '4' => Some([0, 1]),
+        '5' => Some([1, 1]),
+        '6' => Some([2, 1]),
+        '1' => Some([0, 2]),
+        '2' => Some([1, 2]),
+        '3' => Some([2, 2]),
+        '0' => Some([1, 3]),
+        'A' => Some([2, 3]),
         _ => None,
     }
 }
@@ -54,30 +72,54 @@ fn to_dir(c: char) -> aoc::Point {
     }
 }
 
-fn find_kp_moves(wanted_code: &[char]) -> Vec<Vec<char>> {
+fn find_kp_moves(wanted_code: &[char], pos: aoc::Point, depth: i64) -> Vec<(Vec<char>, i64)> {
     let mut todo = BinaryHeap::new();
-    todo.push(Reverse((0, [2, 3], Vec::<char>::new(), Vec::<char>::new())));
+    todo.push(Reverse((
+        0,
+        wanted_code.len() as i64,
+        0,
+        BTreeSet::new(),
+        pos,
+        Vec::<char>::new(),
+        Vec::<char>::new(),
+    )));
     let mut seen = aoc::FxHashSet::default();
-    let mut result: Vec<Vec<char>> = vec![];
+    let mut result: Vec<(Vec<char>, i64)> = vec![];
     let mut best = None;
-    while let Some(Reverse((score, pos, presses, code))) = todo.pop() {
+    while let Some(Reverse((_, score, 0, vis, pos, presses, code))) = todo.pop() {
         if !code.is_empty() && !wanted_code.starts_with(&code) {
             continue;
         }
+        println!(
+            "{:?} {:?} -> {}",
+            presses.iter().join(""),
+            code.iter().join(""),
+            score
+        );
         if code == wanted_code {
+            println!("{:?} -> {}", presses.iter().join(""), score);
             if let Some(b) = best {
                 if score > b {
+                    // + depth.pow(3) {
+                    // continue;
                     break;
                 }
             } else {
                 best = Some(score);
             }
-            // println!("{:?}", presses.to_vec().iter().join(""));
-            result.push(presses);
+            println!("{}, {:?}", result.len(), presses.to_vec().iter().join(""));
+            result.push((presses, score));
             continue;
             // break;
         }
         for c in ['A', '>', '^', '<', 'v'] {
+            match (c, presses.last()) {
+                ('>', Some('<')) => continue,
+                ('<', Some('>')) => continue,
+                ('^', Some('v')) => continue,
+                ('v', Some('^')) => continue,
+                _ => {}
+            }
             let mut new_pos = pos;
             let kpc = match c {
                 'A' => Some(keypad(pos).unwrap()),
@@ -98,9 +140,37 @@ fn find_kp_moves(wanted_code: &[char]) -> Vec<Vec<char>> {
             let turns = new_presses
                 .windows(2)
                 .filter(|x| x[0] != 'A' && x[1] != 'A' && x[0] != x[1])
-                .count();
-            if seen.insert((new_pos, new_presses.clone(), new_code.clone())) {
-                todo.push(Reverse((turns, new_pos, new_presses, new_code)));
+                .count() as i64;
+            let mut x = presses.clone();
+            if !x.ends_with(&['A']) {
+                x.push('A');
+            }
+            let seqs = get_sequences(x);
+            let mut ssss: aoc::FxHashMap<Vec<char>, i64> = aoc::FxHashMap::default();
+            for s in &seqs {
+                let sss = solve_sequence(s.clone(), depth);
+                for (k, v) in sss {
+                    *ssss.entry(k).or_default() += v;
+                }
+            }
+            let tot: i64 = ssss.iter().map(|(k, v)| k.len() as i64 * v).sum();
+            let mut visited = vis.clone();
+            visited.insert(new_pos);
+            if seen.insert((
+                new_pos,
+                // visited.clone(),
+                new_presses.clone(),
+                new_code.clone(),
+            )) {
+                todo.push(Reverse((
+                    0, //new_presses.len() as i64,
+                    tot,
+                    (wanted_code.len() - new_code.len()) as i64,
+                    visited,
+                    new_pos,
+                    new_presses,
+                    new_code,
+                )));
             }
         }
     }
@@ -203,26 +273,19 @@ fn solve_sequence(seq: Vec<char>, depth: i64) -> aoc::FxHashMap<Vec<char>, i64> 
 }
 
 fn find_presses(wanted_code: &[char], num: i64) -> i64 {
-    let p = find_kp_moves(wanted_code);
-    let mut ss: Vec<i64> = vec![];
-    for pp in p {
-        // println!("kp: {:?}", pp.iter().join(""));
-        let seqs = get_sequences(pp);
-        let mut ssss: aoc::FxHashMap<Vec<char>, i64> = aoc::FxHashMap::default();
-        for s in &seqs {
-            let sss = solve_sequence(s.clone(), num);
-            for (k, v) in sss {
-                *ssss.entry(k).or_default() += v;
-            }
-        }
-        // for (x, v) in &ssss {
-        //     println!("x: {:?} {}", x.iter().join(""), v);
-        // }
-        let tot = ssss.iter().map(|(k, v)| k.len() as i64 * v).sum();
-        // println!("tot: {}", tot);
-        ss.push(tot);
-    }
-    *ss.iter().min().unwrap()
+    let mut tot = 0;
+    dbg!(wanted_code);
+    dbg!(&wanted_code[0..=1]);
+    let p = find_kp_moves(&wanted_code[0..1], [2, 3], num);
+    dbg!(&p);
+    tot += p.iter().min_by_key(|x| x.1).unwrap().1;
+    let p = find_kp_moves(&wanted_code[1..2], keypad_pos(wanted_code[0]).unwrap(), num);
+    tot += p.iter().min_by_key(|x| x.1).unwrap().1;
+    let p = find_kp_moves(&wanted_code[2..3], keypad_pos(wanted_code[1]).unwrap(), num);
+    tot += p.iter().min_by_key(|x| x.1).unwrap().1;
+    let p = find_kp_moves(&wanted_code[3..], keypad_pos(wanted_code[2]).unwrap(), num);
+    tot += p.iter().min_by_key(|x| x.1).unwrap().1;
+    tot
 }
 
 fn part1(data: &Parsed) -> i64 {
@@ -281,5 +344,11 @@ mod tests {
     #[test]
     fn test_part1() {
         assert_eq!(part1(&parse(&example())), 126384);
+    }
+
+    #[test]
+    fn test_part2() {
+        // TODO: verify this
+        assert_eq!(part2(&parse(&example())), 175406229326698);
     }
 }

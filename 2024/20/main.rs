@@ -1,6 +1,4 @@
-use std::{cmp::Reverse, collections::BinaryHeap, iter::*};
-
-use aoc::{Grid, GridDrawer, PrintGridDrawer};
+use aoc::Grid;
 
 type Parsed = Vec<Vec<char>>;
 
@@ -91,7 +89,7 @@ fn part1(data: &Parsed) -> i64 {
     res
 }
 
-fn part2(data: &Parsed) -> i64 {
+fn part2(_data: &Parsed) -> i64 {
     // solve(data, 100, 19)
     0
 }

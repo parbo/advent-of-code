@@ -4,7 +4,7 @@ use aoc::Itertools;
 
 type Parsed = Vec<(String, String)>;
 
-fn clusters(data: &Parsed, max_len: usize) -> BTreeSet<BTreeSet<String>> {
+fn cliques(data: &Parsed, max_len: usize) -> BTreeSet<BTreeSet<String>> {
     let mut conns: aoc::FxHashMap<String, aoc::FxHashSet<String>> = aoc::FxHashMap::default();
     for d in data {
         conns.entry(d.0.clone()).or_default().insert(d.1.clone());
@@ -37,7 +37,7 @@ fn clusters(data: &Parsed, max_len: usize) -> BTreeSet<BTreeSet<String>> {
 }
 
 fn part1(data: &Parsed) -> i64 {
-    clusters(data, 3)
+    cliques(data, 3)
         .iter()
         .filter(|x| x.len() == 3)
         .filter(|x| x.iter().any(|x| x.starts_with("t")))
@@ -45,7 +45,7 @@ fn part1(data: &Parsed) -> i64 {
 }
 
 fn part2(data: &Parsed) -> i64 {
-    let pw = clusters(data, usize::MAX)
+    let pw = cliques(data, usize::MAX)
         .iter()
         .max_by_key(|x| x.len())
         .unwrap()

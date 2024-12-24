@@ -1,4 +1,5 @@
 use std::{collections::BTreeSet, iter::*};
+use aoc::Itertools;
 
 use aoc::FxHashMap;
 
@@ -61,26 +62,19 @@ fn run(values: &aoc::FxHashMap<String, i64>, gates: &[(String, Op, String, Strin
     zd
 }
 
-fn add(a: i64, b: i64, gates: &[(String, Op, String, String)]) -> i64 {
+fn add(a: i64, b: i64, bits: usize, gates: &[(String, Op, String, String)]) -> i64 {
     let mut values = aoc::FxHashMap::default();
-    let mut zvals = aoc::FxHashSet::default();
-    for (a, _op, b, out) in gates {
-        for x in [a, b, out] {
-            if x.starts_with("z") {
-                zvals.insert(x.clone());
-            }
-        }
-    }
-    let bits = zvals.len();
     let digs = bits.checked_ilog10().unwrap_or(0) as usize + 1;
+//    dbg!(bits, digs);
     for i in 0..bits {
         let av = a & (1 << i);
         let bv = b & (1 << i);
-        let x = format!("x{:0digs$}", av, digs=digs);
-        let y = format!("x{:0digs$}", bv, digs=digs);
+        let x = format!("x{:0digs$}", i, digs = digs);
+        let y = format!("y{:0digs$}", i, digs = digs);
         values.insert(x, av);
         values.insert(y, bv);
     }
+//    dbg!(&values);
     run(&values, gates)
 }
 
@@ -89,7 +83,38 @@ fn part1(data: &Parsed) -> i64 {
 }
 
 fn part2(data: &Parsed) -> i64 {
-    run(&data.0, &data.1)
+    let n = data.0.len() / 2;
+    let bits = n;
+    let mut c = 0;
+    let mut best = 0;
+    'outer: for x in (0..n).combinations(8) {
+//        dbg!(&x);
+        for y in x.iter().copied().permutations(x.len()) {
+            c += 1;
+            if c % 1000 == 0 {
+                println!("{}", c);
+            }
+//            dbg!(&y);
+            let mut gates = data.1.clone();
+            y.chunks(2)
+                .for_each(|x| gates.swap(x[0] as usize, x[1] as usize));
+            for a in 0..(1 << bits) {
+                for b in 0..(1 << bits) {
+//                    println!("trying {} + {}", a, b);
+                    if add(a, b, bits, &gates) != a + b {
+                        continue 'outer;
+                    } else {
+                        //                        println!("{} + {} ok", a, b);
+                        if a > best {
+                            best = a;
+                            println!("new best: {}", a);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    0
 }
 
 fn parse(lines: &[String]) -> Parsed {

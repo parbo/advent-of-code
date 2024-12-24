@@ -1,5 +1,7 @@
 use std::{collections::BTreeSet, iter::*};
 
+use aoc::FxHashMap;
+
 #[derive(parse_display::Display, parse_display::FromStr, Debug, Clone, PartialEq, Eq, Hash)]
 #[display(style = "UPPERCASE")]
 enum Op {
@@ -13,10 +15,10 @@ type Parsed = (
     Vec<(String, Op, String, String)>,
 );
 
-fn part1(data: &Parsed) -> i64 {
-    let mut values = data.0.clone();
+fn run(values: &aoc::FxHashMap<String, i64>, gates: &[(String, Op, String, String)]) -> i64 {
+    let mut values = values.clone();
     let mut zvals = aoc::FxHashSet::default();
-    for (a, op, b, out) in &data.1 {
+    for (a, _op, b, out) in gates {
         for x in [a, b, out] {
             if x.starts_with("z") {
                 zvals.insert(x.clone());
@@ -25,7 +27,7 @@ fn part1(data: &Parsed) -> i64 {
     }
     loop {
         let mut v = values.clone();
-        for (a, op, b, out) in &data.1 {
+        for (a, op, b, out) in gates {
             let av = values.get(a);
             let bv = values.get(b);
             match (av, bv) {
@@ -59,8 +61,35 @@ fn part1(data: &Parsed) -> i64 {
     zd
 }
 
-fn part2(_: &Parsed) -> i64 {
-    0
+fn add(a: i64, b: i64, gates: &[(String, Op, String, String)]) -> i64 {
+    let mut values = aoc::FxHashMap::default();
+    let mut zvals = aoc::FxHashSet::default();
+    for (a, _op, b, out) in gates {
+        for x in [a, b, out] {
+            if x.starts_with("z") {
+                zvals.insert(x.clone());
+            }
+        }
+    }
+    let bits = zvals.len();
+    let digs = bits.checked_ilog10().unwrap_or(0) as usize + 1;
+    for i in 0..bits {
+        let av = a & (1 << i);
+        let bv = b & (1 << i);
+        let x = format!("x{:0digs$}", av, digs=digs);
+        let y = format!("x{:0digs$}", bv, digs=digs);
+        values.insert(x, av);
+        values.insert(y, bv);
+    }
+    run(&values, gates)
+}
+
+fn part1(data: &Parsed) -> i64 {
+    run(&data.0, &data.1)
+}
+
+fn part2(data: &Parsed) -> i64 {
+    run(&data.0, &data.1)
 }
 
 fn parse(lines: &[String]) -> Parsed {

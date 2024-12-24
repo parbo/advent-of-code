@@ -52,8 +52,11 @@ fn part1(data: &Parsed) -> i64 {
         .into_iter()
         .filter(|(k, _v)| k.starts_with("z"))
         .collect();
-    dbg!(z);
-    0
+    let mut zd = 0;
+    for (i, (_k, v)) in z.iter().enumerate() {
+        zd |= v << i;
+    }
+    zd
 }
 
 fn part2(_: &Parsed) -> i64 {

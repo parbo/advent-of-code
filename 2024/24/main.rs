@@ -89,7 +89,7 @@ fn part2(data: &Parsed) -> i64 {
         }
     }
     // An or should always be from two ands
-    for (_ix, g) in gates.iter().enumerate() {
+    for g in gates {
         if g.1 == Op::Or {
             for (ixx, gg) in gates.iter().enumerate() {
                 if (gg.3 == g.0 || gg.3 == g.2) && gg.1 != Op::And {
@@ -99,7 +99,7 @@ fn part2(data: &Parsed) -> i64 {
         }
     }
     // An xor should always have xor and an or
-    for (_ix, g) in gates.iter().enumerate() {
+    for g in gates {
         if g.1 == Op::Xor {
             let mut parents = vec![];
             for (ixx, gg) in gates.iter().enumerate() {
@@ -148,7 +148,7 @@ fn part2(data: &Parsed) -> i64 {
             if re.is_match(&g.0) && re.is_match(&g.2) {
                 continue;
             }
-            for (_ixx, gg) in gates.iter().enumerate() {
+            for gg in gates {
                 if (g.3 == gg.0 || g.3 == gg.2) && gg.1 != Op::Or && !gg.3.starts_with("z") {
                     wrong.insert(ix);
                 }
@@ -188,7 +188,7 @@ fn dump_dot(filename: &str, gates: &[(String, Op, String, String)]) {
     dot.push("}".to_string());
     let dot = dot.iter().join("\n");
     let path = std::path::Path::new(filename);
-    let mut file = std::fs::File::create(&path).unwrap();
+    let mut file = std::fs::File::create(path).unwrap();
     file.write_all(dot.as_bytes()).unwrap();
 }
 

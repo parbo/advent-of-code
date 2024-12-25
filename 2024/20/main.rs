@@ -2,7 +2,7 @@ use aoc::Grid;
 
 type Parsed = Vec<Vec<char>>;
 
-fn get_neighbors(data: &Parsed, p: aoc::Point, d: i64) -> aoc::FxHashSet<(aoc::Point, i64)> {
+fn get_neighbors(data: &Parsed, p: aoc::Point, d: i64) -> Vec<(aoc::Point, i64)> {
     let mut res = aoc::FxHashSet::default();
     let mut todo = vec![(p, d)];
     let mut seen = aoc::FxHashSet::default();
@@ -27,6 +27,9 @@ fn get_neighbors(data: &Parsed, p: aoc::Point, d: i64) -> aoc::FxHashSet<(aoc::P
     // if d > 0 {
     //     dbg!(p, d, &res);
     // }
+    let mut res: Vec<(aoc::Point, i64)> = res.into_iter().collect();
+    res.sort_by_key(|f| std::cmp::Reverse(f.1));
+    // dbg!(&res);
     res
 }
 
@@ -39,6 +42,7 @@ fn solve(
     rem: i64,
     seen: &mut aoc::FxHashMap<(aoc::Point, i64), i64>,
 ) -> i64 {
+    // println!("{:?}", path);
     let pos = *path.last().unwrap();
     if let Some(x) = seen.get(&(pos, rem)) {
         // if *x != 0 {
@@ -64,6 +68,8 @@ fn solve(
         new_path.push(nb);
         num += solve(data, new_path, goal, new_score, threshold, r, seen);
     }
+
+    dbg!(pos, rem, num);
 
     seen.insert((pos, rem), num);
     num

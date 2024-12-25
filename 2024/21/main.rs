@@ -79,9 +79,7 @@ fn find_kp_moves(start: aoc::Point, goal: aoc::Point, depth: i64) -> Vec<(Vec<ch
     let mut result: Vec<(Vec<char>, i64)> = vec![];
     let mut best = None;
     while let Some(Reverse((score, pos, presses))) = todo.pop() {
-        // println!("{:?} -> {}", presses.iter().join(""), score);
         if pos == goal {
-            // println!("{:?} -> {}", presses.iter().join(""), score);
             if let Some(b) = best {
                 if score > b {
                     break;
@@ -89,7 +87,6 @@ fn find_kp_moves(start: aoc::Point, goal: aoc::Point, depth: i64) -> Vec<(Vec<ch
             } else {
                 best = Some(score);
             }
-            // println!("{}, {:?}", result.len(), presses.to_vec().iter().join(""));
             result.push((presses, score));
             continue;
         }
@@ -110,23 +107,36 @@ fn find_kp_moves(start: aoc::Point, goal: aoc::Point, depth: i64) -> Vec<(Vec<ch
     result
 }
 
-fn find_dir_moves(pos: aoc::Point, wanted_code: &[char]) -> Vec<char> {
+#[memoize]
+fn find_dir_moves(pos: aoc::Point, wanted_code: Vec<char>, depth: i64) -> Vec<Vec<char>> {
     let mut todo = BinaryHeap::new();
-    todo.push(Reverse((
-        (0, 0),
-        pos,
-        Vec::<char>::new(),
-        Vec::<char>::new(),
-    )));
+    todo.push(Reverse((0, pos, Vec::<char>::new(), Vec::<char>::new())));
     let mut seen = aoc::FxHashSet::default();
-    while let Some(Reverse((_score, pos, presses, code))) = todo.pop() {
+    let mut result = vec![];
+    let mut best = None;
+    while let Some(Reverse((score, pos, presses, code))) = todo.pop() {
         if !code.is_empty() && !wanted_code.starts_with(&code) {
             continue;
         }
         if code == wanted_code {
-            return presses;
+            if let Some(b) = best {
+                if score > b {
+                    break;
+                }
+            } else {
+                best = Some(score);
+            }
+            result.push(presses);
+            continue;
         }
         for c in &['A', '>', '^', 'v', '<'] {
+            match (c, presses.last()) {
+                ('>', Some('<')) => continue,
+                ('<', Some('>')) => continue,
+                ('^', Some('v')) => continue,
+                ('v', Some('^')) => continue,
+                _ => {}
+            }
             let mut new_pos = pos;
             let kpc = match c {
                 'A' => Some(dirpad(pos).unwrap()),
@@ -144,21 +154,14 @@ fn find_dir_moves(pos: aoc::Point, wanted_code: &[char]) -> Vec<char> {
             }
             let mut new_presses = presses.clone();
             new_presses.push(*c);
-            let turns = new_presses
-                .windows(2)
-                .filter(|x| x[0] != 'A' && x[1] != 'A' && x[0] != x[1])
-                .count();
+            let sss = solve_sequence(new_presses.clone(), depth);
+            let tot: i64 = sss.iter().map(|(k, v)| k.len() as i64 * v).sum();
             if seen.insert((new_pos, new_presses.clone(), new_code.clone())) {
-                todo.push(Reverse((
-                    (turns, new_presses.len()),
-                    new_pos,
-                    new_presses,
-                    new_code,
-                )));
+                todo.push(Reverse((tot, new_pos, new_presses, new_code)));
             }
         }
     }
-    panic!()
+    result
 }
 
 #[memoize]
@@ -175,33 +178,63 @@ fn get_sequences(pp: Vec<char>) -> Vec<Vec<char>> {
 }
 
 #[memoize]
-fn find_dir_move_and_back(s: Vec<char>) -> Vec<char> {
-    let mut m1 = find_dir_moves([2, 0], &s);
-    let m2 = find_dir_moves(dirpad_pos(*s.last().unwrap()).unwrap(), &['A']);
-    m1.extend(m2);
-    m1
-}
-
-#[memoize]
 fn solve_sequence(seq: Vec<char>, depth: i64) -> aoc::FxHashMap<Vec<char>, i64> {
     let mut ss = aoc::FxHashMap::default();
     if seq.is_empty() {
         *ss.entry(vec!['A']).or_default() += 1;
     } else if depth > 0 {
-        let d = find_dir_move_and_back(seq.clone());
-        let seqs = get_sequences(d);
-        for s in &seqs {
-            let sss = solve_sequence(s.clone(), depth - 1);
-            for (k, v) in sss {
+        let mut steps = vec![[2i64, 0i64]];
+        steps.extend(seq.iter().map(|x| dirpad_pos(*x).unwrap()));
+        steps.pop();
+        for (step, ch) in steps.iter().zip(seq.iter()) {
+            let m1 = find_dir_moves(*step, vec![*ch], depth - 1);
+            let mut best1 = None;
+            for d in m1 {
+                let seqs = get_sequences(d);
+                for s in &seqs {
+                    let sss = solve_sequence(s.clone(), depth - 1);
+                    let score: i64 = sss.iter().map(|(k, v)| k.len() as i64 * v).sum();
+                    if let Some((bs, _bss)) = &best1 {
+                        if score < *bs {
+                            best1 = Some((score, sss));
+                        }
+                    } else {
+                        best1 = Some((score, sss));
+                    }
+                }
+            }
+            for (k, v) in best1.unwrap().1 {
                 *ss.entry(k).or_default() += v;
             }
+        }
+        let m2 = find_dir_moves(
+            dirpad_pos(*seq.last().unwrap()).unwrap(),
+            vec!['A'],
+            depth - 1,
+        );
+        let mut best2 = None;
+        for d in m2 {
+            let seqs = get_sequences(d);
+            for s in &seqs {
+                let sss = solve_sequence(s.clone(), depth - 1);
+                let score: i64 = sss.iter().map(|(k, v)| k.len() as i64 * v).sum();
+                if let Some((bs, _bss)) = &best2 {
+                    if score < *bs {
+                        best2 = Some((score, sss));
+                    }
+                } else {
+                    best2 = Some((score, sss));
+                }
+            }
+        }
+        for (k, v) in best2.unwrap().1 {
+            *ss.entry(k).or_default() += v;
         }
     } else {
         let mut sss = seq.to_vec();
         sss.push('A');
         *ss.entry(sss).or_default() += 1;
     }
-    // dbg!(depth, seq.len(), ss.len());
     ss
 }
 
@@ -242,10 +275,9 @@ fn part1(data: &Parsed) -> i64 {
             .parse::<i64>()
             .unwrap();
         let p = find_presses(wanted_code, 2);
-        dbg!(p, num);
         complexity += p * num;
     }
-    dbg!(complexity)
+    complexity
 }
 
 fn part2(data: &Parsed) -> i64 {
@@ -260,10 +292,9 @@ fn part2(data: &Parsed) -> i64 {
             .parse::<i64>()
             .unwrap();
         let p = find_presses(wanted_code, 25);
-        dbg!(p, num);
         complexity += p * num;
     }
-    dbg!(complexity)
+    complexity
 }
 
 fn parse(lines: &[String]) -> Parsed {

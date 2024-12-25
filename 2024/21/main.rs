@@ -312,7 +312,6 @@ mod tests {
 
     #[test]
     fn test_part2() {
-        // TODO: verify this
-        assert_eq!(part2(&parse(&example())), 175396398527088);
+        assert_eq!(part2(&parse(&example())), 154115708116294);
     }
 }

@@ -108,17 +108,14 @@ fn find_kp_moves(start: aoc::Point, goal: aoc::Point, depth: i64) -> Vec<(Vec<ch
 }
 
 #[memoize]
-fn find_dir_moves(pos: aoc::Point, wanted_code: Vec<char>, depth: i64) -> Vec<Vec<char>> {
+fn find_dir_moves(pos: aoc::Point, wanted_code: char, depth: i64) -> Vec<Vec<char>> {
     let mut todo = BinaryHeap::new();
-    todo.push(Reverse((0, pos, Vec::<char>::new(), Vec::<char>::new())));
+    todo.push(Reverse((0, pos, Vec::<char>::new(), None)));
     let mut seen = aoc::FxHashSet::default();
     let mut result = vec![];
     let mut best = None;
     while let Some(Reverse((score, pos, presses, code))) = todo.pop() {
-        if !code.is_empty() && !wanted_code.starts_with(&code) {
-            continue;
-        }
-        if code == wanted_code {
+        if code == Some(wanted_code) {
             if let Some(b) = best {
                 if score > b {
                     break;
@@ -127,6 +124,8 @@ fn find_dir_moves(pos: aoc::Point, wanted_code: Vec<char>, depth: i64) -> Vec<Ve
                 best = Some(score);
             }
             result.push(presses);
+            continue;
+        } else if code.is_some() {
             continue;
         }
         for c in &['A', '>', '^', 'v', '<'] {
@@ -148,16 +147,12 @@ fn find_dir_moves(pos: aoc::Point, wanted_code: Vec<char>, depth: i64) -> Vec<Ve
                     None
                 }
             };
-            let mut new_code = code.clone();
-            if let Some(c) = kpc {
-                new_code.push(c);
-            }
             let mut new_presses = presses.clone();
             new_presses.push(*c);
             let sss = solve_sequence(new_presses.clone(), depth);
             let tot: i64 = sss.iter().map(|(k, v)| k.len() as i64 * v).sum();
-            if seen.insert((new_pos, new_presses.clone(), new_code.clone())) {
-                todo.push(Reverse((tot, new_pos, new_presses, new_code)));
+            if seen.insert((new_pos, new_presses.clone(), kpc)) {
+                todo.push(Reverse((tot, new_pos, new_presses, kpc)));
             }
         }
     }
@@ -187,7 +182,7 @@ fn solve_sequence(seq: Vec<char>, depth: i64) -> aoc::FxHashMap<Vec<char>, i64> 
         steps.extend(seq.iter().map(|x| dirpad_pos(*x).unwrap()));
         steps.pop();
         for (step, ch) in steps.iter().zip(seq.iter()) {
-            let m1 = find_dir_moves(*step, vec![*ch], depth - 1);
+            let m1 = find_dir_moves(*step, *ch, depth - 1);
             let mut best1 = None;
             for d in m1 {
                 let seqs = get_sequences(d);
@@ -207,11 +202,7 @@ fn solve_sequence(seq: Vec<char>, depth: i64) -> aoc::FxHashMap<Vec<char>, i64> 
                 *ss.entry(k).or_default() += v;
             }
         }
-        let m2 = find_dir_moves(
-            dirpad_pos(*seq.last().unwrap()).unwrap(),
-            vec!['A'],
-            depth - 1,
-        );
+        let m2 = find_dir_moves(dirpad_pos(*seq.last().unwrap()).unwrap(), 'A', depth - 1);
         let mut best2 = None;
         for d in m2 {
             let seqs = get_sequences(d);

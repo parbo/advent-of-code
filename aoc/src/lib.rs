@@ -1431,6 +1431,7 @@ where
         } else {
             PathBuf::from(&format!("{}_{}.png", self.basename, self.frame))
         };
+        println!("saving to {:?}", filename);
         if let Some(image) = &self.image {
             image.save(filename).unwrap();
         }

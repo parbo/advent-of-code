@@ -87,6 +87,6 @@ mod tests {
 
     #[test]
     fn test_part1() {
-        assert_eq!(solve(&parse(&example()), 12, 6, 6), 22);
+        assert_eq!(solve(&parse(&example()), 12, 6, 6).unwrap().0, 22);
     }
 }

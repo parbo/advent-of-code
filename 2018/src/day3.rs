@@ -73,8 +73,7 @@ fn parse(input: &str) -> Vec<Claim> {
 fn solve_pt1(claims: &[Claim]) -> Result<i64, Box<dyn Error>> {
     let max_x = claims.iter().map(|c| c.right).max().unwrap();
     let max_y = claims.iter().map(|c| c.bottom).max().unwrap();
-    let mut pixels = vec![];
-    pixels.resize((max_y * max_x) as usize, 0);
+    let mut pixels = vec![0; (max_y * max_x) as usize];
     for claim in claims.iter() {
         for y in claim.top..claim.bottom {
             for x in claim.left..claim.right {

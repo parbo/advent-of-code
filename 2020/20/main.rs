@@ -207,10 +207,10 @@ fn stitch_grids(
     if let Some((_, (_, g))) = grid_of_grids.iter().next() {
         let mut xx = 0;
         let mut yy = 0;
-        let min_x = grid_of_grids.iter().map(|(p, _v)| p[0]).min().unwrap();
-        let min_y = grid_of_grids.iter().map(|(p, _v)| p[1]).min().unwrap();
-        let max_x = grid_of_grids.iter().map(|(p, _v)| p[0]).max().unwrap();
-        let max_y = grid_of_grids.iter().map(|(p, _v)| p[1]).max().unwrap();
+        let min_x = grid_of_grids.keys().map(|p| p[0]).min().unwrap();
+        let min_y = grid_of_grids.keys().map(|p| p[1]).min().unwrap();
+        let max_x = grid_of_grids.keys().map(|p| p[0]).max().unwrap();
+        let max_y = grid_of_grids.keys().map(|p| p[1]).max().unwrap();
         let gh = (g.len() - 2) as i64;
         let gw = (g[0].len() - 2) as i64;
         for y in min_y..=max_y {

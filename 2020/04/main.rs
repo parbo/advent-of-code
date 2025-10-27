@@ -13,7 +13,7 @@ fn is_valid(p: &HashMap<String, String>) -> bool {
 fn is_valid_details(p: &HashMap<String, String>) -> bool {
     let between = |s: &str, least, most| {
         s.parse::<usize>()
-            .map_or(false, |v| v >= least && v <= most)
+            .is_ok_and(|v| v >= least && v <= most)
     };
     is_valid(p)
         && p.iter().all(|(k, v)| match k.as_str() {

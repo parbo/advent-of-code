@@ -49,7 +49,7 @@ fn part1(data: &Parsed) -> i64 {
 }
 
 fn part2(data: &Parsed) -> i64 {
-    let mut cards: Vec<usize> = std::iter::repeat(1).take(data.len()).collect();
+    let mut cards: Vec<usize> = std::iter::repeat_n(1, data.len()).collect();
     data.iter().enumerate().for_each(|(pos, card)| {
         let matching = card.winning.intersection(&card.numbers);
         let c = matching.count();

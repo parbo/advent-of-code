@@ -25,8 +25,8 @@ fn bd(grid: &Parsed) -> i64 {
 }
 
 fn draw(g: &HashMap<(i64, i64, i64), char>) {
-    let lev_min = g.iter().map(|(k, _)| k.0).min().unwrap();
-    let lev_max = g.iter().map(|(k, _)| k.0).max().unwrap();
+    let lev_min = g.keys().map(|k| k.0).min().unwrap();
+    let lev_max = g.keys().map(|k| k.0).max().unwrap();
     let mut tot = 0;
     for level in lev_min..=lev_max {
         let buggs = g.iter().filter(|(k, v)| k.0 == level && **v == '#').count();

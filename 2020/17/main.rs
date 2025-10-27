@@ -6,24 +6,24 @@ type Parsed = HashMap<Vec3, char>;
 type Answer = usize;
 
 fn extents(g: &Parsed) -> (Vec3, Vec3) {
-    let min_x = g.iter().map(|(p, _v)| p[0]).min().unwrap();
-    let min_y = g.iter().map(|(p, _v)| p[1]).min().unwrap();
-    let min_z = g.iter().map(|(p, _v)| p[2]).min().unwrap();
-    let max_x = g.iter().map(|(p, _v)| p[0]).max().unwrap();
-    let max_y = g.iter().map(|(p, _v)| p[1]).max().unwrap();
-    let max_z = g.iter().map(|(p, _v)| p[2]).max().unwrap();
+    let min_x = g.keys().map(|p| p[0]).min().unwrap();
+    let min_y = g.keys().map(|p| p[1]).min().unwrap();
+    let min_z = g.keys().map(|p| p[2]).min().unwrap();
+    let max_x = g.keys().map(|p| p[0]).max().unwrap();
+    let max_y = g.keys().map(|p| p[1]).max().unwrap();
+    let max_z = g.keys().map(|p| p[2]).max().unwrap();
     ([min_x, min_y, min_z], [max_x, max_y, max_z])
 }
 
 fn extents4(g: &HashMap<Vec4, char>) -> (Vec4, Vec4) {
-    let min_x = g.iter().map(|(p, _v)| p[0]).min().unwrap();
-    let min_y = g.iter().map(|(p, _v)| p[1]).min().unwrap();
-    let min_z = g.iter().map(|(p, _v)| p[2]).min().unwrap();
-    let min_w = g.iter().map(|(p, _v)| p[3]).min().unwrap();
-    let max_x = g.iter().map(|(p, _v)| p[0]).max().unwrap();
-    let max_y = g.iter().map(|(p, _v)| p[1]).max().unwrap();
-    let max_z = g.iter().map(|(p, _v)| p[2]).max().unwrap();
-    let max_w = g.iter().map(|(p, _v)| p[3]).max().unwrap();
+    let min_x = g.keys().map(|p| p[0]).min().unwrap();
+    let min_y = g.keys().map(|p| p[1]).min().unwrap();
+    let min_z = g.keys().map(|p| p[2]).min().unwrap();
+    let min_w = g.keys().map(|p| p[3]).min().unwrap();
+    let max_x = g.keys().map(|p| p[0]).max().unwrap();
+    let max_y = g.keys().map(|p| p[1]).max().unwrap();
+    let max_z = g.keys().map(|p| p[2]).max().unwrap();
+    let max_w = g.keys().map(|p| p[3]).max().unwrap();
     ([min_x, min_y, min_z, min_w], [max_x, max_y, max_z, max_w])
 }
 

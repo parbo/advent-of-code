@@ -6,7 +6,6 @@ edition = '2021'
 [dependencies]
 aoc = {path = "../../aoc"}
 parse-display = "0.10.0"
-bitlab = "1.1.0"
 
 [[bin]]
 name = 'day16'

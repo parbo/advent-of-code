@@ -99,7 +99,7 @@ impl AsciiSet {
     }
 
     #[inline]
-    pub fn iter(&self) -> Iter {
+    pub fn iter(&self) -> Iter<'_> {
         Iter(AsciiIter { c: 0, s: &self.set })
     }
 

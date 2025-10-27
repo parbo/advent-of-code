@@ -1,6 +1,6 @@
 #![allow(clippy::ptr_arg)]
 
-use bitlab::ExtractBitsFromVecU8;
+use aoc::ExtractBitsFromVecU8;
 use std::iter::*;
 
 type Answer = i64;

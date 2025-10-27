@@ -2626,6 +2626,169 @@ impl Default for BitSet {
     }
 }
 
+// Some bit extraction helpers lifted from bitlab
+pub trait ExtractBitsFromVecU8 {
+    /// Extracts a range of bits from a Vec<u8> and returns a Result object containing a 8 bit unsigned integer or an error message.
+    ///
+    /// Parameters:
+    ///
+    /// - **byte_offset** (u32) the number of bytes to skip in source
+    /// - **bit_offset** (u32) the start position of the bits to be extracted. Zero is the most significant bit
+    /// - **length** (u32) the number of bits to be extracted.
+    fn get_u8(&self, byte_offset: u32, start: u32, length: u32) -> Result<u8, String>;
+
+    /// Extracts a range of bits from a Vec<u8> and returns a Result object containing a 16 bit unsigned integer or an error message.
+    ///
+    /// Parameters:
+    ///
+    /// - **byte_offset** (u32) the number of bytes to skip in source
+    /// - **bit_offset** (u32) the start position of the bits to be extracted. Zero is the most significant bit
+    /// - **length** (u32) the number of bits to be extracted.
+    fn get_u16(&self, byte_offset: u32, start: u32, length: u32) -> Result<u16, String>;
+}
+
+impl ExtractBitsFromVecU8 for Vec<u8> {
+    fn get_u8(&self, byte_offset: u32, bit_offset: u32, length: u32) -> Result<u8, String> {
+        if length == 0 {
+            return Err(String::from("zero length"));
+        };
+
+        if length <= 8 {
+            if self.len() as u32 * 8 >= byte_offset * 8 + bit_offset + length {
+                // Ensure that we stay within the vector
+                // if the bit offset is > 7 increase the byte offset as needed and reduce the bit offset until bit offset is <= 7
+                let mut byte_offset_copy = byte_offset;
+                let mut bit_offset_copy = bit_offset;
+
+                byte_offset_copy += bit_offset_copy / 8; // Integer division!
+                bit_offset_copy -= (bit_offset_copy / 8) * 8;
+
+                if bit_offset_copy + length <= 8 {
+                    let mut copy: u8 = self[byte_offset_copy as usize];
+                    // Assume that the data is given in big endian and
+                    // convert it to whatever endianness we have on the users machine
+                    copy = u8::from_be(copy);
+                    // Lets clear the bits on both sides of the range of bits of interest
+                    // First clear the ones on the left side
+                    copy <<= bit_offset_copy;
+                    // Second, push it all to the right end
+                    copy >>= 8 - length;
+                    return Ok(copy);
+                } else {
+                    // The range of bits spans over 2 bytes (not more)
+                    // Copy the first byte
+                    let copy1: u8 = self[byte_offset_copy as usize];
+
+                    // Copy that into a bigger variable type
+                    let mut copy1_as_u16: u16 = copy1 as u16;
+
+                    // Shift 8 bits to the left, since these are the first 2 of 3 bytes
+                    copy1_as_u16 <<= 8;
+
+                    // Now copy the second bytes
+                    let copy2: u8 = self[byte_offset_copy as usize + 1];
+
+                    // Logical OR these two to get the original 2 bytes
+                    let mut result = copy1_as_u16 | (copy2 as u16);
+
+                    // From now on, process like the normal case above
+                    result <<= bit_offset_copy;
+                    result >>= 16 - length;
+                    return Ok(result as u8);
+                }
+            } else {
+                return Err(String::from("out of range"));
+            }
+        } else {
+            return Err(String::from("out of range"));
+        }
+    }
+
+    fn get_u16(&self, byte_offset: u32, bit_offset: u32, length: u32) -> Result<u16, String> {
+        if length == 0 {
+            return Err(String::from("zero length"));
+        };
+
+        if length <= 16 {
+            if self.len() as u32 * 8 >= byte_offset * 8 + bit_offset + length {
+                // Ensure that we stay within the vector
+                // if the bit offset is > 7 increase the byte offset as needed and reduce the bit offset until bit offset is <= 7
+                let mut byte_offset_copy = byte_offset;
+                let mut bit_offset_copy = bit_offset;
+
+                byte_offset_copy += bit_offset_copy / 8; // Integer division!
+                bit_offset_copy -= (bit_offset_copy / 8) * 8;
+
+                if bit_offset_copy + length <= 8 {
+                    // Don't touch the original
+                    let copy1 = self[byte_offset_copy as usize] as i8;
+
+                    // Expand to u16
+                    let mut copy2 = copy1 as u16;
+
+                    // Lets clear the bits on both sides of the range of bits of interest
+                    // First clear the ones on the left side
+                    copy2 <<= 8 + bit_offset_copy;
+
+                    // Second, push it all to the right end
+                    copy2 >>= 16 - length;
+
+                    return Ok(copy2);
+                } else if bit_offset_copy + length <= 16 {
+                    let mut copy1 = self[byte_offset_copy as usize] as u16;
+
+                    // This is the most significant byte. So move it to the left
+                    // NOTE: The byte order should be OK for both big and little endian
+                    copy1 <<= 8;
+
+                    let copy2 = self[byte_offset_copy as usize + 1] as u16;
+
+                    // Logical OR these two to get the original 2 bytes
+                    let mut copy3 = copy1 | copy2;
+
+                    // Lets clear the bits on both sides of the range of bits of interest
+                    // First clear the ones on the left side
+                    copy3 <<= bit_offset_copy;
+
+                    // Second, push it all to the right end
+                    copy3 >>= 16 - length;
+
+                    return Ok(copy3);
+                } else {
+                    // The range of bits spans over 3 bytes (not more)
+                    let mut copy1 = self[byte_offset_copy as usize] as u32;
+
+                    // This is the most significant byte. So move it to the left
+                    // NOTE: The byte order should be OK for both big and little endian
+                    copy1 <<= 16;
+
+                    let mut copy2 = self[byte_offset_copy as usize + 1] as u32;
+                    copy2 <<= 8;
+
+                    let copy3 = self[byte_offset_copy as usize + 2] as u32;
+                    // copy3 <<= 0;
+
+                    // Logical OR these two to get the original 3 bytes
+                    let mut copy4 = copy1 | copy2 | copy3;
+
+                    // Lets clear the bits on both sides of the range of bits of interest
+                    // First clear the ones on the left side
+                    copy4 <<= bit_offset_copy + 8;
+
+                    // Second, push it all to the right end
+                    copy4 >>= 32 - length;
+
+                    return Ok(copy4 as u16);
+                }
+            } else {
+                return Err(String::from("out of range"));
+            }
+        } else {
+            return Err(String::from("out of range"));
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

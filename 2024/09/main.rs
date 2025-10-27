@@ -13,7 +13,7 @@ fn part1(data: &Parsed) -> i64 {
             } else {
                 None
             };
-            repeat(v).take(*num as usize)
+            std::iter::repeat_n(v, *num as usize)
         })
         .collect();
     let mut ix = 0;
@@ -73,7 +73,7 @@ fn part2(data: &Parsed) -> i64 {
         }
     }
     exp.iter()
-        .flat_map(|(v, num)| repeat(v.unwrap_or(0)).take(*num as usize))
+        .flat_map(|(v, num)| std::iter::repeat_n(v.unwrap_or(0), *num as usize))
         .enumerate()
         .map(|(ix, x)| ix as i64 * x)
         .sum()

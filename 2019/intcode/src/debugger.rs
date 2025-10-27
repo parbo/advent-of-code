@@ -19,7 +19,7 @@ fn config() {
 }
 
 impl Debugger<'_> {
-    pub fn new(machine: &mut Machine) -> Debugger {
+    pub fn new(machine: &mut Machine) -> Debugger<'_> {
         config();
         Debugger {
             machine,
@@ -120,7 +120,7 @@ impl Debugger<'_> {
                 println!();
             }
         }
-        if (count % 8) != 0 {
+        if !count.is_multiple_of(8) {
             println!();
         }
     }

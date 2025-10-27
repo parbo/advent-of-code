@@ -12,7 +12,7 @@ fn solve(data: &[i64], num: usize) -> i64 {
             let numdigs = (s.checked_ilog10().unwrap_or(0) + 1) as usize;
             if *s == 0 {
                 *newcounts.entry(1).or_default() += c;
-            } else if numdigs % 2 == 0 {
+            } else if numdigs.is_multiple_of(2) {
                 let ss = s.to_string();
                 let s1 = ss[0..(numdigs / 2)].parse().unwrap();
                 let s2 = ss[(numdigs / 2)..].parse().unwrap();

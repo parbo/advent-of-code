@@ -34,8 +34,7 @@ fn solve(data: &Parsed, max: Option<i64>) -> i64 {
                         .get(s)
                         .unwrap()
                         .iter()
-                        .map(|x| *m.get(x).unwrap_or(&false))
-                        .all(|x| x);
+                        .all(|x| *m.get(x).unwrap_or(&false));
                     let (last, cnt) = state.entry(s.to_string()).or_default();
                     if pp != *last {
                         if *cnt > 0 {
@@ -73,8 +72,7 @@ fn solve(data: &Parsed, max: Option<i64>) -> i64 {
                             .get(&s)
                             .unwrap()
                             .iter()
-                            .map(|x| *m.get(x).unwrap_or(&false))
-                            .all(|x| x);
+                            .all(|x| *m.get(x).unwrap_or(&false));
                         for o in out {
                             todo.push_front((o.clone(), pp, s.clone()));
                         }

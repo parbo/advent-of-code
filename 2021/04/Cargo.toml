@@ -8,7 +8,7 @@ aoc = {path = "../../aoc"}
 parse-display = "0.10.0"
 
 [dependencies.pancurses]
-version = "0.16"
+version = "0.17"
 features = ["win32"]
 
 [[bin]]

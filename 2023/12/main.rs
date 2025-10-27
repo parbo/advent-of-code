@@ -68,8 +68,7 @@ fn unfold(springs: &[char], groups: &[i64]) -> (Vec<char>, Vec<i64>) {
         .join("?")
         .chars()
         .collect();
-    let g = std::iter::repeat(groups.to_vec())
-        .take(5)
+    let g = std::iter::repeat_n(groups.to_vec(), 5)
         .flatten()
         .collect::<Vec<_>>();
     (s, g)

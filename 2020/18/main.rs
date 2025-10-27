@@ -32,7 +32,7 @@ impl FromStr for Ops {
 fn tokenize(line: &str) -> Vec<Ops> {
     let mut y = vec![];
     let mut ix = 0;
-    for (i, c) in line.chars().enumerate() {
+    for (i, c) in line.char_indices() {
         match c {
             ' ' => {
                 let s = &line[ix..i];

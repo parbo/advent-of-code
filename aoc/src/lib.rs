@@ -996,10 +996,10 @@ where
         *self.entry(pos).or_insert(value) = value;
     }
     fn extents(&self) -> (Point, Point) {
-        let min_x = self.iter().map(|(p, _v)| p[0]).min().unwrap_or(0);
-        let min_y = self.iter().map(|(p, _v)| p[1]).min().unwrap_or(0);
-        let max_x = self.iter().map(|(p, _v)| p[0]).max().unwrap_or(0);
-        let max_y = self.iter().map(|(p, _v)| p[1]).max().unwrap_or(0);
+        let min_x = self.keys().map(|p| p[0]).min().unwrap_or(0);
+        let min_y = self.keys().map(|p| p[1]).min().unwrap_or(0);
+        let max_x = self.keys().map(|p| p[0]).max().unwrap_or(0);
+        let max_y = self.keys().map(|p| p[1]).max().unwrap_or(0);
         ([min_x, min_y], [max_x, max_y])
     }
     fn flip_horizontal(&mut self) {
@@ -1049,10 +1049,10 @@ where
         *self.entry(pos).or_insert(value) = value;
     }
     fn extents(&self) -> (Point, Point) {
-        let min_x = self.iter().map(|(p, _v)| p[0]).min().unwrap_or(0);
-        let min_y = self.iter().map(|(p, _v)| p[1]).min().unwrap_or(0);
-        let max_x = self.iter().map(|(p, _v)| p[0]).max().unwrap_or(0);
-        let max_y = self.iter().map(|(p, _v)| p[1]).max().unwrap_or(0);
+        let min_x = self.keys().map(|p| p[0]).min().unwrap_or(0);
+        let min_y = self.keys().map(|p| p[1]).min().unwrap_or(0);
+        let max_x = self.keys().map(|p| p[0]).max().unwrap_or(0);
+        let max_y = self.keys().map(|p| p[1]).max().unwrap_or(0);
         ([min_x, min_y], [max_x, max_y])
     }
     fn flip_horizontal(&mut self) {
@@ -1772,49 +1772,17 @@ where
         *self.entry(pos).or_insert(value) = value;
     }
     fn axial_extents(&self) -> (Point, Point) {
-        let min_q = self
-            .iter()
-            .map(|(p, _v)| cube_to_axial(*p)[0])
-            .min()
-            .unwrap_or(0);
-        let min_r = self
-            .iter()
-            .map(|(p, _v)| cube_to_axial(*p)[1])
-            .min()
-            .unwrap_or(0);
-        let max_q = self
-            .iter()
-            .map(|(p, _v)| cube_to_axial(*p)[0])
-            .max()
-            .unwrap_or(0);
-        let max_r = self
-            .iter()
-            .map(|(p, _v)| cube_to_axial(*p)[1])
-            .max()
-            .unwrap_or(0);
+        let min_q = self.keys().map(|p| cube_to_axial(*p)[0]).min().unwrap_or(0);
+        let min_r = self.keys().map(|p| cube_to_axial(*p)[1]).min().unwrap_or(0);
+        let max_q = self.keys().map(|p| cube_to_axial(*p)[0]).max().unwrap_or(0);
+        let max_r = self.keys().map(|p| cube_to_axial(*p)[1]).max().unwrap_or(0);
         ([min_q, min_r], [max_q, max_r])
     }
     fn oddr_extents(&self) -> (Point, Point) {
-        let min_x = self
-            .iter()
-            .map(|(p, _v)| cube_to_oddr(*p)[0])
-            .min()
-            .unwrap_or(0);
-        let min_y = self
-            .iter()
-            .map(|(p, _v)| cube_to_oddr(*p)[1])
-            .min()
-            .unwrap_or(0);
-        let max_x = self
-            .iter()
-            .map(|(p, _v)| cube_to_oddr(*p)[0])
-            .max()
-            .unwrap_or(0);
-        let max_y = self
-            .iter()
-            .map(|(p, _v)| cube_to_oddr(*p)[1])
-            .max()
-            .unwrap_or(0);
+        let min_x = self.keys().map(|p| cube_to_oddr(*p)[0]).min().unwrap_or(0);
+        let min_y = self.keys().map(|p| cube_to_oddr(*p)[1]).min().unwrap_or(0);
+        let max_x = self.keys().map(|p| cube_to_oddr(*p)[0]).max().unwrap_or(0);
+        let max_y = self.keys().map(|p| cube_to_oddr(*p)[1]).max().unwrap_or(0);
         ([min_x, min_y], [max_x, max_y])
     }
     fn flip_horizontal(&mut self) {
@@ -2673,7 +2641,7 @@ impl ExtractBitsFromVecU8 for Vec<u8> {
                     copy <<= bit_offset_copy;
                     // Second, push it all to the right end
                     copy >>= 8 - length;
-                    return Ok(copy);
+                    Ok(copy)
                 } else {
                     // The range of bits spans over 2 bytes (not more)
                     // Copy the first byte
@@ -2694,13 +2662,13 @@ impl ExtractBitsFromVecU8 for Vec<u8> {
                     // From now on, process like the normal case above
                     result <<= bit_offset_copy;
                     result >>= 16 - length;
-                    return Ok(result as u8);
+                    Ok(result as u8)
                 }
             } else {
-                return Err(String::from("out of range"));
+                Err(String::from("out of range"))
             }
         } else {
-            return Err(String::from("out of range"));
+            Err(String::from("out of range"))
         }
     }
 
@@ -2733,7 +2701,7 @@ impl ExtractBitsFromVecU8 for Vec<u8> {
                     // Second, push it all to the right end
                     copy2 >>= 16 - length;
 
-                    return Ok(copy2);
+                    Ok(copy2)
                 } else if bit_offset_copy + length <= 16 {
                     let mut copy1 = self[byte_offset_copy as usize] as u16;
 
@@ -2753,7 +2721,7 @@ impl ExtractBitsFromVecU8 for Vec<u8> {
                     // Second, push it all to the right end
                     copy3 >>= 16 - length;
 
-                    return Ok(copy3);
+                    Ok(copy3)
                 } else {
                     // The range of bits spans over 3 bytes (not more)
                     let mut copy1 = self[byte_offset_copy as usize] as u32;
@@ -2778,13 +2746,13 @@ impl ExtractBitsFromVecU8 for Vec<u8> {
                     // Second, push it all to the right end
                     copy4 >>= 32 - length;
 
-                    return Ok(copy4 as u16);
+                    Ok(copy4 as u16)
                 }
             } else {
-                return Err(String::from("out of range"));
+                Err(String::from("out of range"))
             }
         } else {
-            return Err(String::from("out of range"));
+            Err(String::from("out of range"))
         }
     }
 }

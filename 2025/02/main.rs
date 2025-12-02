@@ -1,3 +1,5 @@
+use aoc::Itertools;
+
 #[derive(parse_display::Display, parse_display::FromStr, Debug, Clone, PartialEq, Eq, Hash)]
 #[display("{start}-{end}")]
 struct Range {
@@ -21,16 +23,7 @@ fn is_invalid(x: i64, max_div: Option<usize>) -> bool {
         if h * div != len {
             continue;
         }
-        let mut is_ok = true;
-        let v = &s[0..h];
-        for x in 1..div {
-            let w = &s[(h * x)..(h * x + h)];
-            if v != w {
-                is_ok = false;
-                break;
-            }
-        }
-        if is_ok {
+        if s.as_bytes().chunks(h).all_equal() {
             return true;
         }
     }

@@ -19,28 +19,22 @@ fn is_invalid(x: i64, max_div: Option<usize>) -> bool {
         .any(|div| s.as_bytes().chunks(len / div).all_equal())
 }
 
+fn solve(data: &Parsed, max_div: Option<usize>) -> i64 {
+    data.iter()
+        .map(|r| {
+            (r.start..=r.end)
+                .filter(|x| is_invalid(*x, max_div))
+                .sum::<i64>()
+        })
+        .sum()
+}
+
 fn part1(data: &Parsed) -> i64 {
-    let mut sum = 0;
-    for Range { start, end } in data {
-        for x in *start..=*end {
-            if is_invalid(x, Some(2)) {
-                sum += x;
-            }
-        }
-    }
-    sum
+    solve(data, Some(2))
 }
 
 fn part2(data: &Parsed) -> i64 {
-    let mut sum = 0;
-    for Range { start, end } in data {
-        for x in *start..=*end {
-            if is_invalid(x, None) {
-                sum += x;
-            }
-        }
-    }
-    sum
+    solve(data, None)
 }
 
 fn parse(lines: &[String]) -> Parsed {

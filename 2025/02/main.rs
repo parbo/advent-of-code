@@ -22,14 +22,12 @@ fn is_invalid(x: i64, max_div: Option<usize>) -> bool {
             continue;
         }
         let mut is_ok = true;
-        'outer: for i in 0..h {
-            let v = s.as_bytes()[i];
-            for x in 1..div {
-                let w = s.as_bytes()[i + h * x];
-                if v != w {
-                    is_ok = false;
-                    break 'outer;
-                }
+        let v = &s[0..h];
+        for x in 1..div {
+            let w = &s[(h * x)..(h * x + h)];
+            if v != w {
+                is_ok = false;
+                break;
             }
         }
         if is_ok {

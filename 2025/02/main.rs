@@ -13,21 +13,10 @@ type Parsed = Vec<ParsedItem>;
 fn is_invalid(x: i64, max_div: Option<usize>) -> bool {
     let s = x.to_string();
     let len = s.len();
-    let md = if let Some(md) = max_div {
-        len.min(md)
-    } else {
-        len
-    };
-    for div in 2..=md {
-        let h = len / div;
-        if h * div != len {
-            continue;
-        }
-        if s.as_bytes().chunks(h).all_equal() {
-            return true;
-        }
-    }
-    false
+    let md = max_div.unwrap_or(len).min(len);
+    (2..=md)
+        .filter(|div| len.is_multiple_of(*div))
+        .any(|div| s.as_bytes().chunks(len / div).all_equal())
 }
 
 fn part1(data: &Parsed) -> i64 {

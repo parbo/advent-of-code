@@ -1,3 +1,4 @@
+use aoc::FxHashSet;
 use rayon::prelude::*;
 use std::{collections::BinaryHeap, iter::*};
 
@@ -22,6 +23,7 @@ fn part1(data: &Parsed) -> i64 {
 fn find_biggest(v: &[i64]) -> i64 {
     let mut todo = BinaryHeap::new();
     todo.push((0, 0, 0, v.to_vec()));
+    let mut seen = FxHashSet::default();
     let mut best = None;
     while let Some((_pot, num, c, rem)) = todo.pop() {
         if c == 12 {
@@ -41,7 +43,9 @@ fn find_biggest(v: &[i64]) -> i64 {
                         nines += 9 * 10i64.pow(k as u32);
                     }
                     let rr = rem[(i + 1)..].to_vec();
-                    todo.push((num + nnum + nines, num + nnum, c + 1, rr));
+                    if seen.insert((num + nnum, rr.clone())) {
+                        todo.push((num + nnum + nines, num + nnum, c + 1, rr));
+                    }
                 }
             }
         }

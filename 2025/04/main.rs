@@ -1,51 +1,38 @@
-use aoc::Grid;
+use aoc::{Grid, Point};
 
 type Parsed = Vec<Vec<char>>;
 
-fn part1(data: &Parsed) -> i64 {
-    let mut ans = 0;
-    for p in data.points() {
-        let mut num = 0;
-        if data.get_value(p) == Some('.') {
+fn get_removable(g: &Parsed) -> Vec<Point> {
+    let mut to_remove = vec![];
+    for p in g.points() {
+        if g.get_value(p) == Some('.') {
             continue;
         }
-        for nb in aoc::neighbors_incl_diagonals(p) {
-            if let Some('@') = data.get_value(nb) {
-                num += 1;
-            }
-        }
+        let num = aoc::neighbors_incl_diagonals(p)
+            .filter(|nb| g.get_value(*nb) == Some('@'))
+            .count();
         if num < 4 {
-            ans += 1;
+            to_remove.push(p);
         }
     }
-    ans
+    to_remove
+}
+
+fn part1(data: &Parsed) -> i64 {
+    get_removable(data).len() as i64
 }
 
 fn part2(data: &Parsed) -> i64 {
     let mut ans = 0;
     let mut g = data.clone();
     loop {
-        let mut to_remove = vec![];
-        for p in g.points() {
-            let mut num = 0;
-            if g.get_value(p) == Some('.') {
-                continue;
-            }
-            for nb in aoc::neighbors_incl_diagonals(p) {
-                if let Some('@') = g.get_value(nb) {
-                    num += 1;
-                }
-            }
-            if num < 4 {
-                ans += 1;
-                to_remove.push(p);
-            }
-        }
+        let to_remove = get_removable(&g);
         if to_remove.is_empty() {
             break;
         }
         for p in to_remove {
             g.set_value(p, '.');
+            ans += 1;
         }
     }
     ans

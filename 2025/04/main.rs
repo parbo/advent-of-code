@@ -1,5 +1,3 @@
-use std::iter::*;
-
 use aoc::Grid;
 
 type Parsed = Vec<Vec<char>>;
@@ -12,10 +10,8 @@ fn part1(data: &Parsed) -> i64 {
             continue;
         }
         for nb in aoc::neighbors_incl_diagonals(p) {
-            if let Some(v) = data.get_value(nb) {
-                if v == '@' {
-                    num += 1;
-                }
+            if let Some('@') = data.get_value(nb) {
+                num += 1;
             }
         }
         if num < 4 {
@@ -36,10 +32,8 @@ fn part2(data: &Parsed) -> i64 {
                 continue;
             }
             for nb in aoc::neighbors_incl_diagonals(p) {
-                if let Some(v) = g.get_value(nb) {
-                    if v == '@' {
-                        num += 1;
-                    }
+                if let Some('@') = g.get_value(nb) {
+                    num += 1;
                 }
             }
             if num < 4 {

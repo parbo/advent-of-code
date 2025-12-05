@@ -1,6 +1,8 @@
 use std::iter::*;
 
-#[derive(parse_display::Display, parse_display::FromStr, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(
+    parse_display::Display, parse_display::FromStr, Debug, Clone, Copy, PartialEq, Eq, Hash,
+)]
 #[display("{from}-{to}")]
 struct Range {
     from: i64,
@@ -26,20 +28,17 @@ fn part1(data: &Parsed) -> i64 {
     num
 }
 
-fn add_ranges(r1: &Range, r2: &Range) -> Range {
-    Range {
-        from: r1.from.min(r2.from),
-        to: r1.to.max(r2.to),
-    }
-}
-
+// This assumes ranges are sorted by 'from'
 fn merge_ranges(ranges: &mut Vec<Range>) {
     let mut i = 0;
     while i + 1 < ranges.len() {
         let curr = &ranges[i];
         let next = &ranges[i + 1];
         if curr.from <= next.from && next.from <= curr.to {
-            ranges[i] = add_ranges(curr, next);
+            ranges[i] = Range {
+                from: curr.from.min(next.from),
+                to: curr.to.max(next.to),
+            };
             ranges.remove(i + 1);
         } else {
             i += 1;
@@ -47,24 +46,20 @@ fn merge_ranges(ranges: &mut Vec<Range>) {
     }
 }
 
-fn insert_range(ranges: &mut Vec<Range>, new_range: Range) {
+fn insert_range(ranges: &mut Vec<Range>, new_range: &Range) {
     let i = ranges
         .binary_search_by(|r| r.from.cmp(&new_range.from))
         .unwrap_or_else(|x| x);
-    ranges.insert(i, new_range);
+    ranges.insert(i, *new_range);
     merge_ranges(ranges);
 }
 
 fn part2(data: &Parsed) -> i64 {
     let mut merged_ranges: Vec<Range> = Vec::new();
     for range in &data.0 {
-        insert_range(&mut merged_ranges, range.clone());
+        insert_range(&mut merged_ranges, range);
     }
-    let mut num = 0;
-    for range in &merged_ranges {
-        num += range.to - range.from + 1;
-    }
-    num
+    merged_ranges.iter().map(|r| r.to - r.from + 1).sum()
 }
 
 fn parse(lines: &[String]) -> Parsed {

@@ -1,4 +1,4 @@
-use std::iter::*;
+use std::{cmp::Reverse, collections::BinaryHeap, iter::*};
 
 use aoc::{FxHashMap, FxHashSet};
 
@@ -19,29 +19,30 @@ fn dist(n: Junction, goal: Junction) -> i64 {
     (goal.x - n.x).pow(2) + (goal.y - n.y).pow(2) + (goal.z - n.z).pow(2)
 }
 
+fn distances(data: &Parsed) -> BinaryHeap<Reverse<(i64, usize, usize)>> {
+    let mut heap = BinaryHeap::new();
+    for i in 0..data.len() {
+        for j in 0..data.len() {
+            if i == j {
+                continue;
+            }
+            let d = dist(data[i], data[j]);
+            heap.push(Reverse((d, i, j)))
+        }
+    }
+    heap
+}
+
 fn solve(data: &Parsed, num: usize) -> i64 {
     let mut connections: FxHashMap<usize, FxHashSet<usize>> = FxHashMap::default();
-    for _ in 0..num {
-        let mut closest = None;
-        for i in 0..data.len() {
-            for j in 0..data.len() {
-                if i == j {
-                    continue;
-                }
-                if connections.entry(i).or_default().contains(&j) {
-                    continue;
-                }
-                let d = dist(data[i], data[j]);
-                if let Some((dd, _ii, _jj)) = closest {
-                    if d < dd {
-                        closest = Some((d, i, j));
-                    }
-                } else {
-                    closest = Some((d, i, j));
-                }
+    let mut dd = distances(data);
+    let mut n = 0;
+    while n < num {
+        if let Some(Reverse((_d, i, j))) = dd.pop() {
+            if connections.entry(i).or_default().contains(&j) {
+                continue;
             }
-        }
-        if let Some((_c, i, j)) = closest {
+            n += 1;
             connections.entry(i).or_default().insert(j);
             connections.entry(j).or_default().insert(i);
         }
@@ -65,7 +66,7 @@ fn solve(data: &Parsed, num: usize) -> i64 {
         }
         chains.push(chain);
     }
-    chains.sort_by_key(|a| std::cmp::Reverse(a.len()));
+    chains.sort_by_key(|a| Reverse(a.len()));
     chains.iter().take(3).map(|x| x.len()).product::<usize>() as i64
 }
 
@@ -75,27 +76,12 @@ fn part1(data: &Parsed) -> i64 {
 
 fn part2(data: &Parsed) -> i64 {
     let mut connections: FxHashMap<usize, FxHashSet<usize>> = FxHashMap::default();
+    let mut dd = distances(data);
     loop {
-        let mut closest = None;
-        for i in 0..data.len() {
-            for j in 0..data.len() {
-                if i == j {
-                    continue;
-                }
-                if connections.entry(i).or_default().contains(&j) {
-                    continue;
-                }
-                let d = dist(data[i], data[j]);
-                if let Some((dd, _ii, _jj)) = closest {
-                    if d < dd {
-                        closest = Some((d, i, j));
-                    }
-                } else {
-                    closest = Some((d, i, j));
-                }
+        if let Some(Reverse((_d, i, j))) = dd.pop() {
+            if connections.entry(i).or_default().contains(&j) {
+                continue;
             }
-        }
-        if let Some((_c, i, j)) = closest {
             connections.entry(i).or_default().insert(j);
             connections.entry(j).or_default().insert(i);
             let mut seen: FxHashSet<usize> = FxHashSet::default();

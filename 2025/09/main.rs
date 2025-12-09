@@ -1,5 +1,4 @@
-use aoc::{Grid, Itertools, Point};
-use std::{collections::HashMap, iter::*};
+use aoc::{FxHashMap, Itertools, Point};
 
 type Parsed = Vec<Point>;
 
@@ -12,6 +11,7 @@ fn part1(data: &Parsed) -> i64 {
 }
 
 fn part2(data: &Parsed) -> i64 {
+    let mut cache: FxHashMap<Point, bool> = FxHashMap::default();
     data.iter()
         .combinations(2)
         .filter(|x| {
@@ -20,18 +20,18 @@ fn part2(data: &Parsed) -> i64 {
             let min_y = x[0][1].min(x[1][1]);
             let max_y = x[0][1].max(x[1][1]);
             for xx in (min_x + 1)..max_x {
-                if !is_inside(data, [xx, min_y]) {
+                if !is_inside(data, [xx, min_y], &mut cache) {
                     return false;
                 }
-                if !is_inside(data, [xx, max_y]) {
+                if !is_inside(data, [xx, max_y], &mut cache) {
                     return false;
                 }
             }
             for yy in (min_y + 1)..max_y {
-                if !is_inside(data, [min_x, yy]) {
+                if !is_inside(data, [min_x, yy], &mut cache) {
                     return false;
                 }
-                if !is_inside(data, [max_x, yy]) {
+                if !is_inside(data, [max_x, yy], &mut cache) {
                     return false;
                 }
             }
@@ -43,48 +43,10 @@ fn part2(data: &Parsed) -> i64 {
         .unwrap()
 }
 
-fn intersection(a1: Point, a2: Point, b1: Point, b2: Point) -> Option<Point> {
-    assert!(a1[0] == a2[0] || a1[1] == a2[1]);
-    assert!(b1[0] == b2[0] || b1[1] == b2[1]);
-    if a1[0] == a2[0] {
-        // a is vertical
-        if b1[0] == b2[0] {
-            if a1[0] == b1[0] {
-                let min_x = a1[0].max(a2[0]).min(b1[0].max(b2[0]));
-                let max_x = a1[0].min(a2[0]).max(b1[0].min(b2[0]));
-                let min_y = a1[1].min(a2[1]).max(b1[1].min(b2[1]));
-                let max_y = a1[1].max(a2[1]).min(b1[1].max(b2[1]));
-                return Some([min_x + (max_x - min_x) / 2, min_y + (max_y - min_y) / 2]);
-            }
-        } else {
-            // b is horizontal
-            let x = a1[0];
-            let y = b1[1];
-            return Some([x, y]);
-        }
-    } else {
-        // a is horizontal
-        if b1[0] == b2[0] {
-            // b is vertical
-            let x = b1[0];
-            let y = a1[1];
-            return Some([x, y]);
-        } else {
-            // b is horizontal
-            if a1[1] == b1[1] {
-                let min_x = a1[0].max(a2[0]).min(b1[0].max(b2[0]));
-                let max_x = a1[0].min(a2[0]).max(b1[0].min(b2[0]));
-                let min_y = a1[1].min(a2[1]).max(b1[1].min(b2[1]));
-                let max_y = a1[1].max(a2[1]).min(b1[1].max(b2[1]));
-                return Some([min_x + (max_x - min_x) / 2, min_y + (max_y - min_y) / 2]);
-            }
-            return None;
-        }
+fn is_inside(polygon: &Parsed, point: Point, cache: &mut FxHashMap<Point, bool>) -> bool {
+    if let Some(v) = cache.get(&point) {
+        return *v;
     }
-    None
-}
-
-fn is_inside(polygon: &Parsed, point: Point) -> bool {
     let num_vertices = polygon.len();
     let x = point[0];
     let y = point[1];
@@ -104,6 +66,7 @@ fn is_inside(polygon: &Parsed, point: Point) -> bool {
         if (x == p1[0] && y <= p1[1].max(p2[1]) && y >= p1[1].min(p2[1]))
             || (y == p1[1] && x <= p1[0].max(p2[0]) && x >= p1[0].min(p2[0]))
         {
+            cache.insert(point, true);
             return true;
         }
 
@@ -137,6 +100,7 @@ fn is_inside(polygon: &Parsed, point: Point) -> bool {
     }
 
     // Return the value of the inside flag
+    cache.insert(point, inside);
     inside
 }
 

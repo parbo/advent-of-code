@@ -12,6 +12,7 @@ fn part1(data: &Parsed) -> i64 {
 
 fn part2(data: &Parsed) -> i64 {
     let mut cache: FxHashMap<Point, bool> = FxHashMap::default();
+    cache.reserve(data.len());
     data.iter()
         .combinations(2)
         .filter(|x| {
@@ -19,7 +20,7 @@ fn part2(data: &Parsed) -> i64 {
             let max_x = x[0][0].max(x[1][0]);
             let min_y = x[0][1].min(x[1][1]);
             let max_y = x[0][1].max(x[1][1]);
-            for xx in (min_x + 1)..max_x {
+            for xx in min_x..=max_x {
                 if !is_inside(data, [xx, min_y], &mut cache) {
                     return false;
                 }
@@ -27,7 +28,7 @@ fn part2(data: &Parsed) -> i64 {
                     return false;
                 }
             }
-            for yy in (min_y + 1)..max_y {
+            for yy in min_y..=max_y {
                 if !is_inside(data, [min_x, yy], &mut cache) {
                     return false;
                 }

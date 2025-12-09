@@ -1,10 +1,11 @@
-use aoc::{Grid, GridDrawer, Itertools, Point};
+use aoc::{Grid, Itertools, Point};
 use std::{collections::HashMap, iter::*};
 
 type Parsed = HashMap<Point, char>;
 
 fn part1(data: &Parsed) -> i64 {
-    data.keys()
+    data.iter()
+        .filter_map(|(k, v)| if *v == '#' { Some(k) } else { None })
         .combinations(2)
         .map(|x| ((x[0][0] - x[1][0]).abs() + 1) * ((x[0][1] - x[1][1]).abs() + 1))
         .max()
@@ -12,54 +13,67 @@ fn part1(data: &Parsed) -> i64 {
 }
 
 fn part2(data: &Parsed) -> i64 {
-    0
-}
-
-fn fill(data: &mut Parsed) {
-    let ([min_x, min_y], [max_x, max_y]) = data.extents();
-    let mut todo = vec![];
-    'outer: for y in (min_y + 1)..=(max_y - 1) {
-        for x in (min_x + 1)..=(max_x - 1) {
-            let mut num = 0;
-            let mut on = false;
-            for xx in x..=(max_x + 1) {
-                let p = [xx, y];
-                if data.get_value(p).is_some() {
-                    if !on {
-                        num += 1;
-                    }
-                    on = true;
-                } else {
-                    on = false;
+    let ([_min_x, _min_y], [max_ext_x, _max_y]) = data.extents();
+    let mut cache: HashMap<Point, bool> = HashMap::new();
+    data.iter()
+        .filter_map(|(k, v)| if *v == '#' { Some(k) } else { None })
+        .combinations(2)
+        .filter(|x| {
+            let min_x = x[0][0].min(x[1][0]);
+            let max_x = x[0][0].max(x[1][0]);
+            let min_y = x[0][1].min(x[1][1]);
+            let max_y = x[0][1].max(x[1][1]);
+            for xx in min_x..=max_x {
+                if !is_inside(data, [xx, min_y], max_ext_x, &mut cache) {
+                    return false;
+                }
+                if !is_inside(data, [xx, max_y], max_ext_x, &mut cache) {
+                    return false;
                 }
             }
-            // dbg!(x, y, num);
-            if num > 0 && num % 2 != 0 {
-                todo.push([x, y]);
-                break 'outer;
+            for yy in min_y..=max_y {
+                if !is_inside(data, [min_x, yy], max_ext_x, &mut cache) {
+                    return false;
+                }
+                if !is_inside(data, [max_x, yy], max_ext_x, &mut cache) {
+                    return false;
+                }
             }
-        }
-        dbg!(y);
+            true
+        })
+        .inspect(|x| println!("{:?}", x))
+        .map(|x| ((x[0][0] - x[1][0]).abs() + 1) * ((x[0][1] - x[1][1]).abs() + 1))
+        .max()
+        .unwrap()
+}
+
+fn is_inside(data: &Parsed, p: Point, max_x: i64, cache: &mut HashMap<Point, bool>) -> bool {
+    if data.get_value(p).is_some() {
+        return true;
     }
-    dbg!(&todo);
-    while let Some(p) = todo.pop() {
-        let curr = data.get_value(p);
-        if curr.is_none() {
-            data.set_value(p, 'X');
-            if p[0] > min_x {
-                todo.push([p[0] - 1, p[1]]);
+    // if let Some(v) = cache.get(&p) {
+    //     return *v;
+    // }
+    let [x, y] = p;
+    let mut num = 0;
+    let mut on = false;
+    for xx in x..=(max_x + 1) {
+        let p = [xx, y];
+        if data.get_value(p).is_some() {
+            if !on {
+                num += 1;
             }
-            if p[0] < max_x {
-                todo.push([p[0] + 1, p[1]]);
-            }
-            if p[1] > min_y {
-                todo.push([p[0], p[1] - 1]);
-            }
-            if p[1] < max_y {
-                todo.push([p[0], p[1] + 1]);
-            }
+            on = true;
+        } else {
+            on = false;
         }
     }
+    if num > 0 && num % 2 != 0 {
+        // cache.insert(p, true);
+        return true;
+    }
+    // cache.insert(p, false);
+    false
 }
 
 fn parse(lines: &[String]) -> Parsed {
@@ -78,17 +92,6 @@ fn parse(lines: &[String]) -> Parsed {
     for p in &points {
         grid.set_value(*p, '#');
     }
-    fill(&mut grid);
-    // let mut gd = aoc::BitmapGridDrawer::new(
-    //     |c| match c {
-    //         '#' => [255, 0, 0],
-    //         'X' => [0, 255, 0],
-    //         _ => [0, 0, 0],
-    //     },
-    //     "day09",
-    // );
-    // let mut gd = aoc::PrintGridDrawer::new(|c| c);
-    // gd.draw(&grid);
     grid
 }
 

@@ -45,12 +45,10 @@ fn part2(data: &Parsed) -> i64 {
             let opt = Optimize::new();
 
             let int_sort = Sort::int();
-            let tots = Array::new_const("tots", &int_sort, &int_sort);
             let num_presses = Array::new_const("num_presses", &int_sort, &int_sort);
 
             for (i, joltage) in m.joltages.iter().enumerate() {
-                let idx = Int::from_i64(i as i64);
-                let mut tot = tots.select(&idx).as_int().unwrap();
+                let mut tot = Int::from_i64(0);
                 // For each button that contributes to this joltage, add its button presses
                 for (k, b) in m.buttons.iter().enumerate() {
                     if *b & (1 << i) != 0 {
@@ -59,7 +57,8 @@ fn part2(data: &Parsed) -> i64 {
                         tot += pval;
                     }
                 }
-                opt.assert(&tot.eq(*joltage));
+                let target = Int::from_i64(*joltage as i64);
+                opt.assert(&tot.eq(&target));
             }
             let mut sum = Int::from_i64(0);
             for (k, _b) in m.buttons.iter().enumerate() {
@@ -69,8 +68,6 @@ fn part2(data: &Parsed) -> i64 {
                 sum += pval;
             }
 
-            println!("{opt:?}");
-
             // Minimize the sum of the array entries
             opt.minimize(&sum);
 
@@ -78,31 +75,13 @@ fn part2(data: &Parsed) -> i64 {
                 SatResult::Sat => {
                     let model = opt.get_model().unwrap();
 
-                    println!("{model:?}");
-
-                    println!("==========================");
-                    for i in 0..m.buttons.len() {
-                        let idx = Int::from_i64(i as i64);
-                        let val = num_presses.select(&idx).as_int().unwrap();
-                        let v = model.eval(&val, true).unwrap();
-                        println!("num_presses[{}] = {}", i, v);
-                    }
-                    for i in 0..m.joltages.len() {
-                        let idx = Int::from_i64(i as i64);
-                        let tval = tots.select(&idx).as_int().unwrap();
-                        let tv = model.eval(&tval, true).unwrap();
-                        println!("tots[{}] = {}", i, tv);
-                    }
-
                     let sum_val = model.eval(&sum, true).unwrap();
                     tot_sum += sum_val.as_i64().unwrap();
                 }
                 SatResult::Unsat => {
-                    println!("unsat");
                     panic!();
                 }
                 SatResult::Unknown => {
-                    println!("unknown: {:?}", opt.get_reason_unknown());
                     panic!();
                 }
             }

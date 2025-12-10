@@ -47,13 +47,14 @@ fn part2(data: &Parsed) -> i64 {
         let mut res = -1;
         let mut last_num = 0;
         'outer: while let Some(Reverse((_d, num, state))) = todo.pop() {
-            println!("{:?} {:?}, {}", state, m.joltages, num);
+            //            println!("{:?} {:?}, {}", state, m.joltages, num);
             if state == m.joltages {
-                if num > last_num {
-                    res = last_num;
+                // println!("{:?} {:?}, {}", state, m.joltages, num);
+                if last_num > 0 && num > last_num {
                     break;
                 }
                 last_num = num;
+                res = num;
             }
             for b in &m.buttons {
                 let mut new_state = state.clone();
@@ -70,6 +71,7 @@ fn part2(data: &Parsed) -> i64 {
                 todo.push(Reverse((d, num + 1, new_state)));
             }
         }
+        dbg!(res);
         sum += res;
     }
     sum
@@ -111,21 +113,20 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    // use super::*;
+    use super::*;
 
-    // fn example() -> Vec<String> {
-    //     let s = include_str!("example.txt");
-    //     s.lines().map(|x| x.to_string()).collect()
-    // }
+    fn example() -> Vec<String> {
+        let s = include_str!("example.txt");
+        s.lines().map(|x| x.to_string()).collect()
+    }
 
-    // fn example() -> Vec<String> {
-    // 	   vec![
-    //         "0".into()
-    //     ]
-    // }
+    #[test]
+    fn test_part1() {
+        assert_eq!(part1(&parse(&example())), 7);
+    }
 
-    // #[test]
-    // fn test_part1() {
-    //     assert_eq!(part1(&parse(&example())), 0);
-    // }
+    #[test]
+    fn test_part2() {
+        assert_eq!(part2(&parse(&example())), 33);
+    }
 }

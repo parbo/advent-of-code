@@ -1,4 +1,8 @@
-use std::{collections::VecDeque, iter::*};
+use std::{
+    cmp::Reverse,
+    collections::{BinaryHeap, VecDeque},
+    iter::*,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Machine {
@@ -34,17 +38,26 @@ fn part1(data: &Parsed) -> i64 {
 fn part2(data: &Parsed) -> i64 {
     let mut sum = 0;
     for m in data {
-        let mut todo = VecDeque::new();
+        let mut todo = BinaryHeap::new();
         let lcm = aoc::lcm_arr(&m.joltages);
         dbg!(lcm);
         let len = m.joltages.len();
         let v = vec![0; len];
-        todo.push_back((v, 0));
+        todo.push(Reverse((m.joltages.iter().sum(), 0, v)));
         let mut res = -1;
-        'outer: while let Some((state, num)) = todo.pop_front() {
-            // println!("{:?}, {:?}, {}", state, m.joltages, num);
+        let mut last_num = 0;
+        'outer: while let Some(Reverse((_d, num, state))) = todo.pop() {
+            println!("{:?} {:?}, {}", state, m.joltages, num);
+            if state == m.joltages {
+                if num > last_num {
+                    res = last_num;
+                    break;
+                }
+                last_num = num;
+            }
             for b in &m.buttons {
                 let mut new_state = state.clone();
+                let mut d = 0;
                 for i in 0..len {
                     if *b & (1 << i) != 0 {
                         new_state[i] += 1;
@@ -52,12 +65,9 @@ fn part2(data: &Parsed) -> i64 {
                     if new_state[i] > m.joltages[i] {
                         continue 'outer;
                     }
+                    d += m.joltages[i] - new_state[i];
                 }
-                if new_state == m.joltages {
-                    res = num + 1;
-                    break 'outer;
-                }
-                todo.push_back((new_state, num + 1));
+                todo.push(Reverse((d, num + 1, new_state)));
             }
         }
         sum += res;
@@ -85,7 +95,7 @@ fn parse(lines: &[String]) -> Parsed {
                 buttons.push(btn.iter().map(|x| 1 << x).sum());
                 p = p + a + b + 1;
             }
-            let joltages = aoc::things(&x[b1..b2]);
+            let joltages = aoc::things(&x[(b1 + 1)..b2]);
             Machine {
                 lights,
                 buttons,

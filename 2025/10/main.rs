@@ -4,6 +4,8 @@ use std::{
     iter::*,
 };
 
+use aoc::FxHashSet;
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Machine {
     lights: i64,
@@ -39,6 +41,7 @@ fn part2(data: &Parsed) -> i64 {
     let mut sum = 0;
     for m in data {
         let mut todo = BinaryHeap::new();
+        let mut seen = FxHashSet::default();
         let lcm = aoc::lcm_arr(&m.joltages);
         dbg!(lcm);
         let len = m.joltages.len();
@@ -47,7 +50,7 @@ fn part2(data: &Parsed) -> i64 {
         let mut res = -1;
         let mut last_num = 0;
         'outer: while let Some(Reverse((_d, num, state))) = todo.pop() {
-            //            println!("{:?} {:?}, {}", state, m.joltages, num);
+            // println!("{:?} {:?}, {}", state, m.joltages, num);
             if state == m.joltages {
                 // println!("{:?} {:?}, {}", state, m.joltages, num);
                 if last_num > 0 && num > last_num {
@@ -68,7 +71,9 @@ fn part2(data: &Parsed) -> i64 {
                     }
                     d += m.joltages[i] - new_state[i];
                 }
-                todo.push(Reverse((d, num + 1, new_state)));
+                if seen.insert((num + 1, new_state.clone())) {
+                    todo.push(Reverse((d, num + 1, new_state)));
+                }
             }
         }
         dbg!(res);

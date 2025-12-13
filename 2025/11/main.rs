@@ -101,11 +101,8 @@ fn part2(data: &Parsed) -> i64 {
         vec![&fft, &dac]
     };
     let a = find_num_paths(data, "svr", order[0]);
-    dbg!(&a);
     let b = find_num_paths(data, order[0], order[1]);
-    dbg!(&b);
     let c = find_num_paths(data, order[1], "out");
-    dbg!(&c);
     a * b * c
 }
 

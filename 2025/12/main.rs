@@ -5,7 +5,7 @@ use std::{
     iter::*,
 };
 
-use aoc::{FxHashSet, Grid, Point};
+use aoc::{FxHashSet, Grid, GridDrawer, Point};
 
 type Shape = Vec<Vec<char>>;
 type SGrid = HashMap<Point, char>;
@@ -13,6 +13,7 @@ type Parsed = (Vec<Shape>, Vec<(i64, i64, Vec<usize>)>);
 
 fn possible_grids(w: i64, h: i64, g: &SGrid, shapes: &[Shape]) -> Vec<SGrid> {
     let mut possible = vec![];
+    let mut gd = aoc::PrintGridDrawer::new(|c| c);
     for y in 0..h {
         for x in 0..w {
             // try to place shape at (x, y)
@@ -20,12 +21,13 @@ fn possible_grids(w: i64, h: i64, g: &SGrid, shapes: &[Shape]) -> Vec<SGrid> {
                 let mut gg = g.clone();
                 let mut ok = true;
                 for p in shape.points() {
-                    let gx = x + p[0];
-                    let gy = y + p[1];
-                    if gx >= w || gy >= h {
-                        break;
-                    }
                     if let Some('#') = shape.get_value(p) {
+                        let gx = x + p[0];
+                        let gy = y + p[1];
+                        if gx >= w || gy >= h {
+                            ok = false;
+                            break;
+                        }
                         let gv = gg.get_value([gx, gy]);
                         if gv == Some('#') {
                             ok = false;
@@ -103,11 +105,15 @@ fn can_fit(w: i64, h: i64, shapes: &[Vec<Shape>], needed_shapes: &[usize]) -> bo
         needed_shapes: needed_shapes.to_vec(),
     }));
     let mut seen = FxHashSet::default();
-    // let mut gd = aoc::PrintGridDrawer::new(|c| c);
+    let mut gd = aoc::PrintGridDrawer::new(|c| c);
     while let Some(Reverse(s)) = todo.pop() {
         if s.score == 0 {
-            // gd.draw(&s.grid);
+            gd.draw(&s.grid);
+            println!();
             return true;
+        }
+        if seen.len() % 1000 == 0 {
+            println!("Seen states: {}", seen.len());
         }
         for (shape_ix, num) in s.needed_shapes.iter().enumerate() {
             if *num == 0 {
@@ -139,6 +145,7 @@ fn part1(data: &Parsed) -> i64 {
     }
     let mut num = 0;
     for (w, h, indices) in &data.1 {
+        dbg!((w, h, indices));
         let tot = indices
             .iter()
             .enumerate()
@@ -206,23 +213,17 @@ fn main() {
     aoc::run_main(parse, part1, part2);
 }
 
-#[cfg(test)]
-mod tests {
-    // use super::*;
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
 
-    // fn example() -> Vec<String> {
-    //     let s = include_str!("example.txt");
-    //     s.lines().map(|x| x.to_string()).collect()
-    // }
+//     fn example() -> Vec<String> {
+//         let s = include_str!("example.txt");
+//         s.lines().map(|x| x.to_string()).collect()
+//     }
 
-    // fn example() -> Vec<String> {
-    // 	   vec![
-    //         "0".into()
-    //     ]
-    // }
-
-    // #[test]
-    // fn test_part1() {
-    //     assert_eq!(part1(&parse(&example())), 0);
-    // }
-}
+//     #[test]
+//     fn test_part1() {
+//         assert_eq!(part1(&parse(&example())), 2);
+//     }
+// }

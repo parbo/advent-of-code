@@ -57,7 +57,7 @@ fn part2(data: &Parsed) -> i64 {
                         tot += pval;
                     }
                 }
-                let target = Int::from_i64(*joltage as i64);
+                let target = Int::from_i64(*joltage);
                 opt.assert(&tot.eq(&target));
             }
             let mut sum = Int::from_i64(0);

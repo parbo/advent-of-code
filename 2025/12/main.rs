@@ -1,42 +1,45 @@
 use std::{
     cmp::Reverse,
-    collections::{BinaryHeap, HashMap},
+    collections::{BTreeMap, BTreeSet, BinaryHeap},
     hash::Hash,
     iter::*,
 };
 
-use aoc::{FxHashSet, Grid, GridDrawer, Point};
+use aoc::{FxHashMap, FxHashSet, Grid, GridDrawer, Point};
 
 type Shape = Vec<Vec<char>>;
-type SGrid = HashMap<Point, char>;
+type SGrid = BTreeMap<Point, char>;
 type Parsed = (Vec<Shape>, Vec<(i64, i64, Vec<usize>)>);
 
 fn possible_grids(w: i64, h: i64, g: &SGrid, shapes: &[Shape]) -> Vec<SGrid> {
     let mut possible = vec![];
-    let mut gd = aoc::PrintGridDrawer::new(|c| c);
     for y in 0..h {
         for x in 0..w {
             // try to place shape at (x, y)
             for shape in shapes {
-                let mut gg = g.clone();
-                let mut ok = true;
-                for p in shape.points() {
+                let ok = shape.points().all(|p| {
                     if let Some('#') = shape.get_value(p) {
                         let gx = x + p[0];
                         let gy = y + p[1];
                         if gx >= w || gy >= h {
-                            ok = false;
-                            break;
+                            return false;
                         }
-                        let gv = gg.get_value([gx, gy]);
+                        let gv = g.get_value([gx, gy]);
                         if gv == Some('#') {
-                            ok = false;
-                            break;
+                            return false;
                         }
-                        gg.set_value([gx, gy], '#');
                     }
-                }
+                    true
+                });
                 if ok {
+                    let mut gg = g.clone();
+                    for p in shape.points() {
+                        if let Some('#') = shape.get_value(p) {
+                            let gx = x + p[0];
+                            let gy = y + p[1];
+                            gg.set_value([gx, gy], '#');
+                        }
+                    }
                     possible.push(gg);
                 }
             }
@@ -46,57 +49,32 @@ fn possible_grids(w: i64, h: i64, g: &SGrid, shapes: &[Shape]) -> Vec<SGrid> {
 }
 
 fn possible_shapes(shape: &Shape) -> Vec<Shape> {
-    let mut shapes = vec![];
-    shapes.push(shape.clone());
+    let mut shapes = BTreeSet::new();
+    shapes.insert(shape.clone());
     let mut s = shape.clone();
     for _ in 0..4 {
         s.rotate_90_cw();
-        shapes.push(s.clone());
+        shapes.insert(s.clone());
     }
     let mut s = shape.clone();
     s.flip_horizontal();
-    shapes.push(s.clone());
+    shapes.insert(s.clone());
     for _ in 0..4 {
         s.rotate_90_cw();
-        shapes.push(s.clone());
+        shapes.insert(s.clone());
     }
-    shapes
+    shapes.iter().cloned().collect()
 }
 
-#[derive(Eq, PartialEq, Clone)]
+#[derive(Eq, PartialEq, Clone, Hash, Ord, PartialOrd)]
 struct State {
     score: usize,
     grid: SGrid,
     needed_shapes: Vec<usize>,
 }
 
-impl Hash for State {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.score.hash(state);
-        for (k, v) in &self.grid {
-            k.hash(state);
-            v.hash(state);
-        }
-        for n in &self.needed_shapes {
-            n.hash(state);
-        }
-    }
-}
-
-impl Ord for State {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.score.cmp(&other.score)
-    }
-}
-
-impl PartialOrd for State {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
 fn can_fit(w: i64, h: i64, shapes: &[Vec<Shape>], needed_shapes: &[usize]) -> bool {
-    let g = HashMap::new();
+    let g = BTreeMap::new();
     let sum = needed_shapes.iter().sum::<usize>();
     let mut todo = BinaryHeap::new();
     todo.push(Reverse(State {
@@ -112,7 +90,7 @@ fn can_fit(w: i64, h: i64, shapes: &[Vec<Shape>], needed_shapes: &[usize]) -> bo
             println!();
             return true;
         }
-        if seen.len() % 1000 == 0 {
+        if seen.len() % 10000 == 0 {
             println!("Seen states: {}", seen.len());
         }
         for (shape_ix, num) in s.needed_shapes.iter().enumerate() {
